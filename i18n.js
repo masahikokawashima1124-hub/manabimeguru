@@ -33,6 +33,18 @@ const LOCALES = {
     // --- せってい ---
     "settings.title": "⚙️ せってい",
     "settings.sub": "がくねんを えらぶと、その がくねんまでの もんだいが 出ます",
+    "settings.backupTitle": "📦 バックアップ",
+    "settings.backupDesc": "べつの たんまつに ひっこしするときや、データが きえてしまったときのために、いままでの きろく（がくねん・カード・ポイント）をファイルに ほぞんしておけます。",
+    "settings.backupExport": "書き出す",
+    "settings.backupImport": "読み込む",
+    "settings.backupConfirmYes": "読み込む",
+    "settings.backupConfirmNo": "やめる",
+    "settings.backupExportOk": "書き出しました！ファイルを だいじに ほかんしてね",
+    "settings.backupExportFailed": "書き出しに しっぱいしました。もういちど ためしてね",
+    "settings.backupImportInvalid": "このファイルは 読み込めませんでした",
+    "settings.backupImportConfirm": "がくねん{grade}年・カード{cards}しゅるい・ポイント{points}点 を読み込みます。今の きろくは うわがきされます。よろしいですか？",
+    "settings.backupImportOk": "読み込みました！",
+    "settings.backupImportFailed": "読み込みに しっぱいしました。もういちど ためしてね",
 
     // --- 共有 ---
     "share.copyHint": "↑ このぶんしょうを コピーして つかってね",

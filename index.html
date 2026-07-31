@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 
@@ -82,6 +82,24 @@
     <h2 data-i18n="settings.title"></h2>
     <p class="sub" data-i18n="settings.sub"></p>
     <div class="settings-box" id="settings-grade-list"></div>
+
+    <h3 class="settings-section-title" data-i18n="settings.backupTitle"></h3>
+    <p class="sub" data-i18n="settings.backupDesc"></p>
+    <div class="backup-box">
+      <div class="backup-actions">
+        <button type="button" id="btn-backup-export" class="btn-secondary" data-i18n="settings.backupExport"></button>
+        <button type="button" id="btn-backup-import" class="btn-secondary" data-i18n="settings.backupImport"></button>
+      </div>
+      <input type="file" id="backup-file-input" accept="application/json,.json" class="hidden">
+      <p id="backup-feedback" class="backup-feedback"></p>
+      <div id="backup-confirm-box" class="backup-confirm-box hidden">
+        <p id="backup-confirm-text"></p>
+        <div class="backup-actions">
+          <button type="button" id="btn-backup-confirm-yes" class="btn-secondary" data-i18n="settings.backupConfirmYes"></button>
+          <button type="button" id="btn-backup-confirm-no" class="btn-secondary" data-i18n="settings.backupConfirmNo"></button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- 科目選択画面 -->
@@ -257,9 +275,9 @@
   <button id="btn-close-card-detail" type="button" class="card-detail-close">✕</button>
 </div>
 
-<script src="i18n.js?v=13"></script>
+<script src="i18n.js?v=14"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=6"></script>
-<script src="script.js?v=31"></script>
+<script src="script.js?v=32"></script>
 </body>
 </html>

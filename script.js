@@ -2187,6 +2187,139 @@ function openSettingsScreen() {
   showScreen("screen-settings");
 }
 
+// ===== バックアップ（書き出し・読み込み） =====
+// アカウント基盤ができるまでのつなぎ。端末が変わる／データが消えるリスクに備えて、
+// localStorage の中身を丸ごとJSONファイルに書き出し・読み込みできるようにする。
+const BACKUP_APP_ID = "manabimeguru";
+const BACKUP_FORMAT_VERSION = 1;
+
+function collectBackupData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    data[key] = localStorage.getItem(key);
+  }
+  return data;
+}
+
+function backupSummaryFromData(data) {
+  const grade = parseInt(data[GRADE_KEY] || "", 10);
+  let cardCount = 0;
+  try {
+    cardCount = Object.keys(JSON.parse(data[GACHA_KEY] || "{}")).length;
+  } catch {
+    cardCount = 0;
+  }
+  return {
+    grade: GRADES.includes(grade) ? grade : DEFAULT_GRADE,
+    cards: cardCount,
+    points: parseInt(data[STORAGE_KEY] || "0", 10),
+  };
+}
+
+function setBackupFeedback(text, cls) {
+  const el = document.getElementById("backup-feedback");
+  el.textContent = text;
+  el.className = `backup-feedback${cls ? ` ${cls}` : ""}`;
+}
+
+function backupFilename() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `manabimeguru-backup-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+}
+
+async function exportBackup() {
+  const payload = {
+    app: BACKUP_APP_ID,
+    formatVersion: BACKUP_FORMAT_VERSION,
+    exportedAt: new Date().toISOString(),
+    data: collectBackupData(),
+  };
+  const filename = backupFilename();
+  const file = new File([JSON.stringify(payload, null, 2)], filename, { type: "application/json" });
+
+  // iPadなど共有シートが使える端末では、AirDrop・メール等にそのまま渡せる方が扱いやすい
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      setBackupFeedback(t("settings.backupExportOk"), "ok");
+      return;
+    } catch (err) {
+      if (err.name === "AbortError") return; // 共有をキャンセルしただけなので何もしない
+      // それ以外のエラーはダウンロード方式にフォールバック
+    }
+  }
+
+  try {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setBackupFeedback(t("settings.backupExportOk"), "ok");
+  } catch (err) {
+    setBackupFeedback(t("settings.backupExportFailed"), "error");
+  }
+}
+
+document.getElementById("btn-backup-export").addEventListener("click", () => {
+  playClickSound();
+  exportBackup();
+});
+
+let pendingBackupData = null;
+
+document.getElementById("btn-backup-import").addEventListener("click", () => {
+  playClickSound();
+  document.getElementById("backup-file-input").click();
+});
+
+document.getElementById("backup-file-input").addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ""; // 同じファイルを選び直しても change が発火するようにリセットしておく
+  if (!file) return;
+
+  try {
+    const parsed = JSON.parse(await file.text());
+    if (parsed.app !== BACKUP_APP_ID || typeof parsed.data !== "object" || !parsed.data) {
+      throw new Error("invalid backup file");
+    }
+    pendingBackupData = parsed.data;
+    document.getElementById("backup-confirm-text").textContent =
+      t("settings.backupImportConfirm", backupSummaryFromData(parsed.data));
+    document.getElementById("backup-confirm-box").classList.remove("hidden");
+    setBackupFeedback("", "");
+  } catch (err) {
+    pendingBackupData = null;
+    setBackupFeedback(t("settings.backupImportInvalid"), "error");
+  }
+});
+
+document.getElementById("btn-backup-confirm-no").addEventListener("click", () => {
+  playClickSound();
+  pendingBackupData = null;
+  document.getElementById("backup-confirm-box").classList.add("hidden");
+});
+
+document.getElementById("btn-backup-confirm-yes").addEventListener("click", () => {
+  playClickSound();
+  if (!pendingBackupData) return;
+  try {
+    localStorage.clear();
+    Object.entries(pendingBackupData).forEach(([key, value]) => localStorage.setItem(key, value));
+    document.getElementById("backup-confirm-box").classList.add("hidden");
+    setBackupFeedback(t("settings.backupImportOk"), "ok");
+    setTimeout(() => location.reload(), 600);
+  } catch (err) {
+    setBackupFeedback(t("settings.backupImportFailed"), "error");
+  }
+  pendingBackupData = null;
+});
+
 // ===== 科目選択 =====
 document.querySelectorAll(".level-card[data-subject]").forEach((btn) => {
   btn.addEventListener("click", () => {
