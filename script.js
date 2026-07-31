@@ -425,14 +425,18 @@ function renderGuideFaceHTML(sizeClass) {
 }
 
 // ===== 図鑑レベル（集めたカードの種類数で決まる） =====
-// 名前つきの称号は最後（でんせつの図鑑編さん者）で打ち止めにせず、そこから先は
-// COMPENDIUM_STEP刻みで「Lv.2」「Lv.3」…と自動で伸びていく。カードを追加するバッチが
-// 増えても、称号の翻訳文を都度書き足さずに済むようにするため。
+// 名前つきの称号は、カード総数が最終的に200枚くらいまで増える想定で用意してある
+// （20枚までは4枚刻み、そこから先は今後のバッチ規模に合わせて20枚刻み）。
+// 200枚を超えた分は打ち止めにせず、COMPENDIUM_STEP刻みで「Lv.2」「Lv.3」…と
+// 自動で伸びていく。カードを追加するバッチが増えても、称号の翻訳文を
+// 都度書き足さずに済むようにするため。
 const COMPENDIUM_TITLES = [
   { min: 0 }, { min: 4 }, { min: 8 }, { min: 12 }, { min: 16 }, { min: 20 },
+  { min: 40 }, { min: 60 }, { min: 80 }, { min: 100 }, { min: 120 },
+  { min: 140 }, { min: 160 }, { min: 180 }, { min: 200 },
 ].map((tier) => ({ ...tier, get title() { return t(`rank.${this.min}`); } }));
 
-const COMPENDIUM_STEP = 4;
+const COMPENDIUM_STEP = 20;
 const COMPENDIUM_NAMED_MAX = COMPENDIUM_TITLES[COMPENDIUM_TITLES.length - 1].min;
 
 function compendiumTierFor(count) {
