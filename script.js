@@ -425,16 +425,32 @@ function renderGuideFaceHTML(sizeClass) {
 }
 
 // ===== 図鑑レベル（集めたカードの種類数で決まる） =====
+// 名前つきの称号は最後（でんせつの図鑑編さん者）で打ち止めにせず、そこから先は
+// COMPENDIUM_STEP刻みで「Lv.2」「Lv.3」…と自動で伸びていく。カードを追加するバッチが
+// 増えても、称号の翻訳文を都度書き足さずに済むようにするため。
 const COMPENDIUM_TITLES = [
   { min: 0 }, { min: 4 }, { min: 8 }, { min: 12 }, { min: 16 }, { min: 20 },
 ].map((tier) => ({ ...tier, get title() { return t(`rank.${this.min}`); } }));
 
+const COMPENDIUM_STEP = 4;
+const COMPENDIUM_NAMED_MAX = COMPENDIUM_TITLES[COMPENDIUM_TITLES.length - 1].min;
+
 function compendiumTierFor(count) {
-  let tier = COMPENDIUM_TITLES[0];
-  let idx = 0;
-  COMPENDIUM_TITLES.forEach((t, i) => { if (count >= t.min) { tier = t; idx = i; } });
-  const next = COMPENDIUM_TITLES[idx + 1] || null;
-  return { count, title: tier.title, idx, next, tierMin: tier.min };
+  if (count < COMPENDIUM_NAMED_MAX) {
+    let tier = COMPENDIUM_TITLES[0];
+    let idx = 0;
+    COMPENDIUM_TITLES.forEach((t, i) => { if (count >= t.min) { tier = t; idx = i; } });
+    const next = COMPENDIUM_TITLES[idx + 1] || { min: COMPENDIUM_NAMED_MAX };
+    return { count, title: tier.title, idx, next, tierMin: tier.min };
+  }
+
+  const stepsBeyond = Math.floor((count - COMPENDIUM_NAMED_MAX) / COMPENDIUM_STEP);
+  const tierMin = COMPENDIUM_NAMED_MAX + stepsBeyond * COMPENDIUM_STEP;
+  const baseTitle = COMPENDIUM_TITLES[COMPENDIUM_TITLES.length - 1].title;
+  const title = stepsBeyond === 0 ? baseTitle : t("rank.beyond", { base: baseTitle, n: stepsBeyond + 1 });
+  const idx = COMPENDIUM_TITLES.length - 1 + stepsBeyond;
+  const next = { min: tierMin + COMPENDIUM_STEP };
+  return { count, title, idx, next, tierMin };
 }
 
 // ===== ガチャカード コレクション =====

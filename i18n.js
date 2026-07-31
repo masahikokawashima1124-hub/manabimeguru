@@ -223,6 +223,7 @@ const LOCALES = {
     "result.rate": "せいかいりつ {rate}％",
     "rank.nextIn": "つぎの かいきゅうまで あと {n}しゅるい",
     "rank.max": "さいこうかいきゅうに とうたつ！",
+    "rank.beyond": "{base} Lv.{n}",
     "share.done": "きょうゆうしました！",
     "share.failed": "きょうゆうできませんでした。もういちど ためしてね",
     "share.copied": "コピーしました！LINEなどに はりつけて つかってね",
