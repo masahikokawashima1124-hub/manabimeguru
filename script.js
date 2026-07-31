@@ -198,7 +198,6 @@ function playLevelUpSound() {
 // loop 省略時はループ再生。volume 省略時は BGM_VOLUME。
 const BGM_SOURCES = {
   home: { src: "assets/bgm/home.mp3" },
-  subject: { src: "assets/bgm/subject.mp3" },
   quiz: { src: "assets/bgm/quiz.mp3" },
   collection: { src: "assets/bgm/collection.mp3" },
   gachaView: { src: "assets/bgm/gacha-view.mp3" },
@@ -216,9 +215,9 @@ const SCREEN_TO_BGM = {
   "screen-home": "home",
   "screen-settings": "home",
   "screen-result": "home",
-  "screen-subject": "subject",
-  "screen-category": "subject",
-  "screen-start": "subject",
+  "screen-subject": "home",
+  "screen-category": "home",
+  "screen-start": "home",
   "screen-quiz": "quiz",
   "screen-collection": "collection",
   "screen-gacha": "home",
