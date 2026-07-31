@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>まなびめぐる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
+<link rel="stylesheet" href="style.css?v=15">
+</head>
+<body>
+
+<!-- 起動時のオープニング。タップかタイマーで閉じる -->
+<div id="splash" class="splash">
+  <img class="splash-image" src="assets/opening/splash.jpg" alt="">
+  <div class="splash-veil"></div>
+  <div class="splash-body">
+    <h1 class="splash-title" data-i18n="home.title"></h1>
+    <p class="splash-tap" data-i18n="splash.tap"></p>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- ステータスバー：どの画面でも常に表示 -->
+  <div class="status-bar" id="status-bar">
+    <div class="status-bar-avatar" id="status-bar-avatar"></div>
+    <div class="status-bar-info">
+      <span class="status-bar-grade" id="status-bar-grade">小学3年生</span>
+      <span class="status-bar-lv" id="status-bar-lv">Lv.0</span>
+    </div>
+    <button id="btn-sound-toggle" type="button" class="status-bar-sound" data-i18n-aria="common.sound">🔊</button>
+    <div class="status-bar-points">
+      <span class="status-bar-points-icon">🎰</span>
+      <span id="status-bar-points-value">0</span>
+    </div>
+  </div>
+
+  <!-- ガイドキャラ：どの画面でも常に表示 -->
+  <div class="guide-box">
+    <div class="guide-character" id="guide-character"></div>
+    <div class="guide-bubble" id="guide-bubble">こんにちは！いっしょに べんきょうしよう！</div>
+  </div>
+
+  <!-- ホーム画面：年齢（レベル）選択 -->
+  <section id="screen-home" class="screen active">
+    <div class="hero-card">
+      <div class="hero-card-shine"></div>
+      <span class="hero-date" id="hero-date"></span>
+      <h1 class="hero-title" id="hero-title"></h1>
+      <p class="hero-sub" data-i18n="home.heroSub"></p>
+    </div>
+
+    <div class="week-chart-card">
+      <div class="week-chart-head">
+        <span class="week-chart-title" data-i18n="home.weekTitle"></span>
+        <span class="week-chart-total" id="week-chart-total">0pt</span>
+      </div>
+      <div class="week-chart" id="week-chart"></div>
+    </div>
+
+    <div class="home-status-card">
+      <div class="level-badge-slot" id="home-rank-badge"></div>
+      <div class="home-status-info">
+        <span class="home-status-grade" id="home-status-grade"></span>
+        <span class="home-status-rank" id="home-status-rank"></span>
+      </div>
+      <div class="home-status-points">
+        <span class="label" data-i18n="gacha.points"></span>
+        <span class="value" id="home-stamps"></span>
+      </div>
+    </div>
+
+    <button id="btn-start-study" class="btn-primary" data-i18n="home.startStudy"></button>
+    <button type="button" class="btn-gacha-mini" id="btn-gacha-home" data-i18n="home.drawGacha"></button>
+  </section>
+
+  <!-- せってい画面 -->
+  <section id="screen-settings" class="screen">
+    <h2 data-i18n="settings.title"></h2>
+    <p class="sub" data-i18n="settings.sub"></p>
+    <div class="settings-box" id="settings-grade-list"></div>
+  </section>
+
+  <!-- 科目選択画面 -->
+  <section id="screen-subject" class="screen">
+    <h2 id="subject-title"></h2>
+    <p class="sub" data-i18n="subject.pick"></p>
+    <div class="level-cards">
+      <button class="level-card" data-subject="math">
+        <div class="emoji">🔢</div>
+        <div class="level-title" data-i18n="subject.math"></div>
+        <div class="level-desc" data-i18n="subject.mathDesc"></div>
+      </button>
+      <button class="level-card" data-subject="japanese">
+        <div class="emoji">📖</div>
+        <div class="level-title" data-i18n="subject.japanese"></div>
+        <div class="level-desc" data-i18n="subject.japaneseDesc"></div>
+      </button>
+      <button class="level-card" data-subject="english" id="subject-english">
+        <div class="emoji">🔤</div>
+        <div class="level-title" data-i18n="subject.english"></div>
+        <div class="level-desc" data-i18n="subject.englishDesc"></div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ぶんや選択画面 -->
+  <section id="screen-category" class="screen">
+    <h2 id="category-title"></h2>
+    <p class="sub" data-i18n="category.pick"></p>
+    <div class="category-list" id="category-list"></div>
+    <button id="btn-back-category" class="btn-secondary" data-i18n="common.back"></button>
+  </section>
+
+  <!-- スタート画面 -->
+  <section id="screen-start" class="screen">
+    <h2 id="start-title"></h2>
+
+    <div class="character-box">
+      <div class="level-badge-slot" id="start-char-emoji"></div>
+      <div class="character-title" id="start-char-title"></div>
+      <div class="character-progress">
+        <div class="character-progress-bar" id="start-char-progress"></div>
+      </div>
+      <div class="character-progress-label" id="start-char-progress-label"></div>
+    </div>
+
+    <div class="stamp-card" id="stamp-card"></div>
+    <p class="badge-line" id="badge-line"></p>
+    <button id="btn-begin" class="btn-primary" data-i18n="quiz.start"></button>
+    <button id="btn-back-home-1" class="btn-secondary" data-i18n="common.back"></button>
+  </section>
+
+  <!-- クイズ画面 -->
+  <section id="screen-quiz" class="screen">
+    <div class="quiz-header">
+      <span id="quiz-progress">1 / 10</span>
+      <span id="quiz-stamps"></span>
+    </div>
+    <div class="problem-box">
+      <div id="problem-badge" class="problem-badge"></div>
+      <div id="problem-text" class="problem-text">?</div>
+
+      <button id="btn-hint" type="button" class="btn-hint" data-i18n="quiz.hint"></button>
+      <div id="hint-box" class="hint-box hidden"></div>
+
+      <form id="answer-form">
+        <input type="text" id="answer-input" inputmode="text" autocomplete="off" data-i18n-placeholder="quiz.answerPlaceholder">
+        <button type="submit" class="btn-primary" data-i18n="quiz.submit"></button>
+      </form>
+
+      <div id="choice-buttons" class="choice-buttons hidden"></div>
+
+      <div id="feedback" class="feedback"></div>
+      <div id="explain-box" class="explain-box hidden"></div>
+      <button id="btn-next" class="btn-primary hidden" data-i18n="quiz.next"></button>
+    </div>
+  </section>
+
+  <!-- 結果画面 -->
+  <section id="screen-result" class="screen">
+    <h2 data-i18n="result.title"></h2>
+    <div class="result-box">
+      <p class="result-score" id="result-score"></p>
+      <p class="result-rate" id="result-rate"></p>
+      <div class="stamp-anim" id="stamp-anim"></div>
+      <p class="points-earned-line" id="points-earned-line"></p>
+    </div>
+
+    <button id="btn-share-result" class="btn-primary btn-share" data-i18n="result.share"></button>
+    <p id="result-action-feedback" class="action-feedback"></p>
+    <div id="manual-copy-box" class="manual-copy-box hidden">
+      <textarea id="manual-copy-text" class="manual-copy-textarea" readonly rows="8"></textarea>
+      <p class="manual-copy-hint" data-i18n="share.copyHint"></p>
+    </div>
+    <button id="btn-retry" class="btn-primary" data-i18n="result.retry"></button>
+  </section>
+
+  <!-- ガチャ画面 -->
+  <section id="screen-gacha" class="screen">
+    <div class="gacha-banner">
+      <div class="gacha-banner-shine"></div>
+      <div class="gacha-banner-sparkles"></div>
+      <h2 id="gacha-screen-title" class="gacha-banner-title" data-i18n="gacha.title"></h2>
+      <div class="gacha-points-box">
+        <span class="label" data-i18n="gacha.points"></span>
+        <span id="gacha-points-value" class="value">0</span>
+        <span class="gacha-cost-hint" data-i18n="gacha.cost"></span>
+        <span class="gacha-pity-hint" id="gacha-pity-hint"></span>
+      </div>
+    </div>
+
+    <button id="btn-pull-gacha" class="btn-primary btn-gacha-pull" data-i18n="gacha.pull"></button>
+    <p id="gacha-insufficient-msg" class="gacha-insufficient hidden" data-i18n="gacha.insufficient"></p>
+
+    <div id="gacha-reveal-box" class="gacha-box hidden">
+      <div id="gacha-card-slot"></div>
+    </div>
+
+    <div id="gacha-levelup-box" class="levelup-box hidden">
+      <p class="levelup-text" data-i18n="gacha.rankUp"></p>
+      <div class="level-badge-slot" id="gacha-levelup-emoji"></div>
+      <div class="levelup-title" id="gacha-levelup-title"></div>
+    </div>
+
+  </section>
+
+  <!-- カードずかん画面 -->
+  <section id="screen-collection" class="screen">
+    <h2 data-i18n="collection.title"></h2>
+    <p class="sub" id="collection-count-line"></p>
+    <div class="collection-grid" id="collection-grid"></div>
+    <button id="btn-back-from-collection" class="btn-secondary" data-i18n="common.back"></button>
+  </section>
+
+</div>
+
+<!-- 下部タブナビゲーション -->
+<nav class="tab-bar" id="tab-bar">
+  <button type="button" class="tab-bar-btn" data-tab="home">
+    <span class="tab-bar-icon">🏠</span>
+    <span class="tab-bar-label" data-i18n="tab.home"></span>
+  </button>
+  <button type="button" class="tab-bar-btn" data-tab="study">
+    <span class="tab-bar-icon">📖</span>
+    <span class="tab-bar-label" data-i18n="tab.study"></span>
+  </button>
+  <button type="button" class="tab-bar-fab" data-tab="gacha" data-i18n-aria="tab.gachaAria">
+    <span class="tab-bar-fab-icon">🎰</span>
+  </button>
+  <button type="button" class="tab-bar-btn" data-tab="collection">
+    <span class="tab-bar-icon">🎴</span>
+    <span class="tab-bar-label" data-i18n="tab.collection"></span>
+  </button>
+  <button type="button" class="tab-bar-btn" data-tab="settings">
+    <span class="tab-bar-icon">⚙️</span>
+    <span class="tab-bar-label" data-i18n="tab.settings"></span>
+  </button>
+</nav>
+
+<!-- ガチャ演出：画面いっぱいに表示する -->
+<div id="gacha-overlay" class="gacha-overlay hidden" aria-hidden="true">
+  <div class="gacha-overlay-stage" id="gacha-overlay-stage"></div>
+  <p class="gacha-refund" id="gacha-refund"></p>
+  <div class="gacha-overlay-actions">
+    <button id="btn-skip-gacha" type="button" class="btn-skip-gacha hidden" data-i18n="gacha.skip"></button>
+    <button id="btn-close-gacha" type="button" class="btn-close-gacha hidden" data-i18n="gacha.close"></button>
+  </div>
+</div>
+
+<!-- カード拡大表示モーダル -->
+<div id="card-detail-overlay" class="card-detail-overlay hidden">
+  <div class="card-detail-content" id="card-detail-content"></div>
+  <button id="btn-close-card-detail" type="button" class="card-detail-close">✕</button>
+</div>
+
+<script src="i18n.js?v=11"></script>
+<script src="content-ja.js?v=15"></script>
+<script src="content-en.js?v=6"></script>
+<script src="script.js?v=28"></script>
+</body>
+</html>
