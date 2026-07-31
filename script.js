@@ -315,8 +315,8 @@ const BGM_SOURCES = {
   collection: { src: "assets/bgm/collection.mp3" },
   gachaView: { src: "assets/bgm/gacha-view.mp3" },
   // ガチャ演出の効果音（5秒・1回きり）。レアリティで鳴り分ける。
-  gachaRevealNR: { src: "assets/se/gacha-reveal-nr.wav", loop: false, volume: 0.7 },
-  gachaRevealSR: { src: "assets/se/gacha-reveal-sr.wav", loop: false, volume: 0.7 },
+  gachaRevealNR: { src: "assets/se/gacha-reveal-nr.mp3", loop: false, volume: 0.7 },
+  gachaRevealSR: { src: "assets/se/gacha-reveal-sr.mp3", loop: false, volume: 0.7 },
 };
 
 // レアリティごとに、どの効果音を鳴らすか
@@ -590,26 +590,26 @@ const THEME_INFO = {
 };
 
 const CARD_POOL = [
-  { id: "n1", name: "はなびのこびと", rarity: "N", theme: "fireworks", shape: "round", color: "#5c6bc0", accessory: "tuft", eye: "dot", flavor: "よぞらに いちばんのりで うちあがる、げんきいっぱいの はなびのせいれい。", image: "n1.png" },
-  { id: "n2", name: "なみのこプクプク", rarity: "N", theme: "ocean", shape: "round", color: "#4fc3f7", accessory: "none", eye: "sleepy", flavor: "なみと いっしょに ぷかぷか うかぶのが だいすき。あわを ふくのが とくい。", image: "n2.png" },
-  { id: "n3", name: "やたいすずめ", rarity: "N", theme: "festival", shape: "oval", color: "#ffb74d", accessory: "none", eye: "dot", flavor: "やたいの にんきものを だれよりも はやく みつける、はなの きく すずめ。", image: "n3.png" },
-  { id: "n4", name: "くわがたぼうや", rarity: "N", theme: "bugs", shape: "oval", color: "#8d6e63", accessory: "ear-tufts", eye: "dot", flavor: "くさむらの おくで じっと まっている、はずかしがりやの むしとりなかま。", image: "n4.png" },
-  { id: "n5", name: "かちわりくん", rarity: "N", theme: "dessert", shape: "round", color: "#b3e5fc", accessory: "none", eye: "dot", flavor: "あつい日に ひとくち たべると、あたまが キーンキーンと するけど やめられない。", image: "n5.png" },
-  { id: "n6", name: "せんこうびのつぶ", rarity: "N", theme: "fireworks", shape: "round", color: "#ffca28", accessory: "tuft", eye: "sleepy", flavor: "ちいさな ひとつぶだけど、しずかな よるを あたたかく てらす。", image: "n6.png" },
-  { id: "n7", name: "うきわらっこ", rarity: "N", theme: "ocean", shape: "round", color: "#4dd0e1", accessory: "none", eye: "dot", flavor: "うきわに のって、いちにちじゅう うみを ぷかぷか さんぽしている。", image: "n7.png" },
-  { id: "n8", name: "きんぎょのすくいっこ", rarity: "N", theme: "festival", shape: "oval", color: "#ef5350", accessory: "none", eye: "dot", flavor: "ポイを もった手から すいすい にげるのが とくいわざ。", image: "n8.png" },
-  { id: "r1", name: "おおだまのぬし", rarity: "R", theme: "fireworks", shape: "round", color: "#e53935", accessory: "comb", eye: "star", flavor: "どーんと ひびく おとと ともに あらわれる、はなびたいかいの ぬし。", image: "r1.png" },
-  { id: "r2", name: "しおさいのせいれい", rarity: "R", theme: "ocean", shape: "round", color: "#26a69a", accessory: "tuft", eye: "star", flavor: "なみの おとに あわせて うたう、しおだまりの まもりびと。", image: "r2.png" },
-  { id: "r3", name: "たいこまつりぼうず", rarity: "R", theme: "festival", shape: "round", color: "#d84315", accessory: "comb", eye: "star", flavor: "まつりばやしの たいこの おとで、みんなを おどらせる げんきもの。", image: "r3.png" },
-  { id: "r4", name: "かぶとむしたいしょう", rarity: "R", theme: "bugs", shape: "oval", color: "#5d4037", accessory: "comb", eye: "star", flavor: "むしとりずかんで いちばん にんきの、りりしい つのを もつ ボス。", image: "r4.png" },
-  { id: "r5", name: "アイスキャンディーせいれい", rarity: "R", theme: "dessert", shape: "oval", color: "#f06292", accessory: "tuft", eye: "star", flavor: "とけそうで とけない、ふしぎな ちからで いつも ひんやり。", image: "r5.png" },
-  { id: "r6", name: "ほたるのひかりんぼ", rarity: "R", theme: "bugs", shape: "round", color: "#dce775", accessory: "none", eye: "star", sparkle: true, flavor: "よるの くさむらで ぴかぴか ひかって、みちしるべに なってくれる。", image: "r6.png" },
-  { id: "sr1", name: "にじいろはなびのきみ", rarity: "SR", theme: "fireworks", shape: "round", color: "#ab47bc", accessory: "crown", eye: "star", sparkle: true, flavor: "うちあがるたびに いろが かわる、たいかいで うわさの めずらしい はなび。", image: "sr1.png" },
-  { id: "sr2", name: "しんかいのぬし", rarity: "SR", theme: "ocean", shape: "round", color: "#1565c0", accessory: "glasses", eye: "star", sparkle: true, flavor: "だれも みたことのない、うみの いちばん ふかい ばしょに すんでいる。", image: "sr2.png" },
-  { id: "sr3", name: "なつまつりのおどりこ", rarity: "SR", theme: "festival", shape: "round", color: "#ec407a", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "おどりの わの まんなかで、いちばん きれいに まう ゆうめいじん。", image: "sr3.png" },
-  { id: "sr4", name: "かんろのこおりひめ", rarity: "SR", theme: "dessert", shape: "round", color: "#81d4fa", accessory: "crown", eye: "star", sparkle: true, flavor: "ひとくちで なつの あつさを わすれさせてくれる、でんせつの あまいこおり。", image: "sr4.png" },
-  { id: "ur1", name: "だいもんじのりゅうじん", rarity: "UR", theme: "fireworks", shape: "round", color: "#ffd700", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "いちねんにいちど やまに おおきな もじを うかびあがらせる でんせつの りゅう。", image: "ur1.png" },
-  { id: "ur2", name: "なつぞらのせいれいおう", rarity: "UR", theme: "special", shape: "round", color: "#ffab40", accessory: "crown", eye: "star", sparkle: true, flavor: "なつの すべての きせつせいれいたちを まとめる、でんせつの おうさま。", image: "ur2.png" },
+  { id: "n1", name: "はなびのこびと", rarity: "N", theme: "fireworks", shape: "round", color: "#5c6bc0", accessory: "tuft", eye: "dot", flavor: "よぞらに いちばんのりで うちあがる、げんきいっぱいの はなびのせいれい。", image: "n1.webp" },
+  { id: "n2", name: "なみのこプクプク", rarity: "N", theme: "ocean", shape: "round", color: "#4fc3f7", accessory: "none", eye: "sleepy", flavor: "なみと いっしょに ぷかぷか うかぶのが だいすき。あわを ふくのが とくい。", image: "n2.webp" },
+  { id: "n3", name: "やたいすずめ", rarity: "N", theme: "festival", shape: "oval", color: "#ffb74d", accessory: "none", eye: "dot", flavor: "やたいの にんきものを だれよりも はやく みつける、はなの きく すずめ。", image: "n3.webp" },
+  { id: "n4", name: "くわがたぼうや", rarity: "N", theme: "bugs", shape: "oval", color: "#8d6e63", accessory: "ear-tufts", eye: "dot", flavor: "くさむらの おくで じっと まっている、はずかしがりやの むしとりなかま。", image: "n4.webp" },
+  { id: "n5", name: "かちわりくん", rarity: "N", theme: "dessert", shape: "round", color: "#b3e5fc", accessory: "none", eye: "dot", flavor: "あつい日に ひとくち たべると、あたまが キーンキーンと するけど やめられない。", image: "n5.webp" },
+  { id: "n6", name: "せんこうびのつぶ", rarity: "N", theme: "fireworks", shape: "round", color: "#ffca28", accessory: "tuft", eye: "sleepy", flavor: "ちいさな ひとつぶだけど、しずかな よるを あたたかく てらす。", image: "n6.webp" },
+  { id: "n7", name: "うきわらっこ", rarity: "N", theme: "ocean", shape: "round", color: "#4dd0e1", accessory: "none", eye: "dot", flavor: "うきわに のって、いちにちじゅう うみを ぷかぷか さんぽしている。", image: "n7.webp" },
+  { id: "n8", name: "きんぎょのすくいっこ", rarity: "N", theme: "festival", shape: "oval", color: "#ef5350", accessory: "none", eye: "dot", flavor: "ポイを もった手から すいすい にげるのが とくいわざ。", image: "n8.webp" },
+  { id: "r1", name: "おおだまのぬし", rarity: "R", theme: "fireworks", shape: "round", color: "#e53935", accessory: "comb", eye: "star", flavor: "どーんと ひびく おとと ともに あらわれる、はなびたいかいの ぬし。", image: "r1.webp" },
+  { id: "r2", name: "しおさいのせいれい", rarity: "R", theme: "ocean", shape: "round", color: "#26a69a", accessory: "tuft", eye: "star", flavor: "なみの おとに あわせて うたう、しおだまりの まもりびと。", image: "r2.webp" },
+  { id: "r3", name: "たいこまつりぼうず", rarity: "R", theme: "festival", shape: "round", color: "#d84315", accessory: "comb", eye: "star", flavor: "まつりばやしの たいこの おとで、みんなを おどらせる げんきもの。", image: "r3.webp" },
+  { id: "r4", name: "かぶとむしたいしょう", rarity: "R", theme: "bugs", shape: "oval", color: "#5d4037", accessory: "comb", eye: "star", flavor: "むしとりずかんで いちばん にんきの、りりしい つのを もつ ボス。", image: "r4.webp" },
+  { id: "r5", name: "アイスキャンディーせいれい", rarity: "R", theme: "dessert", shape: "oval", color: "#f06292", accessory: "tuft", eye: "star", flavor: "とけそうで とけない、ふしぎな ちからで いつも ひんやり。", image: "r5.webp" },
+  { id: "r6", name: "ほたるのひかりんぼ", rarity: "R", theme: "bugs", shape: "round", color: "#dce775", accessory: "none", eye: "star", sparkle: true, flavor: "よるの くさむらで ぴかぴか ひかって、みちしるべに なってくれる。", image: "r6.webp" },
+  { id: "sr1", name: "にじいろはなびのきみ", rarity: "SR", theme: "fireworks", shape: "round", color: "#ab47bc", accessory: "crown", eye: "star", sparkle: true, flavor: "うちあがるたびに いろが かわる、たいかいで うわさの めずらしい はなび。", image: "sr1.webp" },
+  { id: "sr2", name: "しんかいのぬし", rarity: "SR", theme: "ocean", shape: "round", color: "#1565c0", accessory: "glasses", eye: "star", sparkle: true, flavor: "だれも みたことのない、うみの いちばん ふかい ばしょに すんでいる。", image: "sr2.webp" },
+  { id: "sr3", name: "なつまつりのおどりこ", rarity: "SR", theme: "festival", shape: "round", color: "#ec407a", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "おどりの わの まんなかで、いちばん きれいに まう ゆうめいじん。", image: "sr3.webp" },
+  { id: "sr4", name: "かんろのこおりひめ", rarity: "SR", theme: "dessert", shape: "round", color: "#81d4fa", accessory: "crown", eye: "star", sparkle: true, flavor: "ひとくちで なつの あつさを わすれさせてくれる、でんせつの あまいこおり。", image: "sr4.webp" },
+  { id: "ur1", name: "だいもんじのりゅうじん", rarity: "UR", theme: "fireworks", shape: "round", color: "#ffd700", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "いちねんにいちど やまに おおきな もじを うかびあがらせる でんせつの りゅう。", image: "ur1.webp" },
+  { id: "ur2", name: "なつぞらのせいれいおう", rarity: "UR", theme: "special", shape: "round", color: "#ffab40", accessory: "crown", eye: "star", sparkle: true, flavor: "なつの すべての きせつせいれいたちを まとめる、でんせつの おうさま。", image: "ur2.webp" },
 ];
 
 const GACHA_KEY = "gacha_owned";
