@@ -42,9 +42,29 @@ const LOCALES = {
     "settings.backupExportOk": "書き出しました！ファイルを だいじに ほかんしてね",
     "settings.backupExportFailed": "書き出しに しっぱいしました。もういちど ためしてね",
     "settings.backupImportInvalid": "このファイルは 読み込めませんでした",
-    "settings.backupImportConfirm": "がくねん{grade}年・カード{cards}しゅるい・ポイント{points}点 を読み込みます。今の きろくは うわがきされます。よろしいですか？",
+    "settings.backupImportConfirm": "{profiles}人ぶん・カード{cards}しゅるい・ポイント{points}点 を読み込みます。今の きろくは うわがきされます。よろしいですか？",
     "settings.backupImportOk": "読み込みました！",
     "settings.backupImportFailed": "読み込みに しっぱいしました。もういちど ためしてね",
+
+    // --- プロフィール ---
+    "profile.selectTitle": "だれが あそぶ？",
+    "profile.selectSub": "じぶんの なまえを えらんでね",
+    "profile.createTitle": "あたらしく つくる",
+    "profile.createSub": "なまえと すきな どうぶつを えらんでね",
+    "profile.createNew": "＋ あたらしく つくる",
+    "profile.nameLabel": "なまえ",
+    "profile.avatarLabel": "アバター",
+    "profile.createOk": "つくる",
+    "profile.nameRequired": "なまえを いれてね",
+    "profile.defaultName": "わたし",
+    "profile.settingsTitle": "👤 プロフィール",
+    "profile.currentLine": "いま あそんでいるのは {avatar} {name} だよ",
+    "profile.switch": "きりかえる",
+    "profile.manage": "けす",
+    "profile.deleteConfirm": "{name} の きろく（カード・ポイント・がくねん）を ぜんぶ けします。もとには もどせません。よろしいですか？",
+    "profile.deleteBtn": "けす",
+    "profile.deleteCancel": "やめる",
+    "profile.full": "プロフィールは {n}人までです",
 
     // --- 共有 ---
     "share.copyHint": "↑ このぶんしょうを コピーして つかってね",
@@ -135,6 +155,9 @@ const LOCALES = {
     // --- ずかん ---
     "collection.title": "🎴 カードずかん",
     "collection.count": "{owned} / {total} しゅるい あつめた！",
+    "collection.scopeSelf": "じぶん",
+    "collection.scopeFamily": "かぞく",
+    "collection.countFamily": "かぞく ぜんいんで {owned} / {total} しゅるい あつめた！",
 
     // --- レアリティ ---
     "rarity.N": "ノーマル",

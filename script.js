@@ -14,6 +14,119 @@ const state = {
 // 「答えを知っている分野」の周回でポイントを稼ぐことを防ぎ、初めての問題に挑む動機を保つ。
 const REPEAT_STAMP_RATIO = 0.5;
 
+// ===== プロフィール（1台の端末を兄弟で分けて使うための仕組み） =====
+// 将来の「1家庭1アカウント＋子どもプロフィール複数」（Nintendo Switch方式）の土台。
+// 子どもはメールもパスワードも持たず、なまえとアバターだけを持つ。
+// 学習データは localStorage のキーに `<プロフィールID>:` を前置して分ける。
+// 音のON/OFFと言語は端末ごとの設定なので、プロフィールでは分けない。
+const PROFILES_KEY = "profiles";
+const ACTIVE_PROFILE_KEY = "active_profile";
+const PROFILE_AVATARS = ["🦊", "🐰", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮"];
+const PROFILE_NAME_MAX = 8;
+const PROFILE_MAX = 6;
+
+function getProfiles() {
+  try {
+    const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || "[]");
+    return Array.isArray(list) ? list.filter((p) => p && p.id) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveProfiles(list) {
+  localStorage.setItem(PROFILES_KEY, JSON.stringify(list));
+}
+
+function getActiveProfileId() {
+  return localStorage.getItem(ACTIVE_PROFILE_KEY) || "";
+}
+
+function setActiveProfileId(id) {
+  localStorage.setItem(ACTIVE_PROFILE_KEY, id);
+}
+
+function getActiveProfile() {
+  const id = getActiveProfileId();
+  return getProfiles().find((p) => p.id === id) || null;
+}
+
+// プロフィールごとに分けるキーに使う接頭辞をつける
+function pk(key) {
+  const id = getActiveProfileId();
+  return id ? `${id}:${key}` : key;
+}
+
+// IDが重なると2人ぶんの学習データが混ざってしまうため、既存のIDと必ず違う値にする
+function newProfileId(existing) {
+  const used = new Set(existing.map((p) => p.id));
+  let id;
+  let n = 0;
+  do {
+    id = `p${Date.now()}${Math.floor(Math.random() * 1000)}${n ? `-${n}` : ""}`;
+    n += 1;
+  } while (used.has(id));
+  return id;
+}
+
+function createProfile(name, avatar) {
+  const list = getProfiles();
+  if (list.length >= PROFILE_MAX) return null;
+  const profile = {
+    id: newProfileId(list),
+    name: String(name || "").slice(0, PROFILE_NAME_MAX) || t("profile.defaultName"),
+    avatar: PROFILE_AVATARS.includes(avatar) ? avatar : PROFILE_AVATARS[0],
+    createdAt: new Date().toISOString(),
+  };
+  list.push(profile);
+  saveProfiles(list);
+  return profile;
+}
+
+function deleteProfile(id) {
+  // そのプロフィールの学習データ（`<id>:` で始まるキー）も一緒に消す
+  const doomed = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(`${id}:`)) doomed.push(key);
+  }
+  doomed.forEach((key) => localStorage.removeItem(key));
+
+  saveProfiles(getProfiles().filter((p) => p.id !== id));
+  if (getActiveProfileId() === id) localStorage.removeItem(ACTIVE_PROFILE_KEY);
+}
+
+// プロフィール導入前から使っていた端末では、既存データが接頭辞なしで入っている。
+// それを最初の1人のプロフィールとして引き継ぐ（データを失わせない）。
+const LEGACY_KEYS = ["study_grade", "stamps_total", "daily_points", "gacha_owned", "gacha_pity"];
+
+function migrateLegacyDataIfNeeded() {
+  if (localStorage.getItem(PROFILES_KEY)) return; // すでにプロフィール制に移行済み
+
+  const legacyFound = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+    if (LEGACY_KEYS.includes(key) || key.startsWith("seen_history_")) legacyFound.push(key);
+  }
+  if (legacyFound.length === 0) return; // まっさらな端末なので移行するものがない
+
+  const profile = {
+    id: newProfileId([]),
+    name: t("profile.defaultName"),
+    avatar: PROFILE_AVATARS[0],
+    createdAt: new Date().toISOString(),
+  };
+  saveProfiles([profile]);
+  setActiveProfileId(profile.id);
+
+  legacyFound.forEach((key) => {
+    const value = localStorage.getItem(key);
+    if (value !== null) localStorage.setItem(`${profile.id}:${key}`, value);
+    localStorage.removeItem(key);
+  });
+}
+
 // ===== 学年設定 =====
 // せっていで選んだ学年。その学年までの問題だけが出題される（例: 3年なら1〜3年）。
 const GRADE_KEY = "study_grade";
@@ -24,13 +137,13 @@ const DEFAULT_GRADE = 3;
 const SESSION_SIZE = 10;
 
 function getGrade() {
-  const v = parseInt(localStorage.getItem(GRADE_KEY) || "", 10);
+  const v = parseInt(localStorage.getItem(pk(GRADE_KEY)) || "", 10);
   return GRADES.includes(v) ? v : DEFAULT_GRADE;
 }
 
 function setGrade(grade) {
   if (!GRADES.includes(grade)) return;
-  localStorage.setItem(GRADE_KEY, String(grade));
+  localStorage.setItem(pk(GRADE_KEY), String(grade));
 }
 
 // ===== ガチャポイント =====
@@ -38,12 +151,12 @@ function setGrade(grade) {
 const STORAGE_KEY = "stamps_total";
 
 function getTotalStamps() {
-  return parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  return parseInt(localStorage.getItem(pk(STORAGE_KEY)) || "0", 10);
 }
 
 function addStamps(count) {
   const total = getTotalStamps() + count;
-  localStorage.setItem(STORAGE_KEY, String(total));
+  localStorage.setItem(pk(STORAGE_KEY), String(total));
   return total;
 }
 
@@ -51,7 +164,7 @@ const GACHA_PULL_COST = 10;
 
 function spendStamps(count) {
   const total = Math.max(0, getTotalStamps() - count);
-  localStorage.setItem(STORAGE_KEY, String(total));
+  localStorage.setItem(pk(STORAGE_KEY), String(total));
   return total;
 }
 
@@ -65,7 +178,7 @@ function dayKey(date) {
 
 function getDailyPoints() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(DAILY_POINTS_KEY) || "{}");
+    const parsed = JSON.parse(localStorage.getItem(pk(DAILY_POINTS_KEY)) || "{}");
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
@@ -86,7 +199,7 @@ function recordDailyPoints(count) {
     if (new Date(y, m - 1, d) >= cutoff) trimmed[key] = value;
   });
 
-  localStorage.setItem(DAILY_POINTS_KEY, JSON.stringify(trimmed));
+  localStorage.setItem(pk(DAILY_POINTS_KEY), JSON.stringify(trimmed));
 }
 
 // ===== 汎用ユーティリティ =====
@@ -503,14 +616,30 @@ const GACHA_KEY = "gacha_owned";
 
 function getOwnedCards() {
   try {
-    return JSON.parse(localStorage.getItem(GACHA_KEY) || "{}");
+    return JSON.parse(localStorage.getItem(pk(GACHA_KEY)) || "{}");
   } catch (e) {
     return {};
   }
 }
 
 function saveOwnedCards(owned) {
-  localStorage.setItem(GACHA_KEY, JSON.stringify(owned));
+  localStorage.setItem(pk(GACHA_KEY), JSON.stringify(owned));
+}
+
+// かぞくのずかん用：全プロフィールの所持カードを合算する
+function getFamilyOwnedCards() {
+  const merged = {};
+  getProfiles().forEach((profile) => {
+    try {
+      const owned = JSON.parse(localStorage.getItem(`${profile.id}:${GACHA_KEY}`) || "{}");
+      Object.entries(owned).forEach(([id, count]) => {
+        merged[id] = (merged[id] || 0) + count;
+      });
+    } catch {
+      // 壊れたデータは無視して他のプロフィールの集計を続ける
+    }
+  });
+  return merged;
 }
 
 function getCompendiumInfo() {
@@ -525,11 +654,11 @@ const PITY_KEY = "gacha_pity";
 const DUPLICATE_REFUND = { N: 3, R: 4, SR: 6, UR: 8 };
 
 function getPity() {
-  return parseInt(localStorage.getItem(PITY_KEY) || "0", 10);
+  return parseInt(localStorage.getItem(pk(PITY_KEY)) || "0", 10);
 }
 
 function setPity(n) {
-  localStorage.setItem(PITY_KEY, String(n));
+  localStorage.setItem(pk(PITY_KEY), String(n));
 }
 
 function rollRarity() {
@@ -756,13 +885,23 @@ function closeGachaOverlay(gachaResult) {
   }
 }
 
-function openCollectionScreen(returnScreen) {
-  state.collectionReturnScreen = returnScreen;
-  const owned = getOwnedCards();
+function openCollectionScreen(returnScreen, scope) {
+  if (returnScreen) state.collectionReturnScreen = returnScreen;
+  if (scope) state.collectionScope = scope;
+  const isFamily = state.collectionScope === "family";
+
+  // かぞく表示は、プロフィールが2人以上いるときだけ意味があるので出し分ける
+  const scopeBar = document.getElementById("collection-scope");
+  scopeBar.classList.toggle("hidden", getProfiles().length < 2);
+  scopeBar.querySelectorAll(".collection-scope-btn").forEach((btn) => {
+    btn.classList.toggle("active", (btn.dataset.scope === "family") === isFamily);
+  });
+
+  const owned = isFamily ? getFamilyOwnedCards() : getOwnedCards();
   const ownedCount = Object.keys(owned).length;
 
   document.getElementById("collection-count-line").textContent =
-    t("collection.count", { owned: ownedCount, total: CARD_POOL.length });
+    t(isFamily ? "collection.countFamily" : "collection.count", { owned: ownedCount, total: CARD_POOL.length });
 
   const grid = document.getElementById("collection-grid");
   grid.innerHTML = CARD_POOL.map((card) => {
@@ -800,6 +939,13 @@ document.getElementById("card-detail-overlay").addEventListener("click", (e) => 
 
 document.getElementById("btn-back-from-collection").addEventListener("click", () => {
   showScreen(state.collectionReturnScreen || "screen-home");
+});
+
+document.querySelectorAll("#collection-scope .collection-scope-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    playClickSound();
+    openCollectionScreen(null, btn.dataset.scope);
+  });
 });
 
 // ===== ガイドキャラのセリフ =====
@@ -1570,7 +1716,7 @@ const SEEN_HISTORY_LIMIT = 60;
 const RECENCY_PENALTY = 0.03;
 
 function historyKey(subject, category) {
-  return `seen_history_${subject}_${category}`;
+  return pk(`seen_history_${subject}_${category}`);
 }
 
 function getRecentTexts(subject, category) {
@@ -1998,11 +2144,21 @@ function updateStatusBar() {
   document.getElementById("status-bar-points-value").textContent = getTotalStamps();
 }
 
+// プロフィールを選ぶ前は学年もポイントも決まらないので、
+// ステータスバー・ガイド・タブバーはまとめて隠す
+const PROFILE_SCREENS = ["screen-profile-select", "screen-profile-create"];
+
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+
+  const chromeHidden = PROFILE_SCREENS.includes(id);
+  document.getElementById("status-bar").classList.toggle("hidden", chromeHidden);
+  document.querySelector(".guide-box").classList.toggle("hidden", chromeHidden);
+  document.getElementById("tab-bar").classList.toggle("hidden", chromeHidden);
+
   updateActiveTab(id);
-  updateStatusBar();
+  if (!chromeHidden) updateStatusBar();
   updateBgmForScreen(id);
 }
 
@@ -2184,7 +2340,136 @@ function openSettingsScreen() {
       updateStatusBar();
     });
   });
+
+  const profile = getActiveProfile();
+  document.getElementById("profile-current-line").textContent = profile
+    ? t("profile.currentLine", { avatar: profile.avatar, name: profile.name })
+    : "";
+
   showScreen("screen-settings");
+}
+
+// ===== プロフィール画面 =====
+// state.profileMode が "manage" のときは、選ぶかわりに消す操作になる
+function openProfileSelectScreen(mode) {
+  state.profileMode = mode === "manage" ? "manage" : "select";
+  const list = document.getElementById("profile-list");
+  const profiles = getProfiles();
+
+  list.innerHTML = profiles.map((p) => `
+    <button type="button" class="profile-card" data-profile-id="${p.id}">
+      <span class="profile-card-avatar">${p.avatar}</span>
+      <span class="profile-card-name"></span>
+      ${state.profileMode === "manage" ? `<span class="profile-card-delete">${t("profile.deleteBtn")}</span>` : ""}
+    </button>
+  `).join("") + (state.profileMode === "select" ? `
+    <button type="button" class="profile-card profile-card--new" id="btn-profile-new">
+      <span class="profile-card-avatar">＋</span>
+      <span class="profile-card-name">${t("profile.createNew")}</span>
+    </button>
+  ` : "");
+
+  // なまえはユーザー入力なので、HTMLに混ぜずtextContentで入れる
+  list.querySelectorAll(".profile-card[data-profile-id]").forEach((btn) => {
+    const profile = profiles.find((p) => p.id === btn.dataset.profileId);
+    btn.querySelector(".profile-card-name").textContent = profile.name;
+    btn.addEventListener("click", () => {
+      playClickSound();
+      if (state.profileMode === "manage") {
+        requestProfileDelete(profile);
+      } else {
+        setActiveProfileId(profile.id);
+        enterAppWithActiveProfile();
+      }
+    });
+  });
+
+  const newBtn = document.getElementById("btn-profile-new");
+  if (newBtn) {
+    newBtn.addEventListener("click", () => {
+      playClickSound();
+      if (getProfiles().length >= PROFILE_MAX) return;
+      openProfileCreateScreen();
+    });
+  }
+
+  showScreen("screen-profile-select");
+}
+
+function requestProfileDelete(profile) {
+  if (!window.confirm(t("profile.deleteConfirm", { name: profile.name }))) return;
+  deleteProfile(profile.id);
+  const remaining = getProfiles();
+  if (remaining.length === 0) {
+    openProfileCreateScreen();
+  } else {
+    if (!getActiveProfileId()) setActiveProfileId(remaining[0].id);
+    openProfileSelectScreen("manage");
+  }
+}
+
+function openProfileCreateScreen() {
+  document.getElementById("profile-name-input").value = "";
+  document.getElementById("profile-create-feedback").textContent = "";
+  state.profileAvatar = PROFILE_AVATARS[0];
+
+  const picker = document.getElementById("profile-avatar-picker");
+  picker.innerHTML = PROFILE_AVATARS.map((a, i) => `
+    <button type="button" class="profile-avatar-option${i === 0 ? " active" : ""}" data-avatar="${a}">${a}</button>
+  `).join("");
+  picker.querySelectorAll(".profile-avatar-option").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClickSound();
+      state.profileAvatar = btn.dataset.avatar;
+      picker.querySelectorAll(".profile-avatar-option").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+
+  // プロフィールが1つも無いとき（初回起動）は戻る先がないので隠す
+  document.getElementById("btn-profile-create-cancel").classList.toggle("hidden", getProfiles().length === 0);
+  showScreen("screen-profile-create");
+}
+
+document.getElementById("btn-profile-create-ok").addEventListener("click", () => {
+  playClickSound();
+  const name = document.getElementById("profile-name-input").value.trim();
+  if (!name) {
+    document.getElementById("profile-create-feedback").textContent = t("profile.nameRequired");
+    document.getElementById("profile-create-feedback").className = "backup-feedback error";
+    return;
+  }
+  const profile = createProfile(name, state.profileAvatar);
+  if (!profile) {
+    document.getElementById("profile-create-feedback").textContent = t("profile.full", { n: PROFILE_MAX });
+    document.getElementById("profile-create-feedback").className = "backup-feedback error";
+    return;
+  }
+  setActiveProfileId(profile.id);
+  enterAppWithActiveProfile();
+});
+
+document.getElementById("btn-profile-create-cancel").addEventListener("click", () => {
+  playClickSound();
+  openProfileSelectScreen("select");
+});
+
+document.getElementById("btn-profile-switch").addEventListener("click", () => {
+  playClickSound();
+  openProfileSelectScreen("select");
+});
+
+document.getElementById("btn-profile-manage").addEventListener("click", () => {
+  playClickSound();
+  openProfileSelectScreen("manage");
+});
+
+// プロフィールが決まった状態でアプリ本体に入る。
+// 学年・ポイント・カードはプロフィールごとに違うので、表示を作り直してから入る。
+function enterAppWithActiveProfile() {
+  refreshHome();
+  updateStatusBar();
+  showScreen("screen-home");
 }
 
 // ===== バックアップ（書き出し・読み込み） =====
@@ -2202,19 +2487,32 @@ function collectBackupData() {
   return data;
 }
 
+// 書き出しは localStorage を丸ごと入れているので、全プロフィールぶんが入っている。
+// 読み込み前の確認文も、全プロフィールを横断して要約する。
 function backupSummaryFromData(data) {
-  const grade = parseInt(data[GRADE_KEY] || "", 10);
-  let cardCount = 0;
+  let profiles = [];
   try {
-    cardCount = Object.keys(JSON.parse(data[GACHA_KEY] || "{}")).length;
+    const parsed = JSON.parse(data[PROFILES_KEY] || "[]");
+    if (Array.isArray(parsed)) profiles = parsed.filter((p) => p && p.id);
   } catch {
-    cardCount = 0;
+    profiles = [];
   }
-  return {
-    grade: GRADES.includes(grade) ? grade : DEFAULT_GRADE,
-    cards: cardCount,
-    points: parseInt(data[STORAGE_KEY] || "0", 10),
-  };
+
+  // プロフィール制より前に書き出したファイルは、接頭辞なしのキーが1人ぶんとして入っている
+  const prefixes = profiles.length > 0 ? profiles.map((p) => `${p.id}:`) : [""];
+
+  const cardIds = new Set();
+  let points = 0;
+  prefixes.forEach((prefix) => {
+    try {
+      Object.keys(JSON.parse(data[`${prefix}${GACHA_KEY}`] || "{}")).forEach((id) => cardIds.add(id));
+    } catch {
+      // 壊れたデータは無視して集計を続ける
+    }
+    points += parseInt(data[`${prefix}${STORAGE_KEY}`] || "0", 10) || 0;
+  });
+
+  return { profiles: Math.max(1, profiles.length), cards: cardIds.size, points };
 }
 
 function setBackupFeedback(text, cls) {
@@ -2671,7 +2969,7 @@ document.querySelectorAll("#tab-bar [data-tab]").forEach((btn) => {
     } else if (tab === "gacha") {
       openGachaScreen();
     } else if (tab === "collection") {
-      openCollectionScreen("screen-home");
+      openCollectionScreen("screen-home", "self");
     } else if (tab === "settings") {
       openSettingsScreen();
     }
@@ -2682,6 +2980,8 @@ document.querySelectorAll("#tab-bar [data-tab]").forEach((btn) => {
 document.documentElement.lang = getLocale();
 document.title = t("home.title");
 applyTranslations();
+// 文言（t）を使うので、翻訳を読み込んだあとに移行する
+migrateLegacyDataIfNeeded();
 // 改行を含むためテキスト代入ではなく <br> に変換して入れる
 document.getElementById("hero-title").innerHTML = t("home.heroGreeting")
   .split("\n")
@@ -2689,8 +2989,26 @@ document.getElementById("hero-title").innerHTML = t("home.heroGreeting")
   .join("<br>");
 document.getElementById("guide-character").innerHTML = renderGuideCharacterHTML();
 document.getElementById("status-bar-avatar").innerHTML = renderGuideFaceHTML("creature-slot--mini");
-refreshHome();
-showScreen("screen-home");
+
+// 起動時にどの画面から始めるかを決める。
+// 0人 → 作成画面、1人 → そのまま入る（毎回選ばせない）、2人以上 → だれがあそぶ？
+function startInitialScreen() {
+  const profiles = getProfiles();
+  if (profiles.length === 0) {
+    openProfileCreateScreen();
+    return;
+  }
+  if (profiles.length === 1) {
+    setActiveProfileId(profiles[0].id);
+    enterAppWithActiveProfile();
+    return;
+  }
+  if (!getProfiles().some((p) => p.id === getActiveProfileId())) {
+    localStorage.removeItem(ACTIVE_PROFILE_KEY);
+  }
+  openProfileSelectScreen("select");
+}
+startInitialScreen();
 
 // ===== オープニング =====
 // タップ／タッチするまで消えない。自動では消さず、しっかり見てもらう。

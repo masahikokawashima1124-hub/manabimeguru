@@ -855,6 +855,120 @@ h2 {
 
 .hidden { display: none !important; }
 
+/* ===== プロフィール（だれがあそぶ？・作成） ===== */
+.profile-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 20px;
+}
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 12px;
+  border: 3px solid var(--primary);
+  border-radius: 22px;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.08);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.profile-card:hover { transform: translateY(-2px); }
+.profile-card:active { transform: translateY(2px); box-shadow: none; }
+.profile-card--new {
+  border-style: dashed;
+  border-color: var(--text-muted);
+  color: var(--text-muted);
+}
+.profile-card-avatar { font-size: 2.6rem; line-height: 1; }
+.profile-card-name {
+  font-weight: 800;
+  color: var(--primary-dark);
+  font-size: 1rem;
+  word-break: break-word;
+}
+.profile-card--new .profile-card-name { color: var(--text-muted); font-size: 0.9rem; }
+.profile-card-delete {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fff;
+  background: #e57373;
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+
+.profile-create-box {
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+.profile-field-label {
+  font-weight: 800;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 6px;
+  display: block;
+}
+.profile-name-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 1.1rem;
+  font-family: inherit;
+  font-weight: 700;
+  border: 3px solid var(--primary);
+  border-radius: 14px;
+  margin-bottom: 18px;
+  box-sizing: border-box;
+}
+.profile-name-input:focus { outline: none; border-color: var(--primary-dark); }
+.profile-avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.profile-avatar-option {
+  font-size: 1.9rem;
+  padding: 8px 0;
+  border: 3px solid transparent;
+  border-radius: 16px;
+  background: var(--bg-soft, #f3f3f7);
+  cursor: pointer;
+  line-height: 1;
+}
+.profile-avatar-option.active { border-color: var(--primary); background: #fff; }
+.profile-create-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ===== ずかんの じぶん／かぞく 切り替え ===== */
+.collection-scope {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 12px 0 4px;
+}
+.collection-scope-btn {
+  padding: 7px 20px;
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--primary-dark);
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.collection-scope-btn.active { background: var(--primary); color: #fff; }
+
 .btn-link {
   display: block;
   margin: 0 auto 16px;
