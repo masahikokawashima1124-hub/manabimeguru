@@ -172,6 +172,8 @@ const LOCALES = {
     "theme.bugs": "虫とり・自然かんさつ",
     "theme.dessert": "ひんやりデザート",
     "theme.special": "なつのしょうちょう",
+    "theme.coolbreeze": "すずしさ",
+    "theme.starrysky": "ほしぞら",
 
     // --- ぶんや名 ---
     "cat.keisan": "けいさん",

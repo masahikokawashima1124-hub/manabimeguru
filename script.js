@@ -587,6 +587,8 @@ const THEME_INFO = {
   bugs: { icon: "🦗", get label() { return t("theme.bugs"); } },
   dessert: { icon: "🍧", get label() { return t("theme.dessert"); } },
   special: { icon: "🌞", get label() { return t("theme.special"); } },
+  coolbreeze: { icon: "🎐", get label() { return t("theme.coolbreeze"); } },
+  starrysky: { icon: "🌌", get label() { return t("theme.starrysky"); } },
 };
 
 const CARD_POOL = [
@@ -610,6 +612,27 @@ const CARD_POOL = [
   { id: "sr4", name: "かんろのこおりひめ", rarity: "SR", theme: "dessert", shape: "round", color: "#81d4fa", accessory: "crown", eye: "star", sparkle: true, flavor: "ひとくちで なつの あつさを わすれさせてくれる、でんせつの あまいこおり。", image: "sr4.webp" },
   { id: "ur1", name: "だいもんじのりゅうじん", rarity: "UR", theme: "fireworks", shape: "round", color: "#ffd700", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "いちねんにいちど やまに おおきな もじを うかびあがらせる でんせつの りゅう。", image: "ur1.webp" },
   { id: "ur2", name: "なつぞらのせいれいおう", rarity: "UR", theme: "special", shape: "round", color: "#ffab40", accessory: "crown", eye: "star", sparkle: true, flavor: "なつの すべての きせつせいれいたちを まとめる、でんせつの おうさま。", image: "ur2.webp" },
+  // ─── 第2弾（2026-08-04・夏シーズン継続） ───
+  { id: "n9", name: "ひばなのちびすけ", rarity: "N", theme: "fireworks", shape: "round", color: "#ff8a65", accessory: "tuft", eye: "dot", flavor: "せんこうはなびの さきっぽに すむ、ちいさな ひばなの せいれい。パチパチ はねるのが とくい。", image: "n9.webp" },
+  { id: "r7", name: "うちあげやのみならい", rarity: "R", theme: "fireworks", shape: "oval", color: "#66bb6a", accessory: "ear-tufts", eye: "star", flavor: "おおきな はなびを うちあげる れんしゅうちゅう。まだ ちいさな はなしか あげられないけど、いつか どーんと あげたい。", image: "r7.webp" },
+  { id: "n10", name: "さざなみのこ", rarity: "N", theme: "ocean", shape: "round", color: "#b2ebf2", accessory: "none", eye: "dot", flavor: "なぎさで さざなみと あそぶのが だいすき。あしもとを くすぐるのが とくいわざ。", image: "n10.webp" },
+  { id: "r8", name: "かいがらひろいのぷりん", rarity: "R", theme: "ocean", shape: "oval", color: "#ffab91", accessory: "comb", eye: "star", flavor: "なぎさで きれいな かいがらを あつめている。いちばんの おきにいりは、ないしょの ばしょに かくしてあるらしい。", image: "r8.webp" },
+  { id: "n11", name: "わたあめのふわりん", rarity: "N", theme: "festival", shape: "round", color: "#f48fb1", accessory: "tuft", eye: "sleepy", flavor: "やたいの わたあめきから うまれた、ふわふわの せいれい。さわると とけそうで、いつも ドキドキしている。", image: "n11.webp" },
+  { id: "r9", name: "りんごあめのつやつやん", rarity: "R", theme: "festival", shape: "round", color: "#c62828", accessory: "tuft", eye: "star", flavor: "つやつやの あかい ころもを まとった、やたいの にんきもの。かたい みための わりに、なかは あまくて やさしい。", image: "r9.webp" },
+  { id: "n12", name: "せみしぐれのうたいて", rarity: "N", theme: "bugs", shape: "oval", color: "#9ccc65", accessory: "none", eye: "dot", flavor: "きの うえから、なつの おわりを つげる うたを うたっている。うたいすぎて、よく こえが かれる。", image: "n12.webp" },
+  { id: "n13", name: "とんぼのつーさん", rarity: "N", theme: "bugs", shape: "egg", color: "#42a5f5", accessory: "tuft", eye: "dot", flavor: "むぎわらぼうしの うえを、すいっと ひとまわり。とぶのが とくいで、みんなを あんないするのが すき。", image: "n13.webp" },
+  { id: "sr5", name: "たまむしのひかりぎみ", rarity: "SR", theme: "bugs", shape: "oval", color: "#26a69a", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "きんいろに ひかる はねを もつ、なかなか であえない めずらしい むし。みつけた ひは、いいことが あるかもしれない。", image: "sr5.webp" },
+  { id: "n14", name: "すいかわりのたね", rarity: "N", theme: "dessert", shape: "egg", color: "#33691e", accessory: "none", eye: "dot", flavor: "すいかわりで とびだした、ちいさな たねの せいれい。めかくしした ともだちを、こっそり おうえんしている。", image: "n14.webp" },
+  { id: "r10", name: "ソーダみつのりゅうちゃん", rarity: "R", theme: "dessert", shape: "round", color: "#0288d1", accessory: "comb", eye: "star", flavor: "あおくて つめたい、ソーダあじの かきごおりから うまれた。ひとくちで あたまが キーンと するのは、このこの しわざ。", image: "r10.webp" },
+  { id: "n15", name: "ふうりんのちりん", rarity: "N", theme: "coolbreeze", shape: "round", color: "#81d4fa", accessory: "tuft", eye: "dot", flavor: "のきさきの ふうりんに すんでいる。かぜが ふくたびに、すずしい おとを ならして みんなを げんきづける。", image: "n15.webp" },
+  { id: "r11", name: "すだれかげのひんやり", rarity: "R", theme: "coolbreeze", shape: "oval", color: "#7cb342", accessory: "none", eye: "star", flavor: "すだれの すきまから もれる ひかりの したで、ひるねを している。すずしい かげを つくるのが とくい。", image: "r11.webp" },
+  { id: "sr6", name: "ゆうだちのおとずれ", rarity: "SR", theme: "coolbreeze", shape: "egg", color: "#5c9ce6", accessory: "tuft", eye: "star", sparkle: true, flavor: "あつい いちにちの おわりに、さっと やってきて つちの においを はこんでくる。とおりすぎたあと、にじが のこることも。", image: "sr6.webp" },
+  { id: "ur3", name: "すずかぜのぬし", rarity: "UR", theme: "coolbreeze", shape: "round", color: "#4dd0e1", accessory: "crown", eye: "star", sparkle: true, flavor: "まちじゅうの あつさを、ひとふきで さらっていく でんせつの かぜの ぬし。すがたを みたものは、しあわせに なれると いわれている。", image: "ur3.webp" },
+  { id: "n16", name: "ながれぼしのかけら", rarity: "N", theme: "starrysky", shape: "egg", color: "#ffe082", accessory: "none", eye: "dot", flavor: "よぞらから おちてきた、ちいさな ひかりの かけら。ねがいごとを ひとつだけ きいてくれる、という うわさがある。", image: "n16.webp" },
+  { id: "r12", name: "あまのがわのこもりうた", rarity: "R", theme: "starrysky", shape: "round", color: "#7e57c2", accessory: "tuft", eye: "star", flavor: "よるが ふけると、あまのがわの ほとりで やさしい こもりうたを うたう。このうたを きくと、ぐっすり ねむれるらしい。", image: "r12.webp" },
+  { id: "sr7", name: "たなばたかざりのふうせん", rarity: "SR", theme: "starrysky", shape: "round", color: "#fff176", accessory: "book", eye: "star", sparkle: true, flavor: "たんざくと いっしょに かざられていた、ちいさな かみの せいれい。みんなの ねがいごとを よみあげるのが しゅみ。", image: "sr7.webp" },
+  { id: "sr8", name: "せいざつなぎのはかせ", rarity: "SR", theme: "starrysky", shape: "round", color: "#283593", accessory: "glasses", eye: "star", sparkle: true, flavor: "よぞらの ほしを せんで つないで、いきものの かたちを つくるのが とくい。まだ だれも しらない せいざを さがしている。", image: "sr8.webp" },
+  { id: "ur4", name: "つきよのじょうおう", rarity: "UR", theme: "starrysky", shape: "round", color: "#c5cae9", accessory: "crown", eye: "star", sparkle: true, flavor: "まんげつの よるだけ すがたを あらわす、でんせつの おうひ。なつぞらの せいれいおうと ならんで、よるの そらを おさめている。", image: "ur4.webp" },
 ];
 
 const GACHA_KEY = "gacha_owned";
