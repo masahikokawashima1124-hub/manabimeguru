@@ -983,6 +983,14 @@ h2 {
   font-family: inherit;
 }
 
+.auth-note {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: -10px 0 18px;
+  line-height: 1.5;
+}
+
 /* ===== バックアップ ===== */
 .settings-section-title {
   margin: 26px 0 4px;

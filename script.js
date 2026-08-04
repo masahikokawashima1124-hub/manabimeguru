@@ -1,3 +1,9 @@
+// ===== Firebase認証・同期の状態 =====
+// fbCurrentUser と _syncDirtyTimer は script.js 全体から参照されるため、
+// ファイル冒頭で宣言しておく（Firebase セクションで初期化）。
+let fbCurrentUser = null;
+let _syncDirtyTimer = null;
+
 // ===== 状態管理 =====
 const state = {
   subject: null,
@@ -144,6 +150,7 @@ function getGrade() {
 function setGrade(grade) {
   if (!GRADES.includes(grade)) return;
   localStorage.setItem(pk(GRADE_KEY), String(grade));
+  markSyncDirty();
 }
 
 // ===== ガチャポイント =====
@@ -157,6 +164,7 @@ function getTotalStamps() {
 function addStamps(count) {
   const total = getTotalStamps() + count;
   localStorage.setItem(pk(STORAGE_KEY), String(total));
+  markSyncDirty();
   return total;
 }
 
@@ -165,6 +173,7 @@ const GACHA_PULL_COST = 10;
 function spendStamps(count) {
   const total = Math.max(0, getTotalStamps() - count);
   localStorage.setItem(pk(STORAGE_KEY), String(total));
+  markSyncDirty();
   return total;
 }
 
@@ -200,6 +209,7 @@ function recordDailyPoints(count) {
   });
 
   localStorage.setItem(pk(DAILY_POINTS_KEY), JSON.stringify(trimmed));
+  markSyncDirty();
 }
 
 // ===== 汎用ユーティリティ =====
@@ -647,6 +657,7 @@ function getOwnedCards() {
 
 function saveOwnedCards(owned) {
   localStorage.setItem(pk(GACHA_KEY), JSON.stringify(owned));
+  markSyncDirty();
 }
 
 // かぞくのずかん用：全プロフィールの所持カードを合算する
@@ -682,6 +693,7 @@ function getPity() {
 
 function setPity(n) {
   localStorage.setItem(pk(PITY_KEY), String(n));
+  markSyncDirty();
 }
 
 function rollRarity() {
@@ -1753,6 +1765,7 @@ function getRecentTexts(subject, category) {
 function recordSeenTexts(subject, category, texts) {
   const merged = getRecentTexts(subject, category).concat(texts);
   localStorage.setItem(historyKey(subject, category), JSON.stringify(merged.slice(-SEEN_HISTORY_LIMIT)));
+  markSyncDirty();
 }
 
 // 設定学年に近い内容ほど多く出す。「学年」単位で出現の割合を決め、
@@ -2169,7 +2182,7 @@ function updateStatusBar() {
 
 // プロフィールを選ぶ前は学年もポイントも決まらないので、
 // ステータスバー・ガイド・タブバーはまとめて隠す
-const PROFILE_SCREENS = ["screen-profile-select", "screen-profile-create"];
+const PROFILE_SCREENS = ["screen-login", "screen-signup", "screen-profile-select", "screen-profile-create"];
 
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
@@ -2489,10 +2502,17 @@ document.getElementById("btn-profile-manage").addEventListener("click", () => {
 
 // プロフィールが決まった状態でアプリ本体に入る。
 // 学年・ポイント・カードはプロフィールごとに違うので、表示を作り直してから入る。
+// ログイン済みの場合はバックグラウンドでサーバからプルし、完了後にUIを再描画する（ローカルファースト）。
 function enterAppWithActiveProfile() {
   refreshHome();
   updateStatusBar();
   showScreen("screen-home");
+  if (fbCurrentUser && getActiveProfileId()) {
+    pullProfileFromFirestore(getActiveProfileId()).then(() => {
+      refreshHome();
+      updateStatusBar();
+    }).catch(() => {});
+  }
 }
 
 // ===== バックアップ（書き出し・読み込み） =====
@@ -3031,7 +3051,8 @@ function startInitialScreen() {
   }
   openProfileSelectScreen("select");
 }
-startInitialScreen();
+// startInitialScreen() はここでは直接呼ばない。
+// Firebase の onAuthStateChanged（下の Firebase セクション）がログイン状態を確認してから呼ぶ。
 
 // ===== オープニング =====
 // タップ／タッチするまで消えない。自動では消さず、しっかり見てもらう。
@@ -3046,4 +3067,314 @@ function dismissSplash() {
 document.getElementById("splash").addEventListener("click", () => {
   unlockAudioOnFirstGesture();
   dismissSplash();
+});
+
+// ===== Firebase認証・同期 =====
+// account-design.md §3・§4・§7・§10-6 段階1の実装。
+// 認証はメール/パスワードのみ。同期はローカルファーストで、localStorageへの書き込みは
+// 同期のまま維持し、Firestoreへはバックグラウンドでまとめてプッシュする（ダーティフラグ＋デバウンス）。
+
+// ------- seenHistoryのlocalStorage↔Firestoreシリアライズ -------
+
+function collectSeenHistory(profileId) {
+  const result = {};
+  const prefix = `${profileId}:seen_history_`;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(prefix)) {
+      const subKey = key.slice(prefix.length);
+      try { result[subKey] = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+    }
+  }
+  return result;
+}
+
+function applySeenHistory(profileId, seenHistory) {
+  if (!seenHistory || typeof seenHistory !== "object") return;
+  const prefix = `${profileId}:seen_history_`;
+  Object.entries(seenHistory).forEach(([subKey, texts]) => {
+    if (Array.isArray(texts)) {
+      localStorage.setItem(prefix + subKey, JSON.stringify(texts));
+    }
+  });
+}
+
+// ------- プッシュ -------
+
+// localStorageの現在の進捗をFirestore書き込み用オブジェクトに変換する
+function buildProgressDoc(profileId) {
+  const r = (key) => localStorage.getItem(`${profileId}:${key}`);
+  return {
+    stampsTotal: parseInt(r(STORAGE_KEY) || "0", 10) || 0,
+    ownedCards: (function () { try { return JSON.parse(r(GACHA_KEY) || "{}"); } catch { return {}; } })(),
+    pity: parseInt(r(PITY_KEY) || "0", 10) || 0,
+    dailyPoints: (function () { try { return JSON.parse(r(DAILY_POINTS_KEY) || "{}"); } catch { return {}; } })(),
+    seenHistory: collectSeenHistory(profileId),
+    grade: parseInt(r(GRADE_KEY) || String(DEFAULT_GRADE), 10) || DEFAULT_GRADE,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+}
+
+async function pushProfileToFirestore(profileId) {
+  if (!fbCurrentUser || !profileId) return;
+  const uid = fbCurrentUser.uid;
+  const profile = getProfiles().find((p) => p.id === profileId);
+  if (!profile) return;
+
+  const progressDoc = buildProgressDoc(profileId);
+  const profileRef = fbDb.collection("households").doc(uid).collection("profiles").doc(profileId);
+
+  try {
+    const batch = fbDb.batch();
+    batch.set(profileRef, {
+      name: profile.name,
+      avatar: profile.avatar,
+      createdAt: profile.createdAt || new Date().toISOString(),
+    }, { merge: true });
+    batch.set(profileRef.collection("progress").doc("main"), progressDoc);
+    await batch.commit();
+    localStorage.setItem(`${profileId}:updatedAt`, new Date().toISOString());
+    setAuthSyncFeedback(t("auth.syncDone"), "ok");
+    setTimeout(() => setAuthSyncFeedback("", ""), 3000);
+  } catch (e) {
+    console.warn("[sync] push failed:", e.message);
+    setAuthSyncFeedback(t("auth.syncFailed"), "error");
+  }
+}
+
+async function pushCurrentProfileToFirestore() {
+  const profileId = getActiveProfileId();
+  if (!profileId || !fbCurrentUser) return;
+  await pushProfileToFirestore(profileId);
+}
+
+// ダーティフラグ：localStorageへの書き込み後に呼ぶと、5秒後にまとめてプッシュする
+function markSyncDirty() {
+  if (!fbCurrentUser || !getActiveProfileId()) return;
+  clearTimeout(_syncDirtyTimer);
+  _syncDirtyTimer = setTimeout(pushCurrentProfileToFirestore, 5000);
+}
+
+// ページがバックグラウンドに切り替わるタイミングでも即時プッシュ
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && fbCurrentUser && getActiveProfileId()) {
+    clearTimeout(_syncDirtyTimer);
+    pushCurrentProfileToFirestore();
+  }
+});
+
+// ------- プル -------
+
+async function pullProfileFromFirestore(profileId) {
+  if (!fbCurrentUser || !profileId) return;
+  const uid = fbCurrentUser.uid;
+
+  const progressRef = fbDb.collection("households").doc(uid)
+    .collection("profiles").doc(profileId)
+    .collection("progress").doc("main");
+
+  let doc;
+  try {
+    doc = await progressRef.get();
+  } catch (e) {
+    console.warn("[sync] pull failed:", e.message);
+    return;
+  }
+
+  if (!doc.exists) return;
+  const server = doc.data();
+  if (!server || !server.updatedAt) return;
+
+  const serverTs = server.updatedAt.toDate ? server.updatedAt.toDate().toISOString() : String(server.updatedAt);
+  const localTs = localStorage.getItem(`${profileId}:updatedAt`) || "";
+  if (localTs && serverTs <= localTs) return; // ローカルが新しい or 同じ
+
+  // サーバが新しい → conflict-resolution ルールに従ってマージ
+  const pre = (key) => `${profileId}:${key}`;
+
+  // ownedCards: 和集合（枚数は大きい方を採用）
+  const localOwned = (function () { try { return JSON.parse(localStorage.getItem(pre(GACHA_KEY)) || "{}"); } catch { return {}; } })();
+  const serverOwned = (server.ownedCards && typeof server.ownedCards === "object") ? server.ownedCards : {};
+  const mergedOwned = { ...localOwned };
+  Object.entries(serverOwned).forEach(([id, count]) => {
+    mergedOwned[id] = Math.max(mergedOwned[id] || 0, Number(count) || 0);
+  });
+  localStorage.setItem(pre(GACHA_KEY), JSON.stringify(mergedOwned));
+
+  // 以下は last-write-wins（サーバが新しいので上書き）
+  if (server.stampsTotal !== undefined) localStorage.setItem(pre(STORAGE_KEY), String(server.stampsTotal));
+  if (server.grade !== undefined && GRADES.includes(Number(server.grade))) {
+    localStorage.setItem(pre(GRADE_KEY), String(server.grade));
+  }
+  if (server.pity !== undefined) localStorage.setItem(pre(PITY_KEY), String(server.pity));
+  if (server.dailyPoints && typeof server.dailyPoints === "object") {
+    localStorage.setItem(pre(DAILY_POINTS_KEY), JSON.stringify(server.dailyPoints));
+  }
+  if (server.seenHistory) applySeenHistory(profileId, server.seenHistory);
+
+  localStorage.setItem(pre("updatedAt"), serverTs);
+}
+
+// ------- 移行：ローカルのプロフィールをFirestoreのhouseholdに引き取る -------
+// 初回ログイン/新規登録時、householdドキュメントが存在しなければ実行する。
+
+async function migrateLocalProfilesToFirestore() {
+  if (!fbCurrentUser) return;
+  const uid = fbCurrentUser.uid;
+  const householdRef = fbDb.collection("households").doc(uid);
+
+  const snap = await householdRef.get();
+  if (snap.exists) return; // すでに世帯が存在する → 移行済み
+
+  // 世帯ドキュメントを作成（plan は Stage1 では free 固定）
+  await householdRef.set({
+    email: fbCurrentUser.email,
+    plan: "free",
+    createdAt: new Date().toISOString(),
+  });
+
+  // 既存のローカルプロフィールを Firestore に書き出す
+  for (const profile of getProfiles()) {
+    await pushProfileToFirestore(profile.id);
+  }
+}
+
+// ------- ログイン・新規登録 UI -------
+
+function openLoginScreen() {
+  document.getElementById("login-email-input").value = "";
+  document.getElementById("login-password-input").value = "";
+  setLoginFeedback("", "");
+  showScreen("screen-login");
+}
+
+function openSignupScreen() {
+  document.getElementById("signup-email-input").value = "";
+  document.getElementById("signup-password-input").value = "";
+  setSignupFeedback("", "");
+  showScreen("screen-signup");
+}
+
+function setLoginFeedback(text, cls) {
+  const el = document.getElementById("login-feedback");
+  el.textContent = text;
+  el.className = `backup-feedback${cls ? ` ${cls}` : ""}`;
+}
+
+function setSignupFeedback(text, cls) {
+  const el = document.getElementById("signup-feedback");
+  el.textContent = text;
+  el.className = `backup-feedback${cls ? ` ${cls}` : ""}`;
+}
+
+function setAuthSyncFeedback(text, cls) {
+  const el = document.getElementById("auth-sync-feedback");
+  if (!el) return;
+  el.textContent = text;
+  el.className = `backup-feedback${cls ? ` ${cls}` : ""}`;
+}
+
+function authErrorMessage(code) {
+  const map = {
+    "auth/invalid-email": t("auth.errorInvalidEmail"),
+    "auth/weak-password": t("auth.errorWeakPassword"),
+    "auth/email-already-in-use": t("auth.errorEmailInUse"),
+    "auth/wrong-password": t("auth.errorWrongPassword"),
+    "auth/invalid-credential": t("auth.errorWrongPassword"),
+    "auth/user-not-found": t("auth.errorUserNotFound"),
+  };
+  return map[code] || t("auth.errorGeneric");
+}
+
+document.getElementById("btn-login-submit").addEventListener("click", async () => {
+  playClickSound();
+  const email = document.getElementById("login-email-input").value.trim();
+  const password = document.getElementById("login-password-input").value;
+  if (!email || !password) { setLoginFeedback(t("auth.fieldsRequired"), "error"); return; }
+  setLoginFeedback(t("auth.working"), "");
+  document.getElementById("btn-login-submit").disabled = true;
+  try {
+    await fbAuth.signInWithEmailAndPassword(email, password);
+    // onAuthStateChanged が残りを処理する
+  } catch (e) {
+    setLoginFeedback(authErrorMessage(e.code), "error");
+    document.getElementById("btn-login-submit").disabled = false;
+  }
+});
+
+document.getElementById("btn-login-to-signup").addEventListener("click", () => {
+  playClickSound();
+  openSignupScreen();
+});
+
+document.getElementById("btn-login-forgot").addEventListener("click", async () => {
+  const email = document.getElementById("login-email-input").value.trim();
+  if (!email) { setLoginFeedback(t("auth.emailRequired"), "error"); return; }
+  try {
+    await fbAuth.sendPasswordResetEmail(email);
+    setLoginFeedback(t("auth.forgotSent"), "ok");
+  } catch (e) {
+    setLoginFeedback(authErrorMessage(e.code), "error");
+  }
+});
+
+document.getElementById("btn-signup-submit").addEventListener("click", async () => {
+  playClickSound();
+  const email = document.getElementById("signup-email-input").value.trim();
+  const password = document.getElementById("signup-password-input").value;
+  if (!email || !password) { setSignupFeedback(t("auth.fieldsRequired"), "error"); return; }
+  setSignupFeedback(t("auth.working"), "");
+  document.getElementById("btn-signup-submit").disabled = true;
+  try {
+    await fbAuth.createUserWithEmailAndPassword(email, password);
+    // onAuthStateChanged が残りを処理する
+  } catch (e) {
+    setSignupFeedback(authErrorMessage(e.code), "error");
+    document.getElementById("btn-signup-submit").disabled = false;
+  }
+});
+
+document.getElementById("btn-signup-to-login").addEventListener("click", () => {
+  playClickSound();
+  openLoginScreen();
+});
+
+document.getElementById("btn-account-logout").addEventListener("click", async () => {
+  playClickSound();
+  clearTimeout(_syncDirtyTimer);
+  if (fbCurrentUser && getActiveProfileId()) {
+    await pushCurrentProfileToFirestore().catch(() => {});
+  }
+  await fbAuth.signOut();
+  // onAuthStateChanged がログイン画面に遷移させる
+});
+
+function refreshAuthAccountLine() {
+  const el = document.getElementById("auth-account-line");
+  if (!el) return;
+  el.textContent = fbCurrentUser ? t("auth.accountLine", { email: fbCurrentUser.email }) : "";
+}
+
+// ------- 認証状態の監視（起動フローの入り口） -------
+// onAuthStateChanged は Firebase がキャッシュした認証情報をもとにほぼ即座に発火する。
+// ログイン済みであれば移行確認 → startInitialScreen()、未ログインならログイン画面へ。
+
+fbAuth.onAuthStateChanged(async (user) => {
+  fbCurrentUser = user;
+  document.getElementById("btn-login-submit").disabled = false;
+  document.getElementById("btn-signup-submit").disabled = false;
+
+  if (!user) {
+    openLoginScreen();
+    return;
+  }
+
+  try {
+    await migrateLocalProfilesToFirestore();
+  } catch (e) {
+    console.warn("[sync] migration failed:", e.message);
+  }
+
+  refreshAuthAccountLine();
+  startInitialScreen();
 });
