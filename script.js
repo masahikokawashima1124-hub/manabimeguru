@@ -4,6 +4,51 @@
 let fbCurrentUser = null;
 let _syncDirtyTimer = null;
 
+// ===== おためしモード（未登録のまま使う） =====
+// 初めて来た人にメール登録を求めると、そこで大半が離脱する。
+// 登録せずにそのまま遊べるようにし、データはこの端末の localStorage にだけ置く。
+// あとからアカウント登録すると migrateLocalProfilesToFirestore() がそのまま引き取る。
+const GUEST_KEY = "guest_mode";
+
+function isGuestMode() {
+  return localStorage.getItem(GUEST_KEY) === "1";
+}
+
+function setGuestMode(on) {
+  if (on) localStorage.setItem(GUEST_KEY, "1");
+  else localStorage.removeItem(GUEST_KEY);
+}
+
+// ===== プラン（無料／プレミアム） =====
+// account-design.md §10 段階2。plan は Firestore の households/{uid} が持ち、
+// クライアントからは書き換えられない（firestore.rules で禁止）。
+// 未登録のおためし中とログイン直後の既定は "free"。
+let fbPlan = "free";
+
+function isPaidPlan() {
+  return fbPlan === "paid";
+}
+
+// 無料プランで引けるレアリティ。SR・URはプレミアム限定。
+const FREE_RARITIES = ["N", "R"];
+
+function isPremiumRarity(rarity) {
+  return !FREE_RARITIES.includes(rarity);
+}
+
+// いま引けるカードの母集団。無料プランではSR・URが出ない（出てから鍵をかけると萎えるので、
+// そもそも抽選に混ぜない）。ずかんにはシルエットで並べて、集める目標としては見せ続ける。
+function drawableCardPool() {
+  return isPaidPlan() ? CARD_POOL : CARD_POOL.filter((c) => !isPremiumRarity(c.rarity));
+}
+
+// 無料プランのプロフィール上限。プレミアムで PROFILE_MAX 人まで増える。
+const FREE_PROFILE_MAX = 1;
+
+function profileLimit() {
+  return isPaidPlan() ? PROFILE_MAX : FREE_PROFILE_MAX;
+}
+
 // ===== 状態管理 =====
 const state = {
   subject: null,
@@ -77,7 +122,7 @@ function newProfileId(existing) {
 
 function createProfile(name, avatar) {
   const list = getProfiles();
-  if (list.length >= PROFILE_MAX) return null;
+  if (list.length >= profileLimit()) return null;
   const profile = {
     id: newProfileId(list),
     name: String(name || "").slice(0, PROFILE_NAME_MAX) || t("profile.defaultName"),
@@ -696,11 +741,15 @@ function setPity(n) {
   markSyncDirty();
 }
 
+// 無料プランではSR・URを除いた上で、残るレアリティの比率をそのまま保って引き直す
+// （N60:R28 → N68%:R32%）。「出たのに引けない」を起こさないための設計。
 function rollRarity() {
-  const weights = { N: RARITY_INFO.N.weight, R: RARITY_INFO.R.weight, SR: RARITY_INFO.SR.weight, UR: RARITY_INFO.UR.weight };
+  const pool = isPaidPlan() ? ["N", "R", "SR", "UR"] : FREE_RARITIES;
+  const weights = {};
+  pool.forEach((r) => { weights[r] = RARITY_INFO[r].weight; });
   const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
   let roll = Math.random() * total;
-  for (const rarity of Object.keys(weights)) {
+  for (const rarity of pool) {
     if (roll < weights[rarity]) return rarity;
     roll -= weights[rarity];
   }
@@ -709,11 +758,12 @@ function rollRarity() {
 
 function drawGachaCard() {
   const owned = getOwnedCards();
-  const unowned = CARD_POOL.filter((c) => !owned[c.id]);
+  const pool = drawableCardPool();
+  const unowned = pool.filter((c) => !owned[c.id]);
   const pityHit = getPity() >= PITY_LIMIT && unowned.length > 0;
 
   // 天井に達していたら未所持のみから、そうでなければ通常のレアリティ抽選から選ぶ
-  const card = pityHit ? pick(unowned) : pick(CARD_POOL.filter((c) => c.rarity === rollRarity()));
+  const card = pityHit ? pick(unowned) : pick(pool.filter((c) => c.rarity === rollRarity()));
 
   const isNew = !owned[card.id];
   owned[card.id] = (owned[card.id] || 0) + 1;
@@ -735,7 +785,20 @@ function cardArtMarkup(cardDef) {
 }
 
 function renderCardHTML(cardDef, opts) {
-  const { isNew = false, locked = false, count = 0 } = opts || {};
+  const { isNew = false, locked = false, premium = false, count = 0 } = opts || {};
+
+  // プレミアム限定で、まだ持っていないカード。「？？？」ではなく鍵として見せることで、
+  // 「引けなかった」ではなく「まだ開いていない枠がある」と伝わるようにする。
+  if (premium) {
+    return `
+      <div class="card rarity-${cardDef.rarity} locked locked--premium">
+        <div class="card-rarity-badge">${cardDef.rarity}</div>
+        <div class="creature-slot creature-slot--card"></div>
+        <div class="card-premium-lock">🔒</div>
+        <div class="card-name">${t("collection.premiumBadge")}</div>
+      </div>
+    `;
+  }
 
   if (locked) {
     return `
@@ -935,13 +998,28 @@ function openCollectionScreen(returnScreen, scope) {
   const owned = isFamily ? getFamilyOwnedCards() : getOwnedCards();
   const ownedCount = Object.keys(owned).length;
 
+  // 無料プランのときの分母は「引けるカードの数」。集めきれない枚数を分母に入れると
+  // 永久に埋まらないバーになってしまうため。
+  const drawableTotal = drawableCardPool().length;
   document.getElementById("collection-count-line").textContent =
-    t(isFamily ? "collection.countFamily" : "collection.count", { owned: ownedCount, total: CARD_POOL.length });
+    t(isFamily ? "collection.countFamily" : "collection.count", { owned: ownedCount, total: drawableTotal });
+
+  // プレミアム限定のうち、まだ持っていない枚数だけを案内する
+  const premiumLockedCount = isPaidPlan()
+    ? 0
+    : CARD_POOL.filter((c) => isPremiumRarity(c.rarity) && !owned[c.id]).length;
+  const premiumNote = document.getElementById("collection-premium-note");
+  if (premiumNote) {
+    premiumNote.textContent = premiumLockedCount ? t("collection.premiumNote", { n: premiumLockedCount }) : "";
+    premiumNote.classList.toggle("hidden", premiumLockedCount === 0);
+  }
 
   const grid = document.getElementById("collection-grid");
   grid.innerHTML = CARD_POOL.map((card) => {
     const count = owned[card.id] || 0;
-    return `<div class="collection-card-slot" data-card-id="${card.id}">${renderCardHTML(card, { locked: count === 0, count })}</div>`;
+    // すでに持っているカードは、あとから無料プランになっても取り上げない
+    const premium = count === 0 && !isPaidPlan() && isPremiumRarity(card.rarity);
+    return `<div class="collection-card-slot" data-card-id="${card.id}">${renderCardHTML(card, { locked: count === 0, premium, count })}</div>`;
   }).join("");
 
   grid.querySelectorAll(".collection-card-slot").forEach((slot) => {
@@ -2287,9 +2365,11 @@ function refreshGachaPointsDisplay() {
   document.getElementById("gacha-points-value").textContent = points;
   document.getElementById("btn-pull-gacha").disabled = points < GACHA_PULL_COST;
 
-  const remaining = Object.keys(getOwnedCards()).length >= CARD_POOL.length
-    ? null
-    : Math.max(0, PITY_LIMIT - getPity());
+  // 「ぜんぶ あつめた」の判定は、いま引ける母集団を基準にする。
+  // 無料プランでSR・URが残っていても、引けない以上は集めきったと言ってよい。
+  const owned = getOwnedCards();
+  const allDrawableOwned = drawableCardPool().every((c) => owned[c.id]);
+  const remaining = allDrawableOwned ? null : Math.max(0, PITY_LIMIT - getPity());
   const hint = document.getElementById("gacha-pity-hint");
   if (remaining === null) hint.textContent = t("gacha.pityDone");
   else if (remaining === 0) hint.textContent = t("gacha.pityReady");
@@ -2398,12 +2478,18 @@ function openProfileSelectScreen(mode) {
       <span class="profile-card-name"></span>
       ${state.profileMode === "manage" ? `<span class="profile-card-delete">${t("profile.deleteBtn")}</span>` : ""}
     </button>
-  `).join("") + (state.profileMode === "select" ? `
+  `).join("") + (state.profileMode === "select" && profiles.length < profileLimit() ? `
     <button type="button" class="profile-card profile-card--new" id="btn-profile-new">
       <span class="profile-card-avatar">＋</span>
       <span class="profile-card-name">${t("profile.createNew")}</span>
     </button>
   ` : "");
+
+  // 上限に達しているときは「＋」を出さず、なぜ増やせないかを書く
+  const limitNote = document.getElementById("profile-limit-note");
+  const atLimit = state.profileMode === "select" && profiles.length >= profileLimit();
+  limitNote.textContent = atLimit && !isPaidPlan() ? t("profile.freeLimit", { n: PROFILE_MAX }) : "";
+  limitNote.classList.toggle("hidden", !limitNote.textContent);
 
   // なまえはユーザー入力なので、HTMLに混ぜずtextContentで入れる
   list.querySelectorAll(".profile-card[data-profile-id]").forEach((btn) => {
@@ -2424,7 +2510,7 @@ function openProfileSelectScreen(mode) {
   if (newBtn) {
     newBtn.addEventListener("click", () => {
       playClickSound();
-      if (getProfiles().length >= PROFILE_MAX) return;
+      if (getProfiles().length >= profileLimit()) return;
       openProfileCreateScreen();
     });
   }
@@ -2477,7 +2563,9 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
   }
   const profile = createProfile(name, state.profileAvatar);
   if (!profile) {
-    document.getElementById("profile-create-feedback").textContent = t("profile.full", { n: PROFILE_MAX });
+    document.getElementById("profile-create-feedback").textContent = isPaidPlan()
+      ? t("profile.full", { n: PROFILE_MAX })
+      : t("profile.freeLimit", { n: PROFILE_MAX });
     document.getElementById("profile-create-feedback").className = "backup-feedback error";
     return;
   }
@@ -3224,9 +3312,14 @@ async function migrateLocalProfilesToFirestore() {
   const householdRef = fbDb.collection("households").doc(uid);
 
   const snap = await householdRef.get();
-  if (snap.exists) return; // すでに世帯が存在する → 移行済み
+  if (snap.exists) {
+    // すでに世帯が存在する → 移行済み。プランだけ読み取る。
+    fbPlan = snap.data().plan === "paid" ? "paid" : "free";
+    return;
+  }
 
-  // 世帯ドキュメントを作成（plan は Stage1 では free 固定）
+  // 世帯ドキュメントを作成（新規登録の既定は無料プラン）
+  fbPlan = "free";
   await householdRef.set({
     email: fbCurrentUser.email,
     plan: "free",
@@ -3352,8 +3445,50 @@ document.getElementById("btn-account-logout").addEventListener("click", async ()
 function refreshAuthAccountLine() {
   const el = document.getElementById("auth-account-line");
   if (!el) return;
-  el.textContent = fbCurrentUser ? t("auth.accountLine", { email: fbCurrentUser.email }) : "";
+  const guest = !fbCurrentUser;
+  el.textContent = guest ? t("auth.guestAccountLine") : t("auth.accountLine", { email: fbCurrentUser.email });
+
+  // おためし中は「登録する／ログインする」、ログイン後は「ログアウト」を出す
+  document.getElementById("auth-guest-prompt").classList.toggle("hidden", !guest);
+  document.getElementById("btn-guest-signup").classList.toggle("hidden", !guest);
+  document.getElementById("btn-guest-login").classList.toggle("hidden", !guest);
+  document.getElementById("btn-account-logout").classList.toggle("hidden", guest);
 }
+
+// おためし中からログイン／新規登録に進んだときだけ「もどる」を出す。
+// 未登録の初回起動では戻る先がないので隠しておく。
+function setAuthBackToGuestVisible(visible) {
+  document.getElementById("btn-login-back-to-guest").classList.toggle("hidden", !visible);
+  document.getElementById("btn-signup-back-to-guest").classList.toggle("hidden", !visible);
+}
+
+document.getElementById("btn-login-guest").addEventListener("click", () => {
+  playClickSound();
+  setGuestMode(true);
+  setAuthBackToGuestVisible(false);
+  refreshAuthAccountLine();
+  startInitialScreen();
+});
+
+document.getElementById("btn-guest-signup").addEventListener("click", () => {
+  playClickSound();
+  setAuthBackToGuestVisible(true);
+  openSignupScreen();
+});
+
+document.getElementById("btn-guest-login").addEventListener("click", () => {
+  playClickSound();
+  setAuthBackToGuestVisible(true);
+  openLoginScreen();
+});
+
+[["btn-login-back-to-guest"], ["btn-signup-back-to-guest"]].forEach(([id]) => {
+  document.getElementById(id).addEventListener("click", () => {
+    playClickSound();
+    setAuthBackToGuestVisible(false);
+    startInitialScreen();
+  });
+});
 
 // ------- 認証状態の監視（起動フローの入り口） -------
 // onAuthStateChanged は Firebase がキャッシュした認証情報をもとにほぼ即座に発火する。
@@ -3365,9 +3500,16 @@ fbAuth.onAuthStateChanged(async (user) => {
   document.getElementById("btn-signup-submit").disabled = false;
 
   if (!user) {
-    openLoginScreen();
+    // 未ログインでも、おためし中ならそのままアプリに入る
+    fbPlan = "free";
+    refreshAuthAccountLine();
+    if (isGuestMode()) startInitialScreen();
+    else openLoginScreen();
     return;
   }
+
+  // 登録・ログインできたらおためしは終了（ローカルのデータは移行で引き継がれる）
+  setGuestMode(false);
 
   try {
     await migrateLocalProfilesToFirestore();

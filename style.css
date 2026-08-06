@@ -1693,6 +1693,66 @@ h2 {
   box-shadow: none;
 }
 
+/* プレミアム限定でまだ持っていないカード。
+   「取り上げられている」ではなく「これから開く枠」に見えるよう、
+   未所持（灰色）より明るく、金色の枠で見せる。 */
+.card.locked--premium {
+  opacity: 0.72;
+  filter: none;
+  position: relative;
+  border: 2px dashed #d4a017;
+  background: linear-gradient(160deg, #fffdf5, #fdf3d8);
+}
+
+.card.locked--premium .card-name {
+  color: #a67c00;
+  font-weight: 800;
+}
+
+.card-premium-lock {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  font-size: 1.7rem;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.collection-premium-note {
+  color: #a67c00;
+  font-weight: 700;
+}
+
+/* ログイン画面：登録せずに試す導線をログインフォームより目立たせる */
+.guest-entry {
+  margin: 0 auto 18px;
+  max-width: 420px;
+  text-align: center;
+}
+
+.btn-guest {
+  width: 100%;
+  font-size: 1.05rem;
+  padding: 14px 18px;
+}
+
+.guest-note {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.guest-prompt {
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.profile-limit-note {
+  color: #a67c00;
+  font-weight: 700;
+}
+
 .card-rarity-badge {
   position: absolute;
   top: 6px;

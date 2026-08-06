@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 
@@ -48,6 +48,13 @@
   <!-- ログイン（保護者） -->
   <section id="screen-login" class="screen">
     <h2 data-i18n="auth.loginTitle"></h2>
+
+    <!-- 未登録でそのまま試せる導線。初めて来た人がここで離脱しないよう、ログインより前に置く -->
+    <div class="guest-entry">
+      <button type="button" id="btn-login-guest" class="btn-primary btn-guest" data-i18n="auth.tryAsGuest"></button>
+      <p class="guest-note" data-i18n="auth.guestNotice"></p>
+    </div>
+
     <p class="sub" data-i18n="auth.loginSub"></p>
     <div class="profile-create-box">
       <label class="profile-field-label" for="login-email-input" data-i18n="auth.emailLabel"></label>
@@ -59,6 +66,7 @@
         <button type="button" id="btn-login-submit" class="btn-primary" data-i18n="auth.loginSubmit"></button>
         <button type="button" id="btn-login-forgot" class="btn-link" data-i18n="auth.forgotPassword"></button>
         <button type="button" id="btn-login-to-signup" class="btn-secondary" data-i18n="auth.needAccount"></button>
+        <button type="button" id="btn-login-back-to-guest" class="btn-link hidden" data-i18n="auth.backToGuest"></button>
       </div>
     </div>
   </section>
@@ -77,6 +85,7 @@
       <div class="profile-create-actions">
         <button type="button" id="btn-signup-submit" class="btn-primary" data-i18n="auth.signupSubmit"></button>
         <button type="button" id="btn-signup-to-login" class="btn-secondary" data-i18n="auth.haveAccount"></button>
+        <button type="button" id="btn-signup-back-to-guest" class="btn-link hidden" data-i18n="auth.backToGuest"></button>
       </div>
     </div>
   </section>
@@ -85,6 +94,7 @@
   <section id="screen-profile-select" class="screen">
     <h2 data-i18n="profile.selectTitle"></h2>
     <p class="sub" data-i18n="profile.selectSub"></p>
+    <p class="sub profile-limit-note hidden" id="profile-limit-note"></p>
     <div class="profile-list" id="profile-list"></div>
   </section>
 
@@ -153,7 +163,11 @@
 
     <h3 class="settings-section-title" data-i18n="auth.accountTitle"></h3>
     <p class="sub" id="auth-account-line"></p>
-    <div class="backup-actions">
+    <!-- おためし中だけ出す。登録するとカードとポイントがそのまま引き継がれることを伝える -->
+    <p class="sub guest-prompt hidden" id="auth-guest-prompt" data-i18n="auth.guestSignupPrompt"></p>
+    <div class="backup-actions" id="auth-guest-actions">
+      <button type="button" id="btn-guest-signup" class="btn-primary hidden" data-i18n="auth.guestSignup"></button>
+      <button type="button" id="btn-guest-login" class="btn-secondary hidden" data-i18n="auth.guestLogin"></button>
       <button type="button" id="btn-account-logout" class="btn-secondary" data-i18n="auth.logout"></button>
     </div>
     <p id="auth-sync-feedback" class="backup-feedback"></p>
@@ -309,6 +323,7 @@
       <button type="button" class="collection-scope-btn" data-scope="family" data-i18n="collection.scopeFamily"></button>
     </div>
     <p class="sub" id="collection-count-line"></p>
+    <p class="sub collection-premium-note hidden" id="collection-premium-note"></p>
     <div class="collection-grid" id="collection-grid"></div>
     <button id="btn-back-from-collection" class="btn-secondary" data-i18n="common.back"></button>
   </section>
@@ -361,9 +376,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=16"></script>
+<script src="i18n.js?v=17"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=6"></script>
-<script src="script.js?v=37"></script>
+<script src="script.js?v=38"></script>
 </body>
 </html>

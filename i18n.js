@@ -65,6 +65,7 @@ const LOCALES = {
     "profile.deleteBtn": "けす",
     "profile.deleteCancel": "やめる",
     "profile.full": "プロフィールは {n}人までです",
+    "profile.freeLimit": "むりょうプランでは プロフィールは1人までです。プレミアムプランで さいだい{n}人まで つくれます。",
 
     // --- ログイン／新規登録（保護者向け） ---
     "auth.loginTitle": "ログイン",
@@ -95,6 +96,15 @@ const LOCALES = {
     "auth.syncing": "同期中…",
     "auth.syncDone": "同期しました",
     "auth.syncFailed": "同期に失敗しました（次回また試みます）",
+
+    // --- おためし（未登録で使う） ---
+    "auth.tryAsGuest": "とうろくせずに ためす",
+    "auth.guestNotice": "登録しなくても、そのまま全部あそべます。",
+    "auth.guestAccountLine": "おためし中（未登録）",
+    "auth.guestSignupPrompt": "アカウントを登録すると、この端末が変わってもデータを引き継げます。いま集めたカードとポイントは、そのまま引き継がれます。",
+    "auth.guestSignup": "アカウントを登録する",
+    "auth.guestLogin": "ログインする",
+    "auth.backToGuest": "もどる",
 
     // --- 共有 ---
     "share.copyHint": "↑ このぶんしょうを コピーして つかってね",
@@ -188,6 +198,8 @@ const LOCALES = {
     "collection.scopeSelf": "じぶん",
     "collection.scopeFamily": "かぞく",
     "collection.countFamily": "かぞく ぜんいんで {owned} / {total} しゅるい あつめた！",
+    "collection.premiumNote": "🔒 の {n}まいは プレミアムプランで あつめられるよ",
+    "collection.premiumBadge": "プレミアム",
 
     // --- レアリティ ---
     "rarity.N": "ノーマル",
