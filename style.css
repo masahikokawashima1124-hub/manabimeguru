@@ -1289,6 +1289,9 @@ h2 {
 
 #answer-input {
   flex: 1;
+  /* min-width が auto のままだと input は既定の表示幅より縮まず、
+     スマホ幅で「こたえる」ボタンを画面外に押し出してしまう */
+  min-width: 0;
   font-size: 1.25rem;
   font-family: inherit;
   padding: 12px;

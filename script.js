@@ -2444,7 +2444,7 @@ function openSettingsScreen() {
   list.innerHTML = GRADES.map((g) => `
     <button type="button" class="grade-option${g === current ? " active" : ""}" data-grade="${g}">
       ${gradeLabel(g)}
-      <span class="grade-option-range">${g === 1 ? t("settings.gradeRange1") : t("settings.gradeRange", { n: g })}</span>
+      <span class="grade-option-range">${g === 1 ? t("settings.gradeRange1") : t("settings.gradeRange", { lo: gradeFloor(g), n: g })}</span>
     </button>
   `).join("");
 

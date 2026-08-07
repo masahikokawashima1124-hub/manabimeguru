@@ -32,7 +32,7 @@ const LOCALES = {
 
     // --- せってい ---
     "settings.title": "⚙️ せってい",
-    "settings.sub": "がくねんを えらぶと、その がくねんまでの もんだいが 出ます",
+    "settings.sub": "がくねんを えらぶと、その がくねんに あわせた もんだいが 出ます",
     "settings.backupTitle": "📦 バックアップ",
     "settings.backupDesc": "べつの たんまつに ひっこしするときや、データが きえてしまったときのために、いままでの きろく（がくねん・カード・ポイント）をファイルに ほぞんしておけます。",
     "settings.backupExport": "書き出す",
@@ -237,7 +237,7 @@ const LOCALES = {
     "cat.kaiwa": "かいわ",
     "cat.kaiwaDesc": "あいさつや やりとりの あなうめ",
     "cat.titleFor": "{grade} - {subject}",
-    "settings.gradeRange": "1〜{n}年の もんだい",
+    "settings.gradeRange": "{lo}〜{n}年の もんだい",
     "settings.gradeRange1": "1年の もんだい",
 
     // --- 問題文・解説のひな形 ---
