@@ -1644,6 +1644,141 @@ function genWordUnit4() {
   };
 }
 
+// --- 4年の文章題 ---
+// genWordUnit4（単位換算）1つしかなく、4年生の内容がセッションに乗りにくかったので追加した。
+// 計算系（genRectArea4 / genRounding4 / genAngle4）と場面が重ならないようにしてある。
+
+// 大きい数（万・億）。4年の1学期最初の単元なので、年度のはじめから出す。
+function genWordBigNumber4() {
+  const base = randInt(12, 98);
+  const times = randInt(2, 9);
+  const isMan = Math.random() < 0.6;
+  const unit = isMan ? "万" : "億";
+  const place = pick(["市", "町", "県"]);
+  const what = isMan ? "人口" : "予算";
+  const amount = isMan ? "人" : "円";
+  return {
+    text: `ある${place}の ${what}は ${base}${unit}${amount} です。となりの${place}は その ${times}ばい です。となりの${place}の ${what}は なん${unit}${amount}？（${unit}を のぞいた 数を 答えてね）`,
+    answer: String(base * times),
+    type: "number",
+    hint: `${unit}の いくつぶんか で かんがえよう。${base} × ${times} を 計算するよ`,
+    explain: `${base}${unit} の ${times}ばい は ${base}×${times}＝${base * times}。つまり ${base * times}${unit}${amount}`,
+  };
+}
+
+// がい数で見積もる。正確な計算ではなく「およそいくつか」を考える単元。
+function genWordEstimate4() {
+  const unit = pick([100, 1000]);
+  const label = unit === 100 ? "百" : "千";
+  // きりのいい数にならないよう、下の位に必ず端数を作る
+  const make = () => randInt(unit * 2, unit * 9) + randInt(1, unit - 1);
+  const a = make();
+  const b = make();
+  const ra = Math.round(a / unit) * unit;
+  const rb = Math.round(b / unit) * unit;
+  return {
+    text: `ある店で 月よう日に ${a}人、火よう日に ${b}人 きました。それぞれ ${label}の位までの がい数に して、2日で およそ なん人か もとめましょう。`,
+    answer: String(ra + rb),
+    type: "number",
+    hint: `先に それぞれを ${label}の位までの がい数に してから たすよ`,
+    explain: `${a}は およそ ${ra}、${b}は およそ ${rb}。${ra}＋${rb}＝${ra + rb}（人）`,
+  };
+}
+
+// 2けたでわるわり算の文章題。あまりをどう扱うかを場面から考える。
+function genWordDivLarge4() {
+  const perBox = randInt(12, 36);
+  const boxes = randInt(4, 15);
+  const rest = randInt(1, perBox - 1);
+  const total = perBox * boxes + rest;
+  const needAll = Math.random() < 0.5;
+  return needAll
+    ? {
+        text: `${total}この ボールを 1はこに ${perBox}こずつ 入れます。ぜんぶ 入れるには はこは なんこ いりますか？`,
+        answer: String(boxes + 1),
+        type: "number",
+        hint: `${total}÷${perBox} を計算して、あまったぶんの はこも かぞえよう`,
+        explain: `${total}÷${perBox}＝${boxes}あまり${rest}。あまった ${rest}こにも はこが いるので ${boxes}＋1＝${boxes + 1}こ`,
+      }
+    : {
+        text: `${total}この ボールを 1はこに ${perBox}こずつ 入れます。いっぱいに なる はこは なんこ できますか？`,
+        answer: String(boxes),
+        type: "number",
+        hint: `${total}÷${perBox} の 商が、いっぱいに なった はこの 数だよ`,
+        explain: `${total}÷${perBox}＝${boxes}あまり${rest}。いっぱいに なるのは ${boxes}こ（${rest}こ あまる）`,
+      };
+}
+
+// 面積（m²）の文章題。genRectArea4 は cm² の図形問題なので、単位と場面を変えてある。
+function genWordAreaRoom4() {
+  const w = randInt(3, 12);
+  const h = randInt(3, 12);
+  const place = pick(["きょうしつ", "花だん", "にわ", "ちゅう車場"]);
+  const isFindSide = Math.random() < 0.4;
+  return isFindSide
+    ? {
+        text: `${place}の 面積は ${w * h}m² です。たての 長さが ${h}m の とき、よこの 長さは なんm？`,
+        answer: String(w),
+        type: "number",
+        hint: "面積 ÷ たて ＝ よこ。かけ算の ぎゃくを かんがえよう",
+        explain: `${w * h}÷${h}＝${w}（m）`,
+      }
+    : {
+        text: `たて ${h}m、よこ ${w}m の ${place}が あります。面積は なんm²？`,
+        answer: String(w * h),
+        type: "number",
+        hint: "長方形の 面積 ＝ たて × よこ",
+        explain: `${h}×${w}＝${w * h}（m²）`,
+      };
+}
+
+// 小数のかさ・重さの文章題。式は4年の小数のたし算ひき算だが、場面から式を立てる。
+function genWordDecimalAmount4() {
+  const aRaw = randInt(15, 95);
+  const bRaw = randInt(5, aRaw - 5);
+  const a = aRaw / 10, b = bRaw / 10;
+  const isAdd = Math.random() < 0.5;
+  const item = pick([
+    { name: "ジュース", unit: "L" },
+    { name: "水", unit: "L" },
+    { name: "さとう", unit: "kg" },
+  ]);
+  return isAdd
+    ? {
+        text: `${item.name}が 大きい入れものに ${a}${item.unit}、小さい入れものに ${b}${item.unit} あります。あわせて なん${item.unit}？`,
+        answer: String(Math.round((a + b) * 10) / 10),
+        type: "number",
+        hint: "小数点の いちを そろえて たそう",
+        explain: `${a}＋${b}＝${Math.round((a + b) * 10) / 10}（${item.unit}）`,
+      }
+    : {
+        text: `${item.name}が ${a}${item.unit} ありました。${b}${item.unit} つかいました。のこりは なん${item.unit}？`,
+        answer: String(Math.round((a - b) * 10) / 10),
+        type: "number",
+        hint: "小数点の いちを そろえて ひこう",
+        explain: `${a}－${b}＝${Math.round((a - b) * 10) / 10}（${item.unit}）`,
+      };
+}
+
+// 変わり方（かんたんな比例）。1あたりの量から、まとまった量を求める。
+function genWordProportion4() {
+  const n1 = randInt(2, 6);
+  const n2 = n1 + randInt(2, 8);
+  const item = pick([
+    // 1あたりの量は、場面として不自然にならない範囲にする（4mで12円のリボンは安すぎる）
+    { name: "はりがね", unit: "m", amount: "g", word: "重さ", per: randInt(3, 25) },
+    { name: "リボン", unit: "m", amount: "円", word: "ねだん", per: randInt(4, 30) * 10 },
+  ]);
+  const per = item.per;
+  return {
+    text: `${item.name} ${n1}${item.unit} の ${item.word}は ${per * n1}${item.amount} です。同じ ${item.name} ${n2}${item.unit} では なん${item.amount}？`,
+    answer: String(per * n2),
+    type: "number",
+    hint: `まず 1${item.unit} ぶんの ${item.word}を もとめよう`,
+    explain: `1${item.unit} ぶんは ${per * n1}÷${n1}＝${per}${item.amount}。${n2}${item.unit} では ${per}×${n2}＝${per * n2}${item.amount}`,
+  };
+}
+
 // ===== 算数（小学5年生・新しく習う内容）=====
 function genDecimalMul5() {
   const a = randInt(11, 99) / 10;
@@ -1755,6 +1890,114 @@ function genWordPerUnit5() {
     type: "number",
     hint: "1あたりの 大きさ ＝ ぜんたい ÷ いくつ分",
     explain: `${total} ÷ ${units} ＝ ${perUnit}（${t.per}）`,
+  };
+}
+
+// --- 5年の文章題 ---
+// genWordPerUnit5 / genWordSpeed の2つしかなく、5年の内容がセッションに乗りにくかった。
+// 計算系（genPercent5・genAverage5 は式だけの問題）とは違い、場面から式を立てる形にする。
+
+// 倍数・公倍数の文章題。式ではなく「いつ同時になるか」の場面で考える。
+function genWordMultiple5() {
+  const a = randInt(3, 12);
+  let b = randInt(3, 12);
+  if (b === a) b = a === 12 ? 3 : b + 1;
+  const gcd = (x, y) => (y === 0 ? x : gcd(y, x % y));
+  const lcm = (a * b) / gcd(a, b);
+  const kind = pick(["bus", "light"]);
+  return kind === "bus"
+    ? {
+        text: `駅から Aの バスは ${a}分ごと、Bの バスは ${b}分ごとに 出ます。2つが 同時に 出たあと、つぎに 同時に 出るのは なん分後？`,
+        answer: String(lcm),
+        type: "number",
+        hint: `${a}と ${b}の 公倍数の うち、いちばん 小さい数（最小公倍数）を 見つけよう`,
+        explain: `${a}の倍数と ${b}の倍数に 共通する いちばん小さい数は ${lcm}。だから ${lcm}分後`,
+      }
+    : {
+        text: `たて ${a}cm、よこ ${b}cm の カードを すきまなく ならべて 正方形を つくります。いちばん 小さい 正方形の 1辺は なんcm？`,
+        answer: String(lcm),
+        type: "number",
+        hint: `たてにも よこにも きっちり ならぶ長さ＝${a}と ${b}の 最小公倍数`,
+        explain: `${a}と ${b}の 最小公倍数は ${lcm}。だから 1辺 ${lcm}cm`,
+      };
+}
+
+// 約数・公約数の文章題。「あまりなく分ける」場面で考える。
+function genWordDivisor5() {
+  const gcdVal = randInt(3, 12);
+  const m = randInt(2, 8);
+  let n = randInt(2, 8);
+  if (n === m) n = m === 8 ? 2 : n + 1;
+  const a = gcdVal * m;
+  const b = gcdVal * n;
+  return {
+    text: `あめが ${a}こ、クッキーが ${b}こ あります。どちらも あまりが 出ないように 同じ数ずつ 分けます。いちばん 多くて なん人に 分けられますか？`,
+    answer: String(gcdVal),
+    type: "number",
+    hint: `${a}と ${b}の 両方を わりきれる数の うち、いちばん 大きい数（最大公約数）だよ`,
+    explain: `${a}÷${gcdVal}＝${m}、${b}÷${gcdVal}＝${n} で どちらも わりきれる。${gcdVal}より大きい数では わりきれないので ${gcdVal}人`,
+  };
+}
+
+// 割合（百分率）の文章題。genPercent5 は「◯の△％はいくつ」という式だけの問題なので、
+// こちらは値引き・増量といった場面から立式させる。
+function genWordPercent5() {
+  const price = randInt(4, 30) * 100;
+  const pct = pick([10, 15, 20, 25, 30, 40, 50]);
+  const isDiscount = Math.random() < 0.6;
+  const diff = (price * pct) / 100;
+  return isDiscount
+    ? {
+        text: `定価 ${price}円の 品物が ${pct}％引きに なりました。ねだんは いくらに なりますか？`,
+        answer: String(price - diff),
+        type: "number",
+        hint: `${pct}％引き ＝ 定価の (100－${pct})％ を はらうということ`,
+        explain: `ひく分は ${price}×${pct / 100}＝${diff}円。${price}－${diff}＝${price - diff}円`,
+      }
+    : {
+        text: `もとの ねだんが ${price}円の 品物が ${pct}％ ねあがりしました。いまの ねだんは いくら？`,
+        answer: String(price + diff),
+        type: "number",
+        hint: `ふえる分は もとの ねだんの ${pct}％。それを もとの ねだんに たすよ`,
+        explain: `ふえる分は ${price}×${pct / 100}＝${diff}円。${price}＋${diff}＝${price + diff}円`,
+      };
+}
+
+// 平均の文章題。genAverage5 は数を並べて平均を出す式の問題なので、
+// こちらは「あと何点とれば平均が◯になるか」という逆向きの場面にする。
+function genWordAverage5() {
+  const n = randInt(3, 5);
+  const avgSoFar = randInt(60, 85);
+  const targetAvg = avgSoFar + randInt(2, 8);
+  const need = targetAvg * (n + 1) - avgSoFar * n;
+  return {
+    text: `テストを ${n}回 うけて、平均は ${avgSoFar}点でした。つぎの テストで なん点 とれば、${n + 1}回の 平均が ${targetAvg}点に なりますか？`,
+    answer: String(need),
+    type: "number",
+    hint: `${n + 1}回ぶんの 合計が いくつ 必要か を 先に もとめよう`,
+    explain: `いまの合計は ${avgSoFar}×${n}＝${avgSoFar * n}点。ほしい合計は ${targetAvg}×${n + 1}＝${targetAvg * (n + 1)}点。差の ${need}点が 必要`,
+  };
+}
+
+// こみぐあい（単位量あたりの大きさ）。2つをくらべて どちらが混んでいるかを判断する。
+function genWordDensity5() {
+  // 「10m²に120人」のような非現実的な混みぐあいにならないよう、
+  // 教科書と同じ「うさぎ小屋」の場面にして1m²あたりの数を小さく保つ
+  const areaA = randInt(4, 12);
+  const areaB = randInt(4, 12);
+  const perA = randInt(2, 6);
+  let perB = randInt(2, 6);
+  if (perB === perA) perB = perA === 6 ? 2 : perB + 1;
+  const totalA = areaA * perA;
+  const totalB = areaB * perB;
+  const denser = perA > perB ? "A" : "B";
+  const dense = Math.max(perA, perB);
+  return {
+    text: `Aの うさぎ小屋は ${areaA}m²に ${totalA}ひき、Bの うさぎ小屋は ${areaB}m²に ${totalB}ひき います。こんでいる ほうの 小屋の 1m²あたりの 数は なんひき？`,
+    answer: String(dense),
+    type: "number",
+    hint: "どちらも 1m²あたり なんひきか を もとめて くらべよう",
+    explain: `Aは ${totalA}÷${areaA}＝${perA}ひき、Bは ${totalB}÷${areaB}＝${perB}ひき。こんでいるのは ${denser}で ${dense}ひき`,
   };
 }
 
@@ -1921,6 +2164,103 @@ function genWordRatioSplit6() {
   };
 }
 
+// --- 6年の文章題 ---
+// genProportion6（比例）/ genCombination6（並べ方）/ genWordRatioSplit6（比で分ける）の
+// 3つしかなかったので追加する。計算系（genFractionMul6・genFractionDiv6・genCircleArea6）は
+// 式だけの問題なので、こちらは場面から立式させる形にする。
+
+// 分数のかけ算の文章題。「1mあたり」から「◯mぶん」を求める。
+function genWordFractionMul6() {
+  const gcd = (x, y) => (y === 0 ? x : gcd(y, x % y));
+  const den = pick([2, 3, 4, 5, 6, 8]);
+  let num = randInt(1, den - 1);
+  // 6/8 のような約分できる分数を問題文に出さない（6年生は約分を習っている）
+  while (gcd(num, den) !== 1) num = randInt(1, den - 1);
+  // 答えが整数になる長さを選ぶ（分数どうしの計算は genFractionMul6 の担当）
+  const len = den * randInt(1, 4);
+  const answer = (num / den) * len;
+  return {
+    text: `1mの 重さが ${num}/${den}kg の ぼうが あります。この ぼう ${len}m の 重さは なんkg？`,
+    answer: String(answer),
+    type: "number",
+    hint: "1mあたりの 重さ × 長さ で もとめられるよ",
+    explain: `${num}/${den} × ${len} ＝ ${num}×${len}/${den} ＝ ${num * len}/${den} ＝ ${answer}（kg）`,
+  };
+}
+
+// 組み合わせ。genCombination6 は「ならべ方（順列）」なので、こちらは
+// 順番を区別しない「えらび方（組み合わせ）」にする。混同しやすい対比が練習になる。
+function genWordCombinationPick6() {
+  const n = randInt(4, 8);
+  const answer = (n * (n - 1)) / 2;
+  const kind = pick(["team", "handshake"]);
+  return kind === "team"
+    ? {
+        text: `${n}つの チームが、どのチームとも 1回ずつ 試合を します。試合は ぜんぶで なん試合？`,
+        answer: String(answer),
+        type: "number",
+        hint: `${n}チームから 2チームを えらぶ 組み合わせの 数だよ。順番は 区別しない`,
+        explain: `${n}×(${n}－1)÷2 ＝ ${n}×${n - 1}÷2 ＝ ${answer}試合（AとBの試合は 1回と数える）`,
+      }
+    : {
+        text: `${n}人が、おたがいに 1回ずつ あくしゅを します。あくしゅは ぜんぶで なん回？`,
+        answer: String(answer),
+        type: "number",
+        hint: `${n}人から 2人を えらぶ 組み合わせの 数だよ`,
+        explain: `${n}×(${n}－1)÷2 ＝ ${n}×${n - 1}÷2 ＝ ${answer}回`,
+      };
+}
+
+// 反比例の文章題。genProportion6（比例）と対になる単元。
+function genWordInverse6() {
+  const total = pick([24, 36, 48, 60, 72, 120]);
+  const divisors = [];
+  for (let i = 2; i <= total / 2; i++) if (total % i === 0) divisors.push(i);
+  const x1 = pick(divisors);
+  let x2 = pick(divisors);
+  if (x2 === x1) x2 = divisors[(divisors.indexOf(x1) + 1) % divisors.length];
+  return {
+    text: `面積が ${total}cm²の 長方形が あります。たての 長さが ${x1}cm の とき よこは ${total / x1}cm でした。たてを ${x2}cm に すると、よこは なんcm？`,
+    answer: String(total / x2),
+    type: "number",
+    hint: "たて × よこ が いつも 同じ数（面積）に なる。これが 反比例の 関係だよ",
+    explain: `たて×よこ＝${total} で いつも 同じ。${total}÷${x2}＝${total / x2}（cm）`,
+  };
+}
+
+// 円の面積の文章題。genCircleArea6 は「半径◯cmの円の面積は？」という式だけの問題なので、
+// こちらは半径が直接与えられない場面（直径から求める・まわりの長さから考える）にする。
+function genWordCircle6() {
+  const r = randInt(2, 20);
+  const d = r * 2;
+  const area = Math.round(r * r * 3.14 * 100) / 100;
+  return {
+    text: `直径 ${d}m の まるい 花だんが あります。この 花だんの 面積は なんm²？（円周率は3.14）`,
+    answer: String(area),
+    type: "number",
+    hint: "先に 半径を もとめよう。半径 ＝ 直径 ÷ 2",
+    explain: `半径は ${d}÷2＝${r}m。${r}×${r}×3.14＝${area}（m²）`,
+  };
+}
+
+// 比の文章題。genWordRatioSplit6 は「全体を比で分ける」なので、
+// こちらは「一方の量から もう一方を求める」形にする。
+function genWordRatioFind6() {
+  const rx = randInt(2, 8);
+  let ry = randInt(2, 8);
+  if (ry === rx) ry = rx === 8 ? 2 : ry + 1;
+  const unit = randInt(2, 15);
+  const known = rx * unit;
+  const answer = ry * unit;
+  return {
+    text: `すと あぶらを ${rx}:${ry} の 比で まぜます。すを ${known}mL つかうとき、あぶらは なんmL？`,
+    answer: String(answer),
+    type: "number",
+    hint: `すの ${rx} が ${known}mL なので、比の 1あたりが いくつかを もとめよう`,
+    explain: `比の1あたりは ${known}÷${rx}＝${unit}mL。あぶらは ${ry}×${unit}＝${answer}mL`,
+  };
+}
+
 // ===== 分野（カテゴリー）ごとの出題プール =====
 // 生成器を「習う学年」で束ねる。設定学年以下をすべて使うので、
 // 6年を選ぶと1〜6年の内容から出題される。
@@ -1960,16 +2300,47 @@ const MATH_GENS_BY_GRADE = {
   },
   4: {
     keisan: [genDivLong4, genDecimalAddSub4, genRectArea4, genRounding4, genAngle4],
-    bunsho: [genWordUnit4],
+    // 4年の文章題は genWordUnit4 の1つだけで、その1つに全体の2/3が集中していた。
+    // 新しく足したぶんは、学校で習うおおよその時期に合わせて解禁する。
+    // 既存の genWordUnit4 は挙動を変えないよう解禁月なしのまま。
+    bunsho: [
+      genWordUnit4,                             // 単位換算（cm↔m）
+      genWordBigNumber4,                        // 大きい数（万・億）。4年の1学期最初の単元
+      { fn: genWordDivLarge4, from: 3 },        // 2けたでわるわり算（あまりの処理）
+      { fn: genWordDecimalAmount4, from: 5 },   // 小数のかさ・重さ
+      { fn: genWordAreaRoom4, from: 6 },        // 面積（m²）
+      { fn: genWordEstimate4, from: 7 },        // がい数で見積もる
+      { fn: genWordProportion4, from: 9 },      // 変わり方（かんたんな比例）
+    ],
   },
   5: {
     // 体積と速さは5年で習う内容なので、ここに置く
     keisan: [genDecimalMul5, genDecimalDiv5, genFractionAddDiff5, genAverage5, genPercent5, genTriangleArea5, genVolume6],
-    bunsho: [genWordPerUnit5, genWordSpeed],
+    // 5年の文章題は2種類しかなく、5年の内容がセッションに乗りにくかったので拡充した。
+    // 既存2つは挙動を変えないよう解禁月なしのまま。
+    bunsho: [
+      genWordPerUnit5,                          // 単位量あたり
+      genWordSpeed,                             // 速さ
+      { fn: genWordMultiple5, from: 4 },        // 倍数・公倍数
+      { fn: genWordDivisor5, from: 4 },         // 約数・公約数
+      { fn: genWordAverage5, from: 6 },         // 平均（何点とれば平均が◯になるか）
+      { fn: genWordDensity5, from: 7 },         // こみぐあい（単位量あたり）
+      { fn: genWordPercent5, from: 9 },         // 割合（値引き・値上がり）
+    ],
   },
   6: {
     keisan: [genFractionMul6, genFractionDiv6, genCircleArea6, genRatio6],
-    bunsho: [genProportion6, genCombination6, genWordRatioSplit6],
+    // 6年の文章題は3種類しかなかったので拡充した。既存3つは解禁月なしのまま。
+    bunsho: [
+      genProportion6,                           // 比例
+      genCombination6,                          // 並べ方（順列）
+      genWordRatioSplit6,                       // 比で分ける
+      { fn: genWordFractionMul6, from: 3 },     // 分数のかけ算（1mあたりから）
+      { fn: genWordCircle6, from: 5 },          // 円の面積（直径から）
+      { fn: genWordRatioFind6, from: 6 },       // 比（一方から他方を求める）
+      { fn: genWordInverse6, from: 8 },         // 反比例
+      { fn: genWordCombinationPick6, from: 9 }, // 組み合わせ（えらび方）
+    ],
   },
 };
 
