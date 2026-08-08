@@ -129,6 +129,13 @@ function createProfile(name, avatar) {
     avatar: PROFILE_AVATARS.includes(avatar) ? avatar : PROFILE_AVATARS[0],
     createdAt: new Date().toISOString(),
   };
+  // 年度の開始月は家庭ごとに同じはずなので、すでにいる子の設定を引き継ぐ。
+  // 兄弟を追加するたびに保護者が設定し直す手間をなくすため。
+  const inherited = list
+    .map((p) => localStorage.getItem(`${p.id}:${SCHOOL_YEAR_START_KEY}`))
+    .find((v) => v !== null && v !== "");
+  if (inherited) localStorage.setItem(`${profile.id}:${SCHOOL_YEAR_START_KEY}`, inherited);
+
   list.push(profile);
   saveProfiles(list);
   return profile;
@@ -196,6 +203,41 @@ function setGrade(grade) {
   if (!GRADES.includes(grade)) return;
   localStorage.setItem(pk(GRADE_KEY), String(grade));
   markSyncDirty();
+}
+
+// ===== 年度の開始月 =====
+// 同じ「1年生」でも4月と3月では約1年ぶんの差がある。学校で習ったころに合わせて
+// 問題を増やすために、いまが年度の何ヶ月目かを出して、生成器の解禁時期をずらす。
+//
+// 開始月は国・地域で違う（日本=4月／米国・欧州の多く=9月／韓国・南半球=3月など）。
+// 保護者に毎回きくと手間になるので、表示言語から初期値を決めて、変えたい人だけ触る。
+const SCHOOL_YEAR_START_KEY = "school_year_start";
+const SCHOOL_YEAR_START_QUICK = [4, 9, 3];
+const SCHOOL_YEAR_START_BY_LOCALE = { ja: 4, en: 9 };
+
+function defaultSchoolYearStart() {
+  return SCHOOL_YEAR_START_BY_LOCALE[getLocale()] || 4;
+}
+
+// 保存されていなければ言語から決めた既定値を返す（書き込みはしない）。
+// これで、設定を一度も触らない家庭でも妥当な値で動く。
+function getSchoolYearStart() {
+  const v = parseInt(localStorage.getItem(pk(SCHOOL_YEAR_START_KEY)) || "", 10);
+  return v >= 1 && v <= 12 ? v : defaultSchoolYearStart();
+}
+
+function setSchoolYearStart(month) {
+  const m = parseInt(month, 10);
+  if (!(m >= 1 && m <= 12)) return;
+  localStorage.setItem(pk(SCHOOL_YEAR_START_KEY), String(m));
+  markSyncDirty();
+}
+
+// いまが年度の何ヶ月目か。開始月を1として1〜12を返す。
+// 例: 4月始まりなら 4月→1、8月→5、翌3月→12。
+function currentSchoolMonth(now) {
+  const month = (now || new Date()).getMonth() + 1;
+  return ((month - getSchoolYearStart() + 12) % 12) + 1;
 }
 
 // ===== ガチャポイント =====
@@ -1314,16 +1356,27 @@ function genWordAdd() {
   };
 }
 
+// 「えんぴつを たべました」のような不自然な文にならないよう、
+// 数が減る場面の動詞は、食べ物かどうかで変える。
+const WORD_ITEMS_EDIBLE = ["りんご", "みかん", "あめ", "クッキー"];
+const WORD_ITEMS_OTHER = ["えんぴつ", "シール", "おりがみ", "どんぐり"];
+
+function pickConsumable() {
+  return Math.random() < 0.5
+    ? { item: pick(WORD_ITEMS_EDIBLE), past: "たべました", plain: "たべた" }
+    : { item: pick(WORD_ITEMS_OTHER), past: "つかいました", plain: "つかった" };
+}
+
 function genWordSub() {
-  const item = pick(WORD_ITEMS);
+  const { item, past, plain } = pickConsumable();
   const b = randInt(2, 30);
   const bigger = randInt(5, 40) + b;
   return {
-    text: `${item}が ${bigger}こ ありました。${b}こ たべました。のこりは なんこ？`,
+    text: `${item}が ${bigger}こ ありました。${b}こ ${past}。のこりは なんこ？`,
     answer: `${bigger - b}`,
     type: "number",
-    hint: "「たべた」ということは、数が へるね。ひきざんを つかおう",
-    explain: `はじめに ${bigger}こ あって、${b}こ たべたから ${bigger}－${b}＝${bigger - b}こ のこるよ`,
+    hint: `「${plain}」ということは、数が へるね。ひきざんを つかおう`,
+    explain: `はじめに ${bigger}こ あって、${b}こ ${plain}から ${bigger}－${b}＝${bigger - b}こ のこるよ`,
   };
 }
 
@@ -1374,6 +1427,110 @@ function genWordCompare() {
   };
 }
 
+// 合併（「あわせて いくつ」）。genWordAdd の増加（あとから もらう）と同じ たし算だが、
+// 文章の型が違う。たし算しか習っていない時期でも、見た目の変化をつけられる。
+const WORD_PLACES = ["はこの中", "つくえの上", "かごの中", "ふくろの中"];
+
+function genWordAddCombine() {
+  // 種類の違うものを合算すると不自然になるので、同じものが2か所にある形にする
+  const item = pick(WORD_ITEMS);
+  const [place1, place2] = shuffle(WORD_PLACES).slice(0, 2);
+  const a = randInt(3, 30);
+  const b = randInt(2, 25);
+  return {
+    text: `${place1}に ${item}が ${a}こ、${place2}に ${b}こ あります。あわせて なんこ？`,
+    answer: `${a + b}`,
+    type: "number",
+    hint: "「あわせて」と きかれたら、たしざんを つかおう",
+    explain: `${place1}に ${a}こ、${place2}に ${b}こ。あわせると ${a}＋${b}＝${a + b}こ だよ`,
+  };
+}
+
+// 求差（「ちがいは いくつ」）。genWordSub の求残（たべて のこりは）と同じ ひきざんだが、
+// 「へらす」のではなく「くらべる」場面なので、考え方の練習になる。
+function genWordSubDiff1() {
+  const [nameA, nameB] = shuffle(WORD_NAMES).slice(0, 2);
+  const item = pick(WORD_ITEMS);
+  const a = randInt(6, 40);
+  const b = randInt(2, a - 1);
+  return {
+    text: `${nameA}は ${item}を ${a}こ、${nameB}は ${b}こ もっています。ちがいは なんこ？`,
+    answer: `${a - b}`,
+    type: "number",
+    hint: "「ちがい」を きかれたら、大きいほうから 小さいほうを ひこう",
+    explain: `${a}－${b}＝${a - b}。${nameA}のほうが ${a - b}こ おおいよ`,
+  };
+}
+
+// 3口の計算（たして、ひく）。2つの式を順にたどる練習。
+function genWordAddSub1() {
+  const { item, past, plain } = pickConsumable();
+  const a = randInt(5, 25);
+  const b = randInt(2, 15);
+  // のこりが0以下にならないようにする（答えが0の問題は学習価値が低い）
+  const c = randInt(2, Math.min(12, a + b - 1));
+  return {
+    text: `${item}が ${a}こ ありました。${b}こ もらって、そのあと ${c}こ ${past}。のこりは なんこ？`,
+    answer: `${a + b - c}`,
+    type: "number",
+    hint: `はじめの数に もらった数を たして、そのあと ${plain}数を ひこう`,
+    explain: `${a}＋${b}＝${a + b}こ。そこから ${c}こ ${plain}から ${a + b}－${c}＝${a + b - c}こ のこるよ`,
+  };
+}
+
+// 長さ（cm）の計算。2年生の1学期に習う単元。たし算・ひき算は同じでも、
+// 単位が「こ」から「cm」に変わるので、見た目と場面がはっきり変わる。
+function genWordLength2() {
+  const isAdd = Math.random() < 0.5;
+  const a = randInt(10, 80);
+  const b = randInt(3, isAdd ? 40 : a - 2);
+  return isAdd
+    ? {
+        text: `あおい テープが ${a}cm、あかい テープが ${b}cm あります。つなげると なんcm？`,
+        answer: `${a + b}`,
+        type: "number",
+        hint: "つなげた長さは、2本の長さを たすと もとめられるよ",
+        explain: `${a}＋${b}＝${a + b}（cm）`,
+      }
+    : {
+        text: `${a}cm の テープから ${b}cm きりとりました。のこりは なんcm？`,
+        answer: `${a - b}`,
+        type: "number",
+        hint: "きりとった長さを ひくと、のこりが もとめられるよ",
+        explain: `${a}－${b}＝${a - b}（cm）`,
+      };
+}
+
+// あまりのあるわり算の文章題（3年）。あまった分にもう1つ必要になるので、
+// わり算の答えをそのまま書くと間違いになる。式だけでなく場面を考える練習。
+function genWordDivRemainder3() {
+  const perCar = randInt(3, 8);
+  const cars = randInt(3, 9);
+  const rest = randInt(1, perCar - 1);
+  const total = perCar * cars + rest;
+  return {
+    text: `${total}人が 1台に ${perCar}人ずつ 車に のります。ぜんいん のるには 車は なんだい いりますか？`,
+    answer: `${cars + 1}`,
+    type: "number",
+    hint: `${total}÷${perCar} を計算して、あまった人のぶんも 1台 かぞえよう`,
+    explain: `${total}÷${perCar}＝${cars}あまり${rest}。あまった${rest}人にも 車が いるので ${cars}＋1＝${cars + 1}台 だよ`,
+  };
+}
+
+// アレイ図（たて×よこ）。genWordMul の「1ふくろに◯こずつ」と同じ かけ算だが、
+// ならんでいる形から数える場面なので、かけ算の意味の理解につながる。
+function genWordMulArray2() {
+  const rows = randInt(2, 9);
+  const cols = randInt(2, 9);
+  return {
+    text: `シールを たてに ${rows}れつ、よこに ${cols}れつ ならべて はりました。シールは ぜんぶで なんまい？`,
+    answer: `${rows * cols}`,
+    type: "number",
+    hint: "「たて × よこ」で ぜんぶの数が もとめられるよ",
+    explain: `たて ${rows}れつ、よこ ${cols}れつ ならんでいるから ${rows}×${cols}＝${rows * cols}まい だよ`,
+  };
+}
+
 // ===== 算数（小学4年生・新しく習う内容）=====
 // わり算の商（2桁）を十の位・一の位に分けて、分配法則で説明する。
 // 筆算そのものの再現ではなく簡易版（詳しい方針は hint-explain-audit.md 参照）。
@@ -1402,7 +1559,9 @@ function genDivLong4() {
 }
 
 function genDecimalAddSub4() {
-  const aRaw = randInt(101, 999), bRaw = randInt(101, 999);
+  const aRaw = randInt(101, 999);
+  let bRaw = randInt(101, 999);
+  if (bRaw === aRaw) bRaw += 1;
   const a = aRaw / 100, b = bRaw / 100;
   const isAdd = Math.random() < 0.5;
   const bigRaw = Math.max(aRaw, bRaw), smallRaw = Math.min(aRaw, bRaw);
@@ -1765,12 +1924,39 @@ function genWordRatioSplit6() {
 // ===== 分野（カテゴリー）ごとの出題プール =====
 // 生成器を「習う学年」で束ねる。設定学年以下をすべて使うので、
 // 6年を選ぶと1〜6年の内容から出題される。
+// 要素は「関数そのまま」か「{ fn, from }」のどちらでも書ける。
+// from は年度の何ヶ月目から出すか（1〜12）。省略すると年度のはじめから出る。
+// 時期でしぼるのは「いま設定している学年」で新しく習う内容だけで、
+// 下の学年ぶんは去年までに習い終わっているので常に出る（mathGensFor 参照）。
+//
+// 1・2年の bunsho だけ先行導入。生成器が2〜3種類しかなく、10問中4問以上が
+// 同じ型になるセッションが100%発生していたため（2026-08-07の日次チェック）。
 const MATH_GENS_BY_GRADE = {
-  1: { keisan: [genAdd1, genSub1], bunsho: [genWordAdd, genWordSub] },
-  2: { keisan: [genAdd2, genSub2, genMul2], bunsho: [genWordMul] },
+  1: {
+    keisan: [genAdd1, genSub1],
+    bunsho: [
+      genWordAdd,                            // 増加（もらって ふえる）
+      genWordAddCombine,                     // 合併（あわせて いくつ）
+      { fn: genWordSub, from: 3 },           // 求残（たべて のこりは）
+      { fn: genWordSubDiff1, from: 5 },      // 求差（ちがいは いくつ）
+      { fn: genWordAddSub1, from: 9 },       // 3口（たして、ひく）
+    ],
+  },
+  2: {
+    keisan: [genAdd2, genSub2, genMul2],
+    bunsho: [
+      { fn: genWordCompare, from: 2 },       // 求大・求小（◯より△こ おおい/すくない）
+      { fn: genWordLength2, from: 2 },       // 長さ（cm）のたし算・ひき算
+      { fn: genWordMul, from: 6 },           // かけ算（1ふくろに◯こずつ）
+      { fn: genWordMulArray2, from: 7 },     // かけ算（たて×よこ）
+    ],
+  },
   3: {
     keisan: [genAdd3, genSub3, genMul3, genDiv3, genDivRemainder3, genDecimal3, genFractionSame3],
-    bunsho: [genWordDiv, genWordCompare],
+    // genWordCompare は2年へ移した（3年でも下の学年ぶんとして引き続き出る）。
+    // そのぶん3年じしんの文章題が genWordDiv だけになり、その1つに偏るので
+    // あまりのあるわり算の文章題を足してある。
+    bunsho: [genWordDiv, genWordDivRemainder3],
   },
   4: {
     keisan: [genDivLong4, genDecimalAddSub4, genRectArea4, genRounding4, genAngle4],
@@ -1787,23 +1973,61 @@ const MATH_GENS_BY_GRADE = {
   },
 };
 
-function mathGensFor(grade, category) {
-  const collect = (from) => {
+// MATH_GENS_BY_GRADE の要素を { fn, from } の形にそろえる
+function normalizeMathGen(entry) {
+  if (typeof entry === "function") return { fn: entry, from: 1 };
+  return { fn: entry.fn, from: entry.from || 1 };
+}
+
+function mathGensFor(grade, category, schoolMonth) {
+  const month = schoolMonth || currentSchoolMonth();
+  const collect = (fromGrade, applyTimeGate) => {
     const gens = [];
-    for (let g = from; g <= grade; g++) {
+    for (let g = fromGrade; g <= grade; g++) {
       const set = MATH_GENS_BY_GRADE[g];
-      if (set && set[category]) set[category].forEach((fn) => gens.push({ fn, grade: g }));
+      if (!set || !set[category]) continue;
+      set[category].forEach((entry) => {
+        const { fn, from } = normalizeMathGen(entry);
+        // 下の学年ぶんは去年までに習い終わっているので、時期に関係なく出す。
+        // 時期でしぼるのは、いまの学年で新しく習う内容だけ。
+        if (applyTimeGate && g === grade && month < from) return;
+        gens.push({ fn, grade: g });
+      });
     }
     return gens;
   };
-  const withinSpan = collect(gradeFloor(grade, category));
-  return withinSpan.length > 0 ? withinSpan : collect(1);
+
+  const floor = gradeFloor(grade, category);
+  const gated = collect(floor, true);
+  if (gated.length > 0) return gated;
+  // 各学年・各分野に from なしを必ず1つ置いてあるのでここには来ない想定だが、
+  // 設定を足したときに出題不能になるのを防ぐため、時期を無視して埋める
+  const ungated = collect(floor, false);
+  return ungated.length > 0 ? ungated : collect(1, false);
 }
 
-function generateMathProblem(grade, category) {
+// 1セッション内で同じ生成器（＝同じ型の問題）が続いたら、その生成器の重みを下げる。
+//
+// tieredWeights は「今の学年の内容を中心に出す」ため、今の学年のグループに
+// 全体の 8/(8+4+2) を配分する。ところがその学年の生成器が1つしかないと、
+// その1つに全体の2/3が集中し、10問中6〜7問が同じ型になってしまう。
+// 学年の重みづけは保ったまま、同じ型の連続だけを抑える。
+const SESSION_GEN_PENALTY = 0.4;
+
+function generateMathProblem(grade, category, usedGenCounts) {
   const gens = mathGensFor(grade, category);
-  const weights = tieredWeights(gens, grade);
-  return weightedSample(gens, weights, 1)[0].fn();
+  let weights = tieredWeights(gens, grade);
+  if (usedGenCounts) {
+    weights = weights.map((w, i) => {
+      const used = usedGenCounts.get(gens[i].fn.name) || 0;
+      return used > 0 ? w * Math.pow(SESSION_GEN_PENALTY, used) : w;
+    });
+  }
+  const chosen = weightedSample(gens, weights, 1)[0];
+  const problem = chosen.fn();
+  // どの生成器から出たかを覚えておく（セッション内の偏りを見るためだけに使う）
+  problem.genName = chosen.fn.name;
+  return problem;
 }
 
 // 国語のデータ本体は content-ja.js（JA_KANJI / JA_ANTONYM / JA_PROVERB / JA_IDIOM / JA_READING）。
@@ -2175,29 +2399,35 @@ function buildSessionProblems(grade, subject, category, count) {
   const recentSet = new Set(getRecentTexts(subject, category));
   const seen = new Set();
   const result = [];
+  // 同じ型の問題ばかりにならないよう、採用できた問題の生成器だけを数えて重みを下げる
+  const usedGenCounts = new Map();
+  const accept = (problem) => {
+    usedGenCounts.set(problem.genName, (usedGenCounts.get(problem.genName) || 0) + 1);
+    result.push(problem);
+  };
   // 直近に出た問題は避けつつ生成する。生成器の出力の幅が狭い分野では
   // 除外条件で埋まりきらないことがあるため、まずは避けて集め、
   // 足りない分だけ「直近OK」に条件をゆるめて埋める。
   const maxTries = count * 60;
   for (let tries = 0; tries < maxTries && result.length < count; tries++) {
-    const problem = generateMathProblem(grade, category);
+    const problem = generateMathProblem(grade, category, usedGenCounts);
     if (seen.has(problem.text) || recentSet.has(problem.text)) continue;
     seen.add(problem.text);
     problem.isRepeat = false;
-    result.push(problem);
+    accept(problem);
   }
   for (let tries = 0; tries < maxTries && result.length < count; tries++) {
-    const problem = generateMathProblem(grade, category);
+    const problem = generateMathProblem(grade, category, usedGenCounts);
     if (seen.has(problem.text)) continue;
     seen.add(problem.text);
     problem.isRepeat = recentSet.has(problem.text);
-    result.push(problem);
+    accept(problem);
   }
   // それでも足りない分野では、最後だけ重複を許して埋める
   while (result.length < count) {
-    const problem = generateMathProblem(grade, category);
+    const problem = generateMathProblem(grade, category, usedGenCounts);
     problem.isRepeat = recentSet.has(problem.text);
-    result.push(problem);
+    accept(problem);
   }
   recordSeenTexts(subject, category, result.map((q) => q.text));
   return result;
@@ -2457,12 +2687,52 @@ function openSettingsScreen() {
     });
   });
 
+  renderYearStartSetting();
+
   const profile = getActiveProfile();
   document.getElementById("profile-current-line").textContent = profile
     ? t("profile.currentLine", { avatar: profile.avatar, name: profile.name })
     : "";
 
   showScreen("screen-settings");
+}
+
+// 年度の開始月。よく使う3つ（4月=日本、9月=米国・欧州、3月=韓国・南半球）を
+// ボタンで、それ以外は12ヶ月から選べるようにする。
+function renderYearStartSetting() {
+  const box = document.getElementById("settings-year-start");
+  if (!box) return;
+  const current = getSchoolYearStart();
+
+  const quick = SCHOOL_YEAR_START_QUICK.map((m) => `
+    <button type="button" class="grade-option${m === current ? " active" : ""}" data-year-start="${m}">
+      ${t("settings.yearStartMonth", { n: m })}
+    </button>
+  `).join("");
+
+  const options = Array.from({ length: 12 }, (_, i) => i + 1)
+    .map((m) => `<option value="${m}"${m === current ? " selected" : ""}>${t("settings.yearStartMonth", { n: m })}</option>`)
+    .join("");
+
+  box.innerHTML = `${quick}
+    <label class="year-start-other">
+      <span>${t("settings.yearStartOther")}</span>
+      <select id="year-start-select">${options}</select>
+    </label>`;
+
+  box.querySelectorAll("[data-year-start]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClickSound();
+      setSchoolYearStart(parseInt(btn.dataset.yearStart, 10));
+      renderYearStartSetting();
+    });
+  });
+
+  const select = document.getElementById("year-start-select");
+  select.addEventListener("change", () => {
+    setSchoolYearStart(parseInt(select.value, 10));
+    renderYearStartSetting();
+  });
 }
 
 // ===== プロフィール画面 =====
@@ -3199,6 +3469,7 @@ function buildProgressDoc(profileId) {
     dailyPoints: (function () { try { return JSON.parse(r(DAILY_POINTS_KEY) || "{}"); } catch { return {}; } })(),
     seenHistory: collectSeenHistory(profileId),
     grade: parseInt(r(GRADE_KEY) || String(DEFAULT_GRADE), 10) || DEFAULT_GRADE,
+    schoolYearStart: parseInt(r(SCHOOL_YEAR_START_KEY) || "", 10) || defaultSchoolYearStart(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
 }
@@ -3293,6 +3564,10 @@ async function pullProfileFromFirestore(profileId) {
   if (server.stampsTotal !== undefined) localStorage.setItem(pre(STORAGE_KEY), String(server.stampsTotal));
   if (server.grade !== undefined && GRADES.includes(Number(server.grade))) {
     localStorage.setItem(pre(GRADE_KEY), String(server.grade));
+  }
+  if (server.schoolYearStart !== undefined) {
+    const m = Number(server.schoolYearStart);
+    if (m >= 1 && m <= 12) localStorage.setItem(pre(SCHOOL_YEAR_START_KEY), String(m));
   }
   if (server.pity !== undefined) localStorage.setItem(pre(PITY_KEY), String(server.pity));
   if (server.dailyPoints && typeof server.dailyPoints === "object") {

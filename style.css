@@ -198,6 +198,38 @@
   color: var(--text-muted);
 }
 
+/* 年度の開始月：よく使う3つはボタン、それ以外はこのセレクトから選ぶ。
+   .settings-box の2列グリッドに、ボタン3つと並んで4つめのマスとして収まる。 */
+.year-start-other {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: linear-gradient(160deg, #ffffff, var(--card-bg-2));
+  padding: 12px 10px;
+  box-shadow: var(--shadow), var(--gloss-top);
+}
+.year-start-other span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.year-start-other select {
+  /* flexアイテムなので min-width:0 がないと既定幅より縮まず、はみ出す */
+  min-width: 0;
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  padding: 6px 4px;
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: #fffefc;
+}
+
 body {
   margin: 0;
   font-family: var(--font-heading);

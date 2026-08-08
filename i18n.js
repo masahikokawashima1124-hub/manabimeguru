@@ -33,6 +33,10 @@ const LOCALES = {
     // --- せってい ---
     "settings.title": "⚙️ せってい",
     "settings.sub": "がくねんを えらぶと、その がくねんに あわせた もんだいが 出ます",
+    "settings.yearStartTitle": "📅 新学期がはじまる月",
+    "settings.yearStartDesc": "お住まいの地域に合わせて選んでください。学校で習うころに合わせて、出る問題の種類がすこしずつ増えていきます（日本は4月、アメリカ・ヨーロッパの多くは9月、韓国や南半球は3月です）。",
+    "settings.yearStartMonth": "{n}月",
+    "settings.yearStartOther": "そのほかの月",
     "settings.backupTitle": "📦 バックアップ",
     "settings.backupDesc": "べつの たんまつに ひっこしするときや、データが きえてしまったときのために、いままでの きろく（がくねん・カード・ポイント）をファイルに ほぞんしておけます。",
     "settings.backupExport": "書き出す",
