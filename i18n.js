@@ -110,6 +110,21 @@ const LOCALES = {
     "auth.guestLogin": "ログインする",
     "auth.backToGuest": "もどる",
 
+    // --- プラン（無料→ファミリー） ---
+    "plan.title": "🎫 プラン",
+    "plan.freeLine": "いまは 無料プランです",
+    "plan.paidLine": "ファミリープランを ご利用中です 🎉",
+    "plan.benefit1": "お子さんの登録が {n}人まで",
+    "plan.benefit2": "せいれいカードが 全{n}種そろう（SR・URも）",
+    "plan.benefit3": "かぞくのずかん（家族みんなで集めた図鑑）",
+    "plan.gachaPromise": "カードのガチャは、お金では引けません。勉強することでしか引けません。",
+    "plan.monthly": "月払い 1,480円",
+    "plan.yearly": "年払い 14,800円（2か月ぶん無料）",
+    "plan.comingSoon": "ファミリープランは準備中です。もうすこしお待ちください。",
+    "plan.guestNote": "ご購入には、さきに保護者の方のアカウント登録が必要です。",
+    "plan.afterBuyNote": "お支払いは保護者の方が行ってください。完了後、アプリに反映されます。",
+    "plan.managePortal": "契約の管理（解約・お支払い方法）",
+
     // --- 共有 ---
     "share.copyHint": "↑ このぶんしょうを コピーして つかってね",
     "share.copyPrompt": "したの ぶんしょうを コピーして つかってね",

@@ -230,6 +230,56 @@
   background: #fffefc;
 }
 
+/* プラン（せってい内・保護者向け）。account-design.md §10-9 */
+.plan-box {
+  background: linear-gradient(160deg, #ffffff, var(--card-bg-2));
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow), var(--gloss-top);
+  margin-top: 10px;
+}
+
+.plan-benefits {
+  margin: 0 0 12px;
+  padding-left: 1.3em;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.9;
+}
+
+/* 「課金でガチャは引けない」宣言。信頼の核なので、注記より一段目立たせる */
+.plan-promise {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #fff8e8;
+  border: 1.5px solid #f4d9a0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.plan-note {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.plan-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* aタグをボタン見た目に合わせる（btn-primary/secondary は button 前提の指定） */
+.plan-buy-link,
+.plan-portal-link {
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: var(--font-heading);

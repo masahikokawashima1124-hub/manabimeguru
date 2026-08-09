@@ -49,6 +49,30 @@ function profileLimit() {
   return isPaidPlan() ? PROFILE_MAX : FREE_PROFILE_MAX;
 }
 
+// ===== 有料への切り替え（Stripe Payment Links） =====
+// account-design.md §10-9。Stripe ダッシュボードで Payment Link を作り、
+// そのURLをここに貼る（手順は functions/README.md）。
+// 空の間は、せっていの「プラン」に「準備中」と出るだけで、購入ボタンは動かない。
+// テストモードのURL（buy.stripe.com/test_...）を貼れば、テスト決済で一連の流れを確認できる。
+const STRIPE_PAYMENT_LINKS = {
+  monthly: "", // 月払い ¥1,480
+  yearly: "", // 年払い ¥14,800（2か月ぶん無料）
+};
+
+// 契約の管理（解約・お支払い方法の変更）。Stripe カスタマーポータルのURL。
+// ダッシュボード →「設定」→「Billing」→「カスタマーポータル」で有効化すると発行される。
+const STRIPE_CUSTOMER_PORTAL_URL = "";
+
+// Payment Link に「どの世帯の支払いか」を伝えるURLを組み立てる。
+// client_reference_id が webhook（functions/index.js）で世帯の特定に使われる。
+function buildUpgradeUrl(link) {
+  if (!link || !fbCurrentUser) return null;
+  const sep = link.includes("?") ? "&" : "?";
+  let url = `${link}${sep}client_reference_id=${encodeURIComponent(fbCurrentUser.uid)}`;
+  if (fbCurrentUser.email) url += `&prefilled_email=${encodeURIComponent(fbCurrentUser.email)}`;
+  return url;
+}
+
 // ===== 状態管理 =====
 const state = {
   subject: null,
@@ -3059,6 +3083,7 @@ function openSettingsScreen() {
   });
 
   renderYearStartSetting();
+  renderPlanSetting();
 
   const profile = getActiveProfile();
   document.getElementById("profile-current-line").textContent = profile
@@ -3104,6 +3129,63 @@ function renderYearStartSetting() {
     setSchoolYearStart(parseInt(select.value, 10));
     renderYearStartSetting();
   });
+}
+
+// プラン（無料→ファミリーの切り替え）。account-design.md §10-9。
+// 課金の操作は保護者向けのせってい画面にだけ置く（§10-4：子どもがプレイ中に
+// 課金を迫られる導線は作らない）。
+function renderPlanSetting() {
+  const box = document.getElementById("settings-plan");
+  const line = document.getElementById("plan-current-line");
+  if (!box || !line) return;
+
+  // 有料会員：状態と「契約の管理」だけ。売り込みは出さない
+  if (isPaidPlan()) {
+    line.textContent = t("plan.paidLine");
+    box.innerHTML = STRIPE_CUSTOMER_PORTAL_URL
+      ? `<a class="btn-secondary plan-portal-link" href="${STRIPE_CUSTOMER_PORTAL_URL}" target="_blank" rel="noopener">${t("plan.managePortal")}</a>`
+      : "";
+    return;
+  }
+
+  line.textContent = t("plan.freeLine");
+
+  const benefits = `
+    <ul class="plan-benefits">
+      <li>${t("plan.benefit1", { n: PROFILE_MAX })}</li>
+      <li>${t("plan.benefit2", { n: CARD_POOL.length })}</li>
+      <li>${t("plan.benefit3")}</li>
+    </ul>
+    <p class="plan-promise">${t("plan.gachaPromise")}</p>`;
+
+  // おためし中：先にアカウント登録が要る（支払いを世帯に結びつけられないため）
+  if (!fbCurrentUser) {
+    box.innerHTML = `${benefits}
+      <p class="plan-note">${t("plan.guestNote")}</p>
+      <button type="button" id="btn-plan-signup" class="btn-secondary">${t("auth.guestSignup")}</button>`;
+    document.getElementById("btn-plan-signup").addEventListener("click", () => {
+      playClickSound();
+      setAuthBackToGuestVisible(true);
+      openSignupScreen();
+    });
+    return;
+  }
+
+  const monthly = buildUpgradeUrl(STRIPE_PAYMENT_LINKS.monthly);
+  const yearly = buildUpgradeUrl(STRIPE_PAYMENT_LINKS.yearly);
+
+  // Payment Link 未設定＝まだ販売を始めていない。買えそうで買えないボタンは出さない
+  if (!monthly && !yearly) {
+    box.innerHTML = `${benefits}<p class="plan-note">${t("plan.comingSoon")}</p>`;
+    return;
+  }
+
+  box.innerHTML = `${benefits}
+    <div class="plan-buttons">
+      ${monthly ? `<a class="btn-primary plan-buy-link" href="${monthly}" target="_blank" rel="noopener">${t("plan.monthly")}</a>` : ""}
+      ${yearly ? `<a class="btn-primary plan-buy-link" href="${yearly}" target="_blank" rel="noopener">${t("plan.yearly")}</a>` : ""}
+    </div>
+    <p class="plan-note">${t("plan.afterBuyNote")}</p>`;
 }
 
 // ===== プロフィール画面 =====
