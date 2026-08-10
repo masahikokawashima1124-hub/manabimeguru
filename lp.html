@@ -6,12 +6,20 @@
 <title>まなびめぐる｜べんきょうした ぶんだけ、せいれいに会える。</title>
 <meta name="description" content="小学1〜6年生のための学習アプリ「まなびめぐる」。算数・国語・英語をといて、きせつのせいれいカードを集めよう。登録なし・インストール不要で今すぐ遊べます。">
 
-<!-- SNSでの共有プレビュー用。og:image は互換性重視で既存PNGを使う（webpは一部SNSのクローラーで表示に難があるため） -->
+<!-- SNSでの共有プレビュー用。og:image はクローラーが解決できるよう絶対URLで指定する
+     （相対パスだとXなどの一部クローラーがサムネを出せない）。
+     生成元は tools/make-og-image.py（assets/cards/ の実物カードを合成）。 -->
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://masahikokawashima1124-hub.github.io/manabimeguru/lp.html">
 <meta property="og:title" content="まなびめぐる｜べんきょうした ぶんだけ、せいれいに会える。">
 <meta property="og:description" content="小学1〜6年生のための学習アプリ。算数・国語・英語をといて、きせつのせいれいカードを集めよう。">
-<meta property="og:image" content="assets/characters/hanabi-greet.png">
+<meta property="og:image" content="https://masahikokawashima1124-hub.github.io/manabimeguru/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="まなびめぐる｜べんきょうした ぶんだけ、せいれいに会える。">
+<meta name="twitter:description" content="小学1〜6年生のための学習アプリ。算数・国語・英語をといて、きせつのせいれいカードを集めよう。">
+<meta name="twitter:image" content="https://masahikokawashima1124-hub.github.io/manabimeguru/assets/og-card.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,7 +101,7 @@
 
       <p style="text-align:center; font-size:13.5px; color:var(--text-muted); margin:-10px 0 24px;">
         カードは全40種。夏のせいれいたちから始まり、これから季節ごとに増えていきます。<br>
-        レアなカードもありますが、続けていれば必ず出会えるようにしてあります。
+        無料プランでも28種は集められ、続けていれば必ず出会えるようにしてあります（レアな12種はファミリープラン）。
       </p>
 
       <p class="statement">

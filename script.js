@@ -55,8 +55,8 @@ function profileLimit() {
 // 空の間は、せっていの「プラン」に「準備中」と出るだけで、購入ボタンは動かない。
 // テストモードのURL（buy.stripe.com/test_...）を貼れば、テスト決済で一連の流れを確認できる。
 const STRIPE_PAYMENT_LINKS = {
-  monthly: "", // 月払い ¥1,480
-  yearly: "", // 年払い ¥14,800（2か月ぶん無料）
+  monthly: "https://buy.stripe.com/test_5kQ9AVdeH845fWNaVT1ZS01", // 月払い ¥1,480。テストモード
+  yearly: "https://buy.stripe.com/test_5kQaEZ8YrgABfWN1lj1ZS00", // 年払い ¥14,800（2か月ぶん無料）。テストモード
 };
 
 // 契約の管理（解約・お支払い方法の変更）。Stripe カスタマーポータルのURL。
@@ -3022,10 +3022,13 @@ document.getElementById("btn-pull-gacha").addEventListener("click", () => {
   playGachaRevealSequence(gachaResult, () => {
     const compendiumAfter = getCompendiumInfo();
     if (compendiumAfter.idx > compendiumBefore.idx) {
-      document.getElementById("gacha-levelup-box").classList.remove("hidden");
+      const levelupBox = document.getElementById("gacha-levelup-box");
+      levelupBox.classList.remove("hidden");
       document.getElementById("gacha-levelup-emoji").innerHTML = `<div class="level-badge-large">Lv.${compendiumAfter.count}</div>`;
       document.getElementById("gacha-levelup-title").textContent = compendiumAfter.title;
       playLevelUpSound();
+      // カード演出の下に隠れて見えないままになりがちなので、必ずスクロールして見せる
+      levelupBox.scrollIntoView({ behavior: "smooth", block: "center" });
     }
     refreshHome();
   });
@@ -3142,11 +3145,14 @@ function renderPlanSetting() {
   // 有料会員：状態と「契約の管理」だけ。売り込みは出さない
   if (isPaidPlan()) {
     line.textContent = t("plan.paidLine");
+    // ポータル未設定の間は空の枠を出さない（見た目が壊れて見えるのを防ぐ）
+    box.classList.toggle("hidden", !STRIPE_CUSTOMER_PORTAL_URL);
     box.innerHTML = STRIPE_CUSTOMER_PORTAL_URL
       ? `<a class="btn-secondary plan-portal-link" href="${STRIPE_CUSTOMER_PORTAL_URL}" target="_blank" rel="noopener">${t("plan.managePortal")}</a>`
       : "";
     return;
   }
+  box.classList.remove("hidden");
 
   line.textContent = t("plan.freeLine");
 
@@ -3617,10 +3623,13 @@ function renderProblem() {
   } else {
     form.classList.remove("hidden");
     choiceBox.classList.add("hidden");
-    document.getElementById("answer-input").value = "";
-    document.getElementById("answer-input").disabled = false;
+    const input = document.getElementById("answer-input");
+    input.value = "";
+    input.disabled = false;
+    // 数字だけの答えは数字キーパッドの方が打ちやすい。分数は "/" が要るのでフルキーボードのまま
+    input.inputMode = p.type === "number" ? "decimal" : "text";
     form.querySelector("button").disabled = false;
-    document.getElementById("answer-input").focus();
+    input.focus();
   }
 }
 
