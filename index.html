@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="style.css?v=27">
 </head>
 <body>
 
@@ -105,8 +105,6 @@
     <div class="profile-create-box">
       <label class="profile-field-label" for="profile-name-input" data-i18n="profile.nameLabel"></label>
       <input type="text" id="profile-name-input" class="profile-name-input" maxlength="8" autocomplete="off">
-      <p class="profile-field-label" data-i18n="profile.avatarLabel"></p>
-      <div class="profile-avatar-picker" id="profile-avatar-picker"></div>
       <p id="profile-create-feedback" class="backup-feedback"></p>
       <div class="profile-create-actions">
         <button type="button" id="btn-profile-create-ok" class="btn-primary" data-i18n="profile.createOk"></button>
@@ -172,6 +170,18 @@
          登録しないと失われうることも伝える。長く遊んだあとに消えるのが最悪の体験のため -->
     <p class="guest-data-warning hidden" id="auth-guest-warning" data-i18n="auth.guestDataWarning"></p>
     <p class="sub guest-prompt hidden" id="auth-guest-prompt" data-i18n="auth.guestSignupPrompt"></p>
+
+    <!-- メールアドレス未確認のときだけ出す。年額の更新前通知が届かないため確認を促すが、
+         アプリの利用自体は止めない（登録直後に何もできないと離脱するため） -->
+    <div class="verify-box hidden" id="auth-verify-box">
+      <p class="verify-text" data-i18n="auth.verifyNotice"></p>
+      <div class="backup-actions">
+        <button type="button" id="btn-resend-verify" class="btn-secondary" data-i18n="auth.verifyResend"></button>
+        <button type="button" id="btn-check-verified" class="btn-secondary" data-i18n="auth.verifyCheck"></button>
+      </div>
+      <p id="verify-feedback" class="backup-feedback"></p>
+    </div>
+
     <div class="backup-actions" id="auth-guest-actions">
       <button type="button" id="btn-guest-signup" class="btn-primary hidden" data-i18n="auth.guestSignup"></button>
       <button type="button" id="btn-guest-login" class="btn-secondary hidden" data-i18n="auth.guestLogin"></button>
@@ -387,9 +397,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=23"></script>
+<script src="i18n.js?v=25"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=6"></script>
-<script src="script.js?v=48"></script>
+<script src="script.js?v=50"></script>
 </body>
 </html>

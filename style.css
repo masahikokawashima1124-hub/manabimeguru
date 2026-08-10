@@ -1004,11 +1004,14 @@ h2 {
   border-color: var(--text-muted);
   color: var(--text-muted);
 }
-.profile-card-avatar { font-size: 2.6rem; line-height: 1; }
+/* 「＋ あたらしく つくる」だけが持つ記号。名前カードには絵柄を置かない */
+.profile-card-plus { font-size: 2.6rem; line-height: 1; }
+/* アイコンを廃したぶん、名前そのものを主役にする */
 .profile-card-name {
   font-weight: 800;
   color: var(--primary-dark);
-  font-size: 1rem;
+  font-size: 1.25rem;
+  line-height: 1.5;
   word-break: break-word;
 }
 .profile-card--new .profile-card-name { color: var(--text-muted); font-size: 0.9rem; }
@@ -1047,22 +1050,6 @@ h2 {
   box-sizing: border-box;
 }
 .profile-name-input:focus { outline: none; border-color: var(--primary-dark); }
-.profile-avatar-picker {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.profile-avatar-option {
-  font-size: 1.9rem;
-  padding: 8px 0;
-  border: 3px solid transparent;
-  border-radius: 16px;
-  background: var(--bg-soft, #f3f3f7);
-  cursor: pointer;
-  line-height: 1;
-}
-.profile-avatar-option.active { border-color: var(--primary); background: #fff; }
 .profile-create-actions {
   display: flex;
   flex-direction: column;
@@ -1870,6 +1857,22 @@ h2 {
 .guest-prompt {
   font-size: 0.82rem;
   line-height: 1.6;
+}
+
+/* メールアドレス未確認の案内。更新前通知が届かない実害があるので目に留める */
+.verify-box {
+  margin: 12px 0 0;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: #eef6ff;
+  border: 1.5px solid #b9d8f5;
+}
+.verify-text {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.8;
+  color: #1d4f7c;
 }
 
 /* おためし中のデータ消失リスク。見落とすと長く遊んだあとに全部消えるので、

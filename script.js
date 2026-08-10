@@ -96,7 +96,6 @@ const REPEAT_STAMP_RATIO = 0.5;
 // 音のON/OFFと言語は端末ごとの設定なので、プロフィールでは分けない。
 const PROFILES_KEY = "profiles";
 const ACTIVE_PROFILE_KEY = "active_profile";
-const PROFILE_AVATARS = ["🦊", "🐰", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮"];
 const PROFILE_NAME_MAX = 8;
 const PROFILE_MAX = 6;
 
@@ -144,13 +143,12 @@ function newProfileId(existing) {
   return id;
 }
 
-function createProfile(name, avatar) {
+function createProfile(name) {
   const list = getProfiles();
   if (list.length >= profileLimit()) return null;
   const profile = {
     id: newProfileId(list),
     name: String(name || "").slice(0, PROFILE_NAME_MAX) || t("profile.defaultName"),
-    avatar: PROFILE_AVATARS.includes(avatar) ? avatar : PROFILE_AVATARS[0],
     createdAt: new Date().toISOString(),
   };
   // 年度の開始月は家庭ごとに同じはずなので、すでにいる子の設定を引き継ぐ。
@@ -196,7 +194,6 @@ function migrateLegacyDataIfNeeded() {
   const profile = {
     id: newProfileId([]),
     name: t("profile.defaultName"),
-    avatar: PROFILE_AVATARS[0],
     createdAt: new Date().toISOString(),
   };
   saveProfiles([profile]);
@@ -3090,7 +3087,7 @@ function openSettingsScreen() {
 
   const profile = getActiveProfile();
   document.getElementById("profile-current-line").textContent = profile
-    ? t("profile.currentLine", { avatar: profile.avatar, name: profile.name })
+    ? t("profile.currentLine", { name: profile.name })
     : "";
 
   showScreen("screen-settings");
@@ -3205,13 +3202,12 @@ function openProfileSelectScreen(mode) {
 
   list.innerHTML = profiles.map((p) => `
     <button type="button" class="profile-card" data-profile-id="${p.id}">
-      <span class="profile-card-avatar">${p.avatar}</span>
       <span class="profile-card-name"></span>
       ${state.profileMode === "manage" ? `<span class="profile-card-delete">${t("profile.deleteBtn")}</span>` : ""}
     </button>
   `).join("") + (state.profileMode === "select" && profiles.length < profileLimit() ? `
     <button type="button" class="profile-card profile-card--new" id="btn-profile-new">
-      <span class="profile-card-avatar">＋</span>
+      <span class="profile-card-plus">＋</span>
       <span class="profile-card-name">${t("profile.createNew")}</span>
     </button>
   ` : "");
@@ -3264,20 +3260,6 @@ function requestProfileDelete(profile) {
 function openProfileCreateScreen() {
   document.getElementById("profile-name-input").value = "";
   document.getElementById("profile-create-feedback").textContent = "";
-  state.profileAvatar = PROFILE_AVATARS[0];
-
-  const picker = document.getElementById("profile-avatar-picker");
-  picker.innerHTML = PROFILE_AVATARS.map((a, i) => `
-    <button type="button" class="profile-avatar-option${i === 0 ? " active" : ""}" data-avatar="${a}">${a}</button>
-  `).join("");
-  picker.querySelectorAll(".profile-avatar-option").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      playClickSound();
-      state.profileAvatar = btn.dataset.avatar;
-      picker.querySelectorAll(".profile-avatar-option").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-    });
-  });
 
   // プロフィールが1つも無いとき（初回起動）は戻る先がないので隠す
   document.getElementById("btn-profile-create-cancel").classList.toggle("hidden", getProfiles().length === 0);
@@ -3292,7 +3274,7 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
     document.getElementById("profile-create-feedback").className = "backup-feedback error";
     return;
   }
-  const profile = createProfile(name, state.profileAvatar);
+  const profile = createProfile(name);
   if (!profile) {
     document.getElementById("profile-create-feedback").textContent = isPaidPlan()
       ? t("profile.full", { n: PROFILE_MAX })
@@ -3951,7 +3933,6 @@ async function pushProfileToFirestore(profileId) {
     const batch = fbDb.batch();
     batch.set(profileRef, {
       name: profile.name,
-      avatar: profile.avatar,
       createdAt: profile.createdAt || new Date().toISOString(),
     }, { merge: true });
     batch.set(profileRef.collection("progress").doc("main"), progressDoc);
@@ -4211,7 +4192,14 @@ document.getElementById("btn-signup-submit").addEventListener("click", async () 
   setSignupFeedback(t("auth.working"), "");
   document.getElementById("btn-signup-submit").disabled = true;
   try {
-    await fbAuth.createUserWithEmailAndPassword(email, password);
+    const cred = await fbAuth.createUserWithEmailAndPassword(email, password);
+    // 確認メールを送る。届かなくてもアプリは使えるようにする（ここで止めると
+    // 登録直後に何もできなくなり離脱する）。未確認であることはせっていに出す。
+    try {
+      await cred.user.sendEmailVerification();
+    } catch (e) {
+      console.warn("[auth] verification mail failed:", e.message);
+    }
     // onAuthStateChanged が残りを処理する
   } catch (e) {
     setSignupFeedback(authErrorMessage(e.code), "error");
@@ -4246,6 +4234,58 @@ function refreshAuthAccountLine() {
   document.getElementById("btn-guest-signup").classList.toggle("hidden", !guest);
   document.getElementById("btn-guest-login").classList.toggle("hidden", !guest);
   document.getElementById("btn-account-logout").classList.toggle("hidden", guest);
+
+  refreshEmailVerifyNotice();
+}
+
+// メールアドレスの確認状態。未確認のままだと年額の更新前通知（§10-7）が
+// 届かないので、確認を促す。ただしアプリの利用自体は止めない。
+function refreshEmailVerifyNotice() {
+  const box = document.getElementById("auth-verify-box");
+  if (!box) return;
+  const needed = !!fbCurrentUser && !fbCurrentUser.emailVerified;
+  box.classList.toggle("hidden", !needed);
+}
+
+document.getElementById("btn-resend-verify").addEventListener("click", async () => {
+  playClickSound();
+  const btn = document.getElementById("btn-resend-verify");
+  if (!fbCurrentUser) return;
+  btn.disabled = true;
+  setVerifyFeedback(t("auth.working"), "");
+  try {
+    await fbCurrentUser.sendEmailVerification();
+    setVerifyFeedback(t("auth.verifySent"), "ok");
+  } catch (e) {
+    console.warn("[auth] verification mail failed:", e.message);
+    setVerifyFeedback(t("auth.verifyFailed"), "error");
+  }
+  btn.disabled = false;
+});
+
+// 確認リンクを踏んだあとアプリに戻ってきたとき、状態を取り直して表示を消す
+document.getElementById("btn-check-verified").addEventListener("click", async () => {
+  playClickSound();
+  if (!fbCurrentUser) return;
+  setVerifyFeedback(t("auth.working"), "");
+  try {
+    await fbCurrentUser.reload();
+    fbCurrentUser = fbAuth.currentUser;
+    if (fbCurrentUser.emailVerified) {
+      setVerifyFeedback(t("auth.verifyDone"), "ok");
+      setTimeout(refreshEmailVerifyNotice, 1500);
+    } else {
+      setVerifyFeedback(t("auth.verifyStillPending"), "error");
+    }
+  } catch (e) {
+    setVerifyFeedback(t("auth.verifyFailed"), "error");
+  }
+});
+
+function setVerifyFeedback(text, kind) {
+  const el = document.getElementById("verify-feedback");
+  el.textContent = text;
+  el.className = "backup-feedback" + (kind ? " " + kind : "");
 }
 
 // おためし中からログイン／新規登録に進んだときだけ「もどる」を出す。

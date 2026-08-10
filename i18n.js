@@ -54,15 +54,14 @@ const LOCALES = {
     "profile.selectTitle": "だれが あそぶ？",
     "profile.selectSub": "じぶんの なまえを えらんでね",
     "profile.createTitle": "あたらしく つくる",
-    "profile.createSub": "なまえと すきな どうぶつを えらんでね",
+    "profile.createSub": "なまえを おしえてね",
     "profile.createNew": "＋ あたらしく つくる",
     "profile.nameLabel": "なまえ",
-    "profile.avatarLabel": "アバター",
     "profile.createOk": "つくる",
     "profile.nameRequired": "なまえを いれてね",
     "profile.defaultName": "わたし",
     "profile.settingsTitle": "👤 プロフィール",
-    "profile.currentLine": "いま あそんでいるのは {avatar} {name} だよ",
+    "profile.currentLine": "いま あそんでいるのは {name} だよ",
     "profile.switch": "きりかえる",
     "profile.manage": "けす",
     "profile.deleteConfirm": "{name} の きろく（カード・ポイント・がくねん）を ぜんぶ けします。もとには もどせません。よろしいですか？",
@@ -100,6 +99,15 @@ const LOCALES = {
     "auth.syncing": "同期中…",
     "auth.syncDone": "同期しました",
     "auth.syncFailed": "同期に失敗しました（次回また試みます）",
+
+    // --- メールアドレスの確認 ---
+    "auth.verifyNotice": "📧 メールアドレスの確認がまだ済んでいません。ご登録のアドレスに確認メールをお送りしていますので、リンクを開いて完了してください。年額プランの更新前のお知らせも、このアドレスにお送りします。",
+    "auth.verifyResend": "確認メールを再送する",
+    "auth.verifyCheck": "確認できたか調べる",
+    "auth.verifySent": "確認メールを送りました。受信箱をご確認ください（迷惑メールに入ることがあります）",
+    "auth.verifyDone": "確認できました。ありがとうございます！",
+    "auth.verifyStillPending": "まだ確認できていません。メールのリンクを開いてから、もう一度お試しください",
+    "auth.verifyFailed": "送信に失敗しました。時間をおいてもう一度お試しください",
 
     // --- おためし（未登録で使う） ---
     "auth.tryAsGuest": "とうろくせずに ためす",
