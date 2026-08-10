@@ -266,6 +266,45 @@
   font-weight: 700;
 }
 
+/* 有料になった瞬間の通知。別タブで支払ったあと、アプリ側で何も起きないと
+   反映されたか分からないため、画面のどこにいても見えるよう固定で出す。 */
+.plan-upgraded-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  z-index: 60;
+  transform: translate(-50%, 12px);
+  max-width: min(92vw, 420px);
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(140deg, #fff6d8, #ffe6b0);
+  border: 2px solid var(--gold, #ffcf4d);
+  box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.18));
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.7;
+  text-align: center;
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+.plan-upgraded-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* 特商法表示へのリンク。購入判断に必要な法定表示なので、注記より控えめにはしない */
+.plan-legal {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.plan-legal a {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 .plan-buttons {
   display: flex;
   flex-direction: column;
@@ -1831,6 +1870,20 @@ h2 {
 .guest-prompt {
   font-size: 0.82rem;
   line-height: 1.6;
+}
+
+/* おためし中のデータ消失リスク。見落とすと長く遊んだあとに全部消えるので、
+   通常の注記（.guest-prompt）より一段強く出す */
+.guest-data-warning {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: #fff8e8;
+  border: 1.5px solid #f4d9a0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.8;
+  color: #7a5a10;
 }
 
 .profile-limit-note {

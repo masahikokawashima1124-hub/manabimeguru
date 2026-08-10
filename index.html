@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
 
@@ -168,6 +168,9 @@
     <h3 class="settings-section-title" data-i18n="auth.accountTitle"></h3>
     <p class="sub" id="auth-account-line"></p>
     <!-- おためし中だけ出す。登録するとカードとポイントがそのまま引き継がれることを伝える -->
+    <!-- おためし中だけ出す警告。良い面（引き継げる）だけでなく、
+         登録しないと失われうることも伝える。長く遊んだあとに消えるのが最悪の体験のため -->
+    <p class="guest-data-warning hidden" id="auth-guest-warning" data-i18n="auth.guestDataWarning"></p>
     <p class="sub guest-prompt hidden" id="auth-guest-prompt" data-i18n="auth.guestSignupPrompt"></p>
     <div class="backup-actions" id="auth-guest-actions">
       <button type="button" id="btn-guest-signup" class="btn-primary hidden" data-i18n="auth.guestSignup"></button>
@@ -384,9 +387,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=20"></script>
+<script src="i18n.js?v=23"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=6"></script>
-<script src="script.js?v=45"></script>
+<script src="script.js?v=48"></script>
 </body>
 </html>

@@ -3186,12 +3186,14 @@ function renderPlanSetting() {
     return;
   }
 
+  // 特商法の表示は「購入前に必ず到達できる」ことが要件なので、購入ボタンと同じ画面に置く
   box.innerHTML = `${benefits}
     <div class="plan-buttons">
       ${monthly ? `<a class="btn-primary plan-buy-link" href="${monthly}" target="_blank" rel="noopener">${t("plan.monthly")}</a>` : ""}
       ${yearly ? `<a class="btn-primary plan-buy-link" href="${yearly}" target="_blank" rel="noopener">${t("plan.yearly")}</a>` : ""}
     </div>
-    <p class="plan-note">${t("plan.afterBuyNote")}</p>`;
+    <p class="plan-note">${t("plan.afterBuyNote")}</p>
+    <p class="plan-legal"><a href="tokusho.html" target="_blank" rel="noopener">${t("plan.legalLink")}</a></p>`;
 }
 
 // ===== プロフィール画面 =====
@@ -4040,6 +4042,59 @@ async function pullProfileFromFirestore(profileId) {
   localStorage.setItem(pre("updatedAt"), serverTs);
 }
 
+// ------- プランの変更をリアルタイムで受け取る -------
+// 支払いはStripeの別タブで行われるため、購入が終わってもアプリ側のタブは
+// ログイン時に読んだ fbPlan を持ったままだった（無料表示のまま変わらない）。
+// webhookが households/{uid}.plan を書き換えた瞬間に気づけるよう購読する。
+
+let _planUnsubscribe = null;
+
+function watchHouseholdPlan() {
+  stopWatchingHouseholdPlan();
+  if (!fbCurrentUser) return;
+
+  _planUnsubscribe = fbDb.collection("households").doc(fbCurrentUser.uid)
+    .onSnapshot((snap) => {
+      if (!snap.exists) return;
+      const next = snap.data().plan === "paid" ? "paid" : "free";
+      if (next === fbPlan) return;
+
+      const becamePaid = next === "paid" && fbPlan !== "paid";
+      fbPlan = next;
+
+      // 開いている画面に即反映する（ずかんは開き直したときに新しいプランで描かれる）
+      if (document.getElementById("screen-settings").classList.contains("active")) {
+        renderPlanSetting();
+      }
+      if (becamePaid) showPlanUpgradedNotice();
+    }, (e) => {
+      // 購読に失敗してもアプリは動く（次回のログインで反映される）
+      console.warn("[plan] watch failed:", e.message);
+    });
+}
+
+function stopWatchingHouseholdPlan() {
+  if (_planUnsubscribe) {
+    _planUnsubscribe();
+    _planUnsubscribe = null;
+  }
+}
+
+// 有料になった瞬間に出す。別タブで支払った直後、アプリ側で何も起きないと
+// 「反映されていないのでは」と不安になるため、必ず目に見える形で知らせる。
+function showPlanUpgradedNotice() {
+  playLevelUpSound();
+  const box = document.createElement("div");
+  box.className = "plan-upgraded-toast";
+  box.textContent = t("plan.upgradedNotice");
+  document.body.appendChild(box);
+  setTimeout(() => box.classList.add("is-visible"), 20);
+  setTimeout(() => {
+    box.classList.remove("is-visible");
+    setTimeout(() => box.remove(), 400);
+  }, 6000);
+}
+
 // ------- 移行：ローカルのプロフィールをFirestoreのhouseholdに引き取る -------
 // 初回ログイン/新規登録時、householdドキュメントが存在しなければ実行する。
 
@@ -4186,6 +4241,7 @@ function refreshAuthAccountLine() {
   el.textContent = guest ? t("auth.guestAccountLine") : t("auth.accountLine", { email: fbCurrentUser.email });
 
   // おためし中は「登録する／ログインする」、ログイン後は「ログアウト」を出す
+  document.getElementById("auth-guest-warning").classList.toggle("hidden", !guest);
   document.getElementById("auth-guest-prompt").classList.toggle("hidden", !guest);
   document.getElementById("btn-guest-signup").classList.toggle("hidden", !guest);
   document.getElementById("btn-guest-login").classList.toggle("hidden", !guest);
@@ -4238,6 +4294,7 @@ fbAuth.onAuthStateChanged(async (user) => {
 
   if (!user) {
     // 未ログインでも、おためし中ならそのままアプリに入る
+    stopWatchingHouseholdPlan();
     fbPlan = "free";
     refreshAuthAccountLine();
     if (isGuestMode()) startInitialScreen();
@@ -4253,6 +4310,9 @@ fbAuth.onAuthStateChanged(async (user) => {
   } catch (e) {
     console.warn("[sync] migration failed:", e.message);
   }
+
+  // 以降のプラン変更（支払い・解約）はこの購読が拾う
+  watchHouseholdPlan();
 
   refreshAuthAccountLine();
   startInitialScreen();

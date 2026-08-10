@@ -106,6 +106,7 @@ const LOCALES = {
     "auth.guestNotice": "登録しなくても、そのまま全部あそべます。",
     "auth.guestAccountLine": "おためし中（未登録）",
     "auth.guestSignupPrompt": "アカウントを登録すると、この端末が変わってもデータを引き継げます。いま集めたカードとポイントは、そのまま引き継がれます。",
+    "auth.guestDataWarning": "⚠️ いまの記録は、この端末のブラウザの中だけに保存されています。ブラウザのデータを消したときや、別の端末に変えたときには引き継げません。アカウントの登録は無料です。",
     "auth.guestSignup": "アカウントを登録する",
     "auth.guestLogin": "ログインする",
     "auth.backToGuest": "もどる",
@@ -124,6 +125,8 @@ const LOCALES = {
     "plan.guestNote": "ご購入には、さきに保護者の方のアカウント登録が必要です。",
     "plan.afterBuyNote": "お支払いは保護者の方が行ってください。完了後、アプリに反映されます。",
     "plan.managePortal": "契約の管理（解約・お支払い方法）",
+    "plan.legalLink": "特定商取引法に基づく表記",
+    "plan.upgradedNotice": "🎉 ファミリープランになりました！ぜんぶのカードが あつめられます",
 
     // --- 共有 ---
     "share.copyHint": "↑ このぶんしょうを コピーして つかってね",
