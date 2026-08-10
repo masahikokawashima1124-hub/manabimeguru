@@ -63,7 +63,9 @@ const STRIPE_PAYMENT_LINKS = {
 // ダッシュボード →「設定」→「Billing」→「カスタマーポータル」で有効化すると発行される。
 // ⚠️ 空のままでも解約手段は下の SUPPORT_EMAIL で案内されるが、本番課金を始める前に
 //    必ず設定すること（tokusho.html で「せっていのプランから解約できる」と表示しているため）。
-const STRIPE_CUSTOMER_PORTAL_URL = "";
+// ⚠️ これは本番モードのポータル。テストモードの契約はここには出ない。
+//    Payment Link を本番に差し替えるまでは、テスト購入分の管理には使えない。
+const STRIPE_CUSTOMER_PORTAL_URL = "https://billing.stripe.com/p/login/fZudRaeqC067gwq9tK7kc00";
 
 // 解約や問い合わせの受け口。tokusho.html に載せているアドレスと必ず揃えること。
 const SUPPORT_EMAIL = "manabimeguru@comagoto.com";
