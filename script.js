@@ -61,7 +61,12 @@ const STRIPE_PAYMENT_LINKS = {
 
 // 契約の管理（解約・お支払い方法の変更）。Stripe カスタマーポータルのURL。
 // ダッシュボード →「設定」→「Billing」→「カスタマーポータル」で有効化すると発行される。
+// ⚠️ 空のままでも解約手段は下の SUPPORT_EMAIL で案内されるが、本番課金を始める前に
+//    必ず設定すること（tokusho.html で「せっていのプランから解約できる」と表示しているため）。
 const STRIPE_CUSTOMER_PORTAL_URL = "";
+
+// 解約や問い合わせの受け口。tokusho.html に載せているアドレスと必ず揃えること。
+const SUPPORT_EMAIL = "manabimeguru@comagoto.com";
 
 // Payment Link に「どの世帯の支払いか」を伝えるURLを組み立てる。
 // client_reference_id が webhook（functions/index.js）で世帯の特定に使われる。
@@ -234,7 +239,7 @@ function setGrade(grade) {
 // 保護者に毎回きくと手間になるので、表示言語から初期値を決めて、変えたい人だけ触る。
 const SCHOOL_YEAR_START_KEY = "school_year_start";
 const SCHOOL_YEAR_START_QUICK = [4, 9, 3];
-const SCHOOL_YEAR_START_BY_LOCALE = { ja: 4, en: 9 };
+const SCHOOL_YEAR_START_BY_LOCALE = { ja: 4, en: 9, es: 9 };
 
 function defaultSchoolYearStart() {
   return SCHOOL_YEAR_START_BY_LOCALE[getLocale()] || 4;
@@ -1160,17 +1165,17 @@ function genAdd1() {
   if (a >= 10) {
     const aOnes = a - 10;
     explain = aOnes === 0
-      ? `10に ${b}を たすと ${sum}`
-      : `${a}は 10と${aOnes}。${aOnes}に ${b}を たすと ${aOnes + b}。10と${aOnes + b}で ${sum}`;
+      ? t("math.add1.explainTen", { b, sum })
+      : t("math.add1.explainSplit", { a, aOnes, b, part: aOnes + b, sum });
   } else if (sum > 10) {
     const toTen = 10 - a;
     const rest = b - toTen;
-    explain = `${a}に ${toTen}たして 10。のこりの ${rest}を たして ${sum}`;
+    explain = t("math.add1.explainMakeTen", { a, toTen, rest, sum });
   } else {
-    explain = `${a}に ${b}を たすと ${sum}`;
+    explain = t("math.add1.explainPlain", { a, b, sum });
   }
   return { text: `${a} ＋ ${b} = ?`, answer: String(sum), type: "number",
-    hint: `${a}に ${b}を たすよ。ゆびで かぞえても いいよ`, explain };
+    hint: t("math.add1.hint", { a, b }), explain };
 }
 
 function genSub1() {
@@ -1178,20 +1183,20 @@ function genSub1() {
   const diff = a - b;
   let explain;
   if (a < 10) {
-    explain = `${a}から ${b}を ひくと ${diff}`;
+    explain = t("math.sub1.explainPlain", { a, b, diff });
   } else {
     const aOnes = a - 10;
     if (aOnes === 0) {
-      explain = `10は ちょうど10。10から ${b}を ひくと ${diff}`;
+      explain = t("math.sub1.explainFromTen", { b, diff });
     } else if (b <= aOnes) {
-      explain = `${a}は 10と${aOnes}。${aOnes}－${b}＝${aOnes - b}。10と${aOnes - b}で ${diff}`;
+      explain = t("math.sub1.explainSplit", { a, aOnes, b, part: aOnes - b, diff });
     } else {
       const borrow = 10 - b;
-      explain = `${a}は 10と${aOnes}。10－${b}＝${borrow}。${borrow}に ${aOnes}を たして ${diff}`;
+      explain = t("math.sub1.explainBorrow", { a, aOnes, b, borrow, diff });
     }
   }
   return { text: `${a} － ${b} = ?`, answer: String(diff), type: "number",
-    hint: `${a}から ${b}を へらすよ`, explain };
+    hint: t("math.sub1.hint", { a, b }), explain };
 }
 
 function genAdd2() {
@@ -1199,26 +1204,27 @@ function genAdd2() {
   const aOnes = a % 10, bOnes = b % 10;
   const aTens = Math.floor(a / 10), bTens = Math.floor(b / 10);
   const onesSum = aOnes + bOnes;
+  const params = { aOnes, bOnes, onesSum, aTens, bTens, tensSum: aTens + bTens, tensSumCarry: aTens + bTens + 1, sum: a + b };
   const explain = onesSum >= 10
-    ? `一の位: ${aOnes}＋${bOnes}＝${onesSum}なので、十の位に1くり上げる。十の位: ${aTens}＋${bTens}＋1＝${aTens + bTens + 1}。あわせて ${a + b}`
-    : `一の位: ${aOnes}＋${bOnes}＝${onesSum}。十の位: ${aTens}＋${bTens}＝${aTens + bTens}。あわせて ${a + b}`;
+    ? t("math.add2.explainCarry", params)
+    : t("math.add2.explainPlain", params);
   return { text: `${a} ＋ ${b} = ?`, answer: String(a + b), type: "number",
-    hint: "十の位と 一の位に わけて たしてみよう", explain };
+    hint: t("math.add2.hint"), explain };
 }
 
 function genSub2() {
   const a = randInt(20, 99), b = randInt(10, a - 1);
   return { text: `${a} － ${b} = ?`, answer: String(a - b), type: "number",
-    hint: "くり下がりに 気をつけよう",
-    explain: `${a} － ${b} ＝ ${a - b}。たしかめ算: ${a - b} ＋ ${b} ＝ ${a}` };
+    hint: t("math.sub2.hint"),
+    explain: t("math.sub2.explain", { a, b, diff: a - b }) };
 }
 
 function genMul2() {
   const a = randInt(2, 9), b = randInt(2, 9);
   const terms = Array(b).fill(a).join("＋");
   return { text: `${a} × ${b} = ?`, answer: String(a * b), type: "number",
-    hint: `${a}のだんの 九九を おもいだそう`,
-    explain: `${a} × ${b} は ${a}を ${b}回 たすことだから、${terms}＝${a * b}` };
+    hint: t("math.mul2.hint", { a }),
+    explain: t("math.mul2.explain", { a, b, terms, product: a * b }) };
 }
 
 // ===== 算数（小学3年生・新しく習う内容）=====
@@ -1239,8 +1245,8 @@ function genAdd3() {
     text: `${a} ＋ ${b} = ？`,
     answer: `${a + b}`,
     type: "number",
-    hint: "位をそろえて、一の位からじゅんばんに たしざんしてみよう",
-    explain: `${a} は ${decompose(a)}、${b} は ${decompose(b)}。同じ位どうしを たすと ${a + b} になるよ`,
+    hint: t("math.add3.hint"),
+    explain: t("math.add3.explain", { a, b, aParts: decompose(a), bParts: decompose(b), sum: a + b }),
   };
 }
 
@@ -1253,8 +1259,8 @@ function genSub3() {
     text: `${a} － ${b} = ？`,
     answer: `${a - b}`,
     type: "number",
-    hint: "大きい位から順にひき算しよう。くり下がりに注意",
-    explain: `${a} － ${b} = ${a - b}。たしかめ算: ${a - b} ＋ ${b} を計算して ${a} に なるか かくにんしよう`,
+    hint: t("math.sub3.hint"),
+    explain: t("math.sub3.explain", { a, b, diff: a - b }),
   };
 }
 
@@ -1267,8 +1273,8 @@ function genMul3() {
     text: `${a} × ${b} = ？`,
     answer: `${a * b}`,
     type: "number",
-    hint: `${a}を 十の位と一の位に分けて、それぞれ ${b}を かけてみよう`,
-    explain: `${tens}×${b}＝${tens * b}、${ones}×${b}＝${ones * b}。あわせて ${tens * b}＋${ones * b}＝${a * b}`,
+    hint: t("math.mul3.hint", { a, b }),
+    explain: t("math.mul3.explain", { tens, ones, b, tensPart: tens * b, onesPart: ones * b, product: a * b }),
   };
 }
 
@@ -1280,8 +1286,8 @@ function genDiv3() {
     text: `${a} ÷ ${b} = ？`,
     answer: `${q}`,
     type: "number",
-    hint: `${b}のだんの 九九で こたえが ${a} になる数を さがそう`,
-    explain: `${b} × ${q} = ${a} だから、${a} ÷ ${b} の こたえは ${q}`,
+    hint: t("math.div3.hint", { a, b }),
+    explain: t("math.div3.explain", { a, b, q }),
   };
 }
 
@@ -1291,12 +1297,15 @@ function genDivRemainder3() {
   const r = randInt(1, b - 1);
   const a = b * q + r;
   return {
-    text: `${a} ÷ ${b} = ？（例のように「〇あまり△」の形で書いてね。例: 5あまり3）`,
-    answer: `${q}あまり${r}`,
-    accept: [`${q}あまり${r}`, `${q}余り${r}`],
+    text: t("math.divRemainder3.text", { a, b }),
+    answer: t("math.divRemainder3.answer", { q, r }),
+    // 表記ゆれの受け入れ（日本語なら「あまり」と「余り」）。言語ごとに増やせるよう
+    // 配列で持つ。answer 自身は必ず先頭に入れる。
+    accept: [t("math.divRemainder3.answer", { q, r }),
+             ...tList("math.divRemainder3.accept").map((f) => f.replace("{q}", q).replace("{r}", r))],
     type: "text",
-    hint: `${b}のだんの 九九で ${a}を こえない、いちばん大きい数を さがそう`,
-    explain: `${b} × ${q} ＝ ${b * q}。${a} － ${b * q} ＝ ${r} あまる。だから ${q}あまり${r}`,
+    hint: t("math.divRemainder3.hint", { a, b }),
+    explain: t("math.divRemainder3.explain", { a, b, q, r, product: b * q }),
   };
 }
 
@@ -1312,16 +1321,16 @@ function genDecimal3() {
   do { nb = randNonMultipleOf10(1, 50); } while (nb === na);
   const a = na / 10, b = nb / 10;
   const isAdd = Math.random() < 0.5;
-  const hint = "小数点の位置を そろえて 計算しよう";
+  const hint = t("math.decimal3.hint");
   if (isAdd) {
     const answer = roundedText(a + b);
-    const explain = `${a}を 10ばいすると ${na}、${b}を 10ばいすると ${nb}。${na}＋${nb}＝${na + nb}。10で わって もとに もどすと ${answer}`;
+    const explain = t("math.decimal3.explainAdd", { a, b, na, nb, raw: na + nb, answer });
     return { text: `${a} ＋ ${b} = ？`, answer, type: "number", hint, explain };
   }
   const hiRaw = Math.max(na, nb), loRaw = Math.min(na, nb);
   const hi = hiRaw / 10, lo = loRaw / 10;
   const answer = roundedText(hi - lo);
-  const explain = `${hi}を 10ばいすると ${hiRaw}、${lo}を 10ばいすると ${loRaw}。${hiRaw}－${loRaw}＝${hiRaw - loRaw}。10で わって もとに もどすと ${answer}`;
+  const explain = t("math.decimal3.explainSub", { hi, lo, hiRaw, loRaw, raw: hiRaw - loRaw, answer });
   return { text: `${hi} － ${lo} = ？`, answer, type: "number", hint, explain };
 }
 
@@ -1329,7 +1338,7 @@ function genDecimal3() {
 function reduceExplainSuffix(rawNum, d, result) {
   if (result.den === d) return "";
   const g = gcd(rawNum, d);
-  return `。${rawNum}と${d}を${g}でわって やくぶんすると ${fractionToText(result)}`;
+  return t("math.fraction.reduceSuffix", { rawNum, d, g, reduced: fractionToText(result) });
 }
 
 function genFractionSame3() {
@@ -1344,8 +1353,8 @@ function genFractionSame3() {
       text: `${n1}/${d} ＋ ${n2}/${d} = ？`,
       answer: fractionToText(result),
       type: "fraction",
-      hint: "分母はそのまま、分子どうしを たしざんしよう",
-      explain: `分母はそのままで、分子は ${n1}＋${n2}＝${sum}。だから ${sum}/${d}${reduceExplainSuffix(sum, d, result)}`,
+      hint: t("math.fractionSame3.hintAdd"),
+      explain: t("math.fractionSame3.explainAdd", { n1, n2, sum, d }) + reduceExplainSuffix(sum, d, result),
     };
   }
   const n1 = randInt(2, d);
@@ -1356,146 +1365,280 @@ function genFractionSame3() {
     text: `${n1}/${d} － ${n2}/${d} = ？`,
     answer: fractionToText(result),
     type: "fraction",
-    hint: "分母はそのまま、分子どうしを ひきざんしよう",
-    explain: `分母はそのままで、分子は ${n1}－${n2}＝${diff}。だから ${diff}/${d}${reduceExplainSuffix(diff, d, result)}`,
+    hint: t("math.fractionSame3.hintSub"),
+    explain: t("math.fractionSame3.explainSub", { n1, n2, diff, d }) + reduceExplainSuffix(diff, d, result),
   };
 }
 
-const WORD_ITEMS = ["りんご", "みかん", "あめ", "えんぴつ", "シール", "クッキー", "おりがみ", "どんぐり"];
-const WORD_NAMES = ["ゆうたくん", "さくらさん", "けんとくん", "みおさん", "たろうくん", "はなさん"];
+// ===== 文章題の語彙（言語ごと） =====
+// 数の作り方は言語に依存しないが、登場人物・品物・場所は言語ごとに要る。
+// 生成器そのものは1つのまま保つ（複製すると、question-audit.md が何ヶ月もかけて
+// 潰してきた正誤バグが二重管理になる）。
+//
+// 言語ごとに必要なものが違うので、品物は「その言語の文が必要とする欄」を持つ。
+//   ja … counter（助数詞）と howMany（「なんこ」）。
+//        ⚠️ 助数詞は**全品目「こ」で統一**している。従来の出力と1文字も変えないため。
+//           本来シールは「まい」だが、変えると既存の日本語版の問題文が変わってしまう
+//   es … 複数形と、数をたずねる語（Cuántos / Cuántas は名詞の性で変わる）
+//
+// edible は「たべました／つかいました」の出し分け用（えんぴつを食べる文を作らないため）。
+const MATH_WORDS = {
+  ja: {
+    names: ["ゆうたくん", "さくらさん", "けんとくん", "みおさん", "たろうくん", "はなさん"],
+    items: [
+      { w: "りんご", counter: "こ", howMany: "なんこ", edible: true },
+      { w: "みかん", counter: "こ", howMany: "なんこ", edible: true },
+      { w: "あめ", counter: "こ", howMany: "なんこ", edible: true },
+      { w: "クッキー", counter: "こ", howMany: "なんこ", edible: true },
+      { w: "えんぴつ", counter: "こ", howMany: "なんこ", edible: false },
+      { w: "シール", counter: "こ", howMany: "なんこ", edible: false },
+      { w: "おりがみ", counter: "こ", howMany: "なんこ", edible: false },
+      { w: "どんぐり", counter: "こ", howMany: "なんこ", edible: false },
+    ],
+    places: ["はこの中", "つくえの上", "かごの中", "ふくろの中"],
+    consumed: { edible: { past: "たべました", plain: "たべた" }, other: { past: "つかいました", plain: "つかった" } },
+    // 四捨五入する位（genRounding4）。label は「◯の位」、lower はその1つ下の位。
+    roundPlaces: [
+      { label: "十", unit: 10, lower: "一" },
+      { label: "百", unit: 100, lower: "十" },
+      { label: "千", unit: 1000, lower: "百" },
+    ],
+    // 大きな数の単位（genWordBigNumber4）。
+    // ⚠️ 桁の区切り方は言語で違う。日本語は万（10^4）・億（10^8）、
+    //    スペイン語は mil（10^3）・millón（10^6）。倍率ごと言語側に持たせる。
+    bigUnits: [
+      { label: "万", what: "人口", amount: "人" },
+      { label: "億", what: "予算", amount: "円" },
+    ],
+    bigPlaces: ["市", "町", "県"],
+    // 見積もり（genWordEstimate4）で使う位。unit は丸める単位。
+    estimatePlaces: [{ label: "百", unit: 100 }, { label: "千", unit: 1000 }],
+    areaPlaces: ["きょうしつ", "花だん", "にわ", "ちゅう車場"],
+    amountItems: [
+      { name: "ジュース", unit: "L" },
+      { name: "水", unit: "L" },
+      { name: "さとう", unit: "kg" },
+    ],
+    // 比例（genWordProportion4）。heavy=true は重さ（1mあたり数g）、false はねだん。
+    proportionItems: [
+      { name: "はりがね", unit: "m", amount: "g", word: "重さ", heavy: true },
+      { name: "リボン", unit: "m", amount: "円", word: "ねだん", heavy: false },
+    ],
+    // 1あたりの量（genWordPerUnit5）
+    perUnitItems: [
+      { unit: "m", item: "リボン", per: "g", label: "おもさ" },
+      { unit: "こ", item: "あめ", per: "円", label: "ねだん" },
+      { unit: "L", item: "ペンキ", per: "㎡", label: "ぬれる面積" },
+      { unit: "さつ", item: "ノート", per: "円", label: "ねだん" },
+      { unit: "本", item: "えんぴつ", per: "円", label: "ねだん" },
+    ],
+    // 並べ方（genCombination6）で使う色
+    colors: ["あか", "あお", "きいろ", "みどり", "むらさき", "オレンジ", "ピンク", "みずいろ"],
+  },
+  es: {
+    names: ["Mateo", "Lucía", "Diego", "Sofía", "Pablo", "Elena"],
+    items: [
+      { w: "manzanas", counter: "", howMany: "Cuántas", edible: true },
+      { w: "mandarinas", counter: "", howMany: "Cuántas", edible: true },
+      { w: "caramelos", counter: "", howMany: "Cuántos", edible: true },
+      { w: "galletas", counter: "", howMany: "Cuántas", edible: true },
+      { w: "lápices", counter: "", howMany: "Cuántos", edible: false },
+      { w: "pegatinas", counter: "", howMany: "Cuántas", edible: false },
+      { w: "canicas", counter: "", howMany: "Cuántas", edible: false },
+      { w: "bellotas", counter: "", howMany: "Cuántas", edible: false },
+    ],
+    places: ["en la caja", "encima del pupitre", "en la cesta", "en la bolsa"],
+    consumed: { edible: { past: "se comieron", plain: "comerse" }, other: { past: "se usaron", plain: "usar" } },
+    roundPlaces: [
+      { label: "las decenas", unit: 10, lower: "las unidades" },
+      { label: "las centenas", unit: 100, lower: "las decenas" },
+      { label: "los millares", unit: 1000, lower: "las centenas" },
+    ],
+    // ⚠️ 桁の区切り方が日本語と違う（万・億 ではなく mil・millones）。
+    //    倍率そのものは「単位のいくつぶんか」を答えさせる問題なので影響しない。
+    bigUnits: [
+      { label: "mil", what: "La población", amount: "habitantes" },
+      { label: "millones", what: "El presupuesto", amount: "euros" },
+    ],
+    bigPlaces: ["una ciudad", "un pueblo", "una provincia"],
+    estimatePlaces: [{ label: "las centenas", unit: 100 }, { label: "los millares", unit: 1000 }],
+    areaPlaces: ["el aula", "el jardín", "el patio", "el aparcamiento"],
+    amountItems: [
+      { name: "zumo", unit: "L" },
+      { name: "agua", unit: "L" },
+      { name: "azúcar", unit: "kg" },
+    ],
+    proportionItems: [
+      { name: "alambre", unit: "m", amount: "g", word: "el peso", heavy: true },
+      { name: "cinta", unit: "m", amount: "céntimos", word: "el precio", heavy: false },
+    ],
+    // ⚠️ unit（数える単位）と item（品物）が同じ語にならないようにする。
+    //    「caramelos de caramelos」のような文になる。
+    //    label は不定冠詞つき（「tienen un peso de …」と続けるため）。
+    // unitSg は「por cada …」に置く単数形（複数形のままだと "por cada cajas" になる）。
+    perUnitItems: [
+      { unit: "m", unitSg: "m", item: "cinta", per: "g", label: "un peso" },
+      { unit: "kg", unitSg: "kg", item: "caramelos", per: "céntimos", label: "un precio" },
+      { unit: "L", unitSg: "L", item: "pintura", per: "m²", label: "una cobertura" },
+      { unit: "paquetes", unitSg: "paquete", item: "cuadernos", per: "céntimos", label: "un precio" },
+      { unit: "cajas", unitSg: "caja", item: "lápices", per: "céntimos", label: "un precio" },
+    ],
+    colors: ["rojo", "azul", "amarillo", "verde", "morado", "naranja", "rosa", "celeste"],
+  },
+};
+
+function mathWords() {
+  return MATH_WORDS[getLocale()] || MATH_WORDS[DEFAULT_LOCALE];
+}
+
+// 文章題の1問ぶんの語彙をまとめて取り出す。生成器はこれを t() にそのまま渡す。
+// 使わない欄がある言語もあるが、t() は使わない {param} を無視するので害はない。
+function pickWordItem(opts) {
+  const w = mathWords();
+  const pool = opts && opts.edible !== undefined
+    ? w.items.filter((it) => it.edible === opts.edible)
+    : w.items;
+  const it = pick(pool);
+  return { item: it.w, c: it.counter, howMany: it.howMany };
+}
+
+function pickWordNames(n) {
+  return shuffle(mathWords().names).slice(0, n);
+}
+
+function pickWordPlaces(n) {
+  return shuffle(mathWords().places).slice(0, n);
+}
 
 function genWordAdd() {
-  const item = pick(WORD_ITEMS);
+  const w = pickWordItem();
   const a = randInt(5, 40);
   const b = randInt(2, 30);
   return {
-    text: `${item}が ${a}こ ありました。${b}こ もらいました。ぜんぶで なんこ？`,
+    text: t("math.wordAdd.text", { ...w, a, b }),
     answer: `${a + b}`,
     type: "number",
-    hint: "「もらった」ということは、数が ふえるね。たしざんを つかおう",
-    explain: `はじめに ${a}こ、もらった ${b}こを たすと ${a}＋${b}＝${a + b}こ になるよ`,
+    hint: t("math.wordAdd.hint"),
+    explain: t("math.wordAdd.explain", { ...w, a, b, sum: a + b }),
   };
 }
 
 // 「えんぴつを たべました」のような不自然な文にならないよう、
 // 数が減る場面の動詞は、食べ物かどうかで変える。
-const WORD_ITEMS_EDIBLE = ["りんご", "みかん", "あめ", "クッキー"];
-const WORD_ITEMS_OTHER = ["えんぴつ", "シール", "おりがみ", "どんぐり"];
-
 function pickConsumable() {
-  return Math.random() < 0.5
-    ? { item: pick(WORD_ITEMS_EDIBLE), past: "たべました", plain: "たべた" }
-    : { item: pick(WORD_ITEMS_OTHER), past: "つかいました", plain: "つかった" };
+  const edible = Math.random() < 0.5;
+  const verbs = mathWords().consumed[edible ? "edible" : "other"];
+  return { ...pickWordItem({ edible }), past: verbs.past, plain: verbs.plain };
 }
 
 function genWordSub() {
-  const { item, past, plain } = pickConsumable();
+  const w = pickConsumable();
   const b = randInt(2, 30);
   const bigger = randInt(5, 40) + b;
   return {
-    text: `${item}が ${bigger}こ ありました。${b}こ ${past}。のこりは なんこ？`,
+    text: t("math.wordSub.text", { ...w, bigger, b }),
     answer: `${bigger - b}`,
     type: "number",
-    hint: `「${plain}」ということは、数が へるね。ひきざんを つかおう`,
-    explain: `はじめに ${bigger}こ あって、${b}こ ${plain}から ${bigger}－${b}＝${bigger - b}こ のこるよ`,
+    hint: t("math.wordSub.hint", { plain: w.plain }),
+    explain: t("math.wordSub.explain", { ...w, bigger, b, rest: bigger - b }),
   };
 }
 
 function genWordMul() {
-  const item = pick(WORD_ITEMS);
+  const w = pickWordItem();
   const perBag = randInt(2, 9);
   const bags = randInt(2, 9);
   return {
-    text: `1ふくろに ${item}が ${perBag}こずつ 入っています。${bags}ふくろでは ぜんぶで なんこ？`,
+    text: t("math.wordMul.text", { ...w, perBag, bags }),
     answer: `${perBag * bags}`,
     type: "number",
-    hint: "「1ふくろに◯こ」が「△ふくろぶん」あるときは、かけ算を つかおう",
-    explain: `1ふくろ ${perBag}こ が ${bags}ふくろぶん あるから ${perBag}×${bags}＝${perBag * bags}こ になるよ`,
+    hint: t("math.wordMul.hint"),
+    explain: t("math.wordMul.explain", { ...w, perBag, bags, total: perBag * bags }),
   };
 }
 
 function genWordDiv() {
-  const item = pick(WORD_ITEMS);
+  const w = pickWordItem();
   const people = randInt(2, 9);
   const each = randInt(2, 9);
   const total = people * each;
   return {
-    text: `${item}が ${total}こ あります。${people}人で おなじ数ずつ わけると、1人ぶんは なんこ？`,
+    text: t("math.wordDiv.text", { ...w, total, people }),
     answer: `${each}`,
     type: "number",
-    hint: "「おなじ数ずつ わける」ときは、わり算を つかおう",
-    explain: `ぜんぶで ${total}こ を ${people}人で 同じ数ずつ わけるから ${total}÷${people}＝${each}こ になるよ`,
+    hint: t("math.wordDiv.hint"),
+    explain: t("math.wordDiv.explain", { ...w, total, people, each }),
   };
 }
 
 function genWordCompare() {
-  const [nameA, nameB] = shuffle(WORD_NAMES).slice(0, 2);
-  const item = pick(WORD_ITEMS);
+  const [nameA, nameB] = pickWordNames(2);
+  const w = pickWordItem();
   const b = randInt(6, 40);
   // 「すくなく」のとき答えが負や0にならないよう、差は b 未満に収める
   const diff = randInt(2, Math.min(20, b - 1));
   const isMore = Math.random() < 0.5;
+  const params = { ...w, nameA, nameB, b, diff, total: isMore ? b + diff : b - diff };
   return {
-    text: isMore
-      ? `${nameA}は ${item}を ${b}こ もっています。${nameB}は ${nameA}より ${diff}こ おおく もっています。${nameB}は なんこ？`
-      : `${nameA}は ${item}を ${b}こ もっています。${nameB}は ${nameA}より ${diff}こ すくなく もっています。${nameB}は なんこ？`,
+    text: t(isMore ? "math.wordCompare.textMore" : "math.wordCompare.textLess", params),
     answer: isMore ? `${b + diff}` : `${b - diff}`,
     type: "number",
-    hint: isMore ? "「多い」ということは、たしざんを つかおう" : "「少ない」ということは、ひきざんを つかおう",
-    explain: isMore
-      ? `${nameA}は${b}こ。${nameB}は${nameA}より${diff}こ多いから、${b}＋${diff}＝${b + diff}こ になるよ`
-      : `${nameA}は${b}こ。${nameB}は${nameA}より${diff}こ少ないから、${b}－${diff}＝${b - diff}こ になるよ`,
+    hint: t(isMore ? "math.wordCompare.hintMore" : "math.wordCompare.hintLess"),
+    explain: t(isMore ? "math.wordCompare.explainMore" : "math.wordCompare.explainLess", params),
   };
 }
 
 // 合併（「あわせて いくつ」）。genWordAdd の増加（あとから もらう）と同じ たし算だが、
 // 文章の型が違う。たし算しか習っていない時期でも、見た目の変化をつけられる。
-const WORD_PLACES = ["はこの中", "つくえの上", "かごの中", "ふくろの中"];
-
 function genWordAddCombine() {
   // 種類の違うものを合算すると不自然になるので、同じものが2か所にある形にする
-  const item = pick(WORD_ITEMS);
-  const [place1, place2] = shuffle(WORD_PLACES).slice(0, 2);
+  const w = pickWordItem();
+  const [place1, place2] = pickWordPlaces(2);
   const a = randInt(3, 30);
   const b = randInt(2, 25);
+  const params = { ...w, place1, place2, a, b, sum: a + b };
   return {
-    text: `${place1}に ${item}が ${a}こ、${place2}に ${b}こ あります。あわせて なんこ？`,
+    text: t("math.wordAddCombine.text", params),
     answer: `${a + b}`,
     type: "number",
-    hint: "「あわせて」と きかれたら、たしざんを つかおう",
-    explain: `${place1}に ${a}こ、${place2}に ${b}こ。あわせると ${a}＋${b}＝${a + b}こ だよ`,
+    hint: t("math.wordAddCombine.hint"),
+    explain: t("math.wordAddCombine.explain", params),
   };
 }
 
 // 求差（「ちがいは いくつ」）。genWordSub の求残（たべて のこりは）と同じ ひきざんだが、
 // 「へらす」のではなく「くらべる」場面なので、考え方の練習になる。
 function genWordSubDiff1() {
-  const [nameA, nameB] = shuffle(WORD_NAMES).slice(0, 2);
-  const item = pick(WORD_ITEMS);
+  const [nameA, nameB] = pickWordNames(2);
+  const w = pickWordItem();
   const a = randInt(6, 40);
   const b = randInt(2, a - 1);
+  const params = { ...w, nameA, nameB, a, b, diff: a - b };
   return {
-    text: `${nameA}は ${item}を ${a}こ、${nameB}は ${b}こ もっています。ちがいは なんこ？`,
+    text: t("math.wordSubDiff1.text", params),
     answer: `${a - b}`,
     type: "number",
-    hint: "「ちがい」を きかれたら、大きいほうから 小さいほうを ひこう",
-    explain: `${a}－${b}＝${a - b}。${nameA}のほうが ${a - b}こ おおいよ`,
+    hint: t("math.wordSubDiff1.hint"),
+    explain: t("math.wordSubDiff1.explain", params),
   };
 }
 
 // 3口の計算（たして、ひく）。2つの式を順にたどる練習。
 function genWordAddSub1() {
-  const { item, past, plain } = pickConsumable();
+  const w = pickConsumable();
   const a = randInt(5, 25);
   const b = randInt(2, 15);
   // のこりが0以下にならないようにする（答えが0の問題は学習価値が低い）
   const c = randInt(2, Math.min(12, a + b - 1));
+  // ⚠️ ローカル変数 c（3つ目の数）と、語彙側の c（助数詞）が名前でぶつかる。
+  //    数のほうを c2 として渡す。逆にすると助数詞が数字に化ける。
+  const params = { ...w, a, b, c2: c, sum: a + b, rest: a + b - c };
   return {
-    text: `${item}が ${a}こ ありました。${b}こ もらって、そのあと ${c}こ ${past}。のこりは なんこ？`,
+    text: t("math.wordAddSub1.text", params),
     answer: `${a + b - c}`,
     type: "number",
-    hint: `はじめの数に もらった数を たして、そのあと ${plain}数を ひこう`,
-    explain: `${a}＋${b}＝${a + b}こ。そこから ${c}こ ${plain}から ${a + b}－${c}＝${a + b - c}こ のこるよ`,
+    hint: t("math.wordAddSub1.hint", { plain: w.plain }),
+    explain: t("math.wordAddSub1.explain", params),
   };
 }
 
@@ -1507,18 +1650,18 @@ function genWordLength2() {
   const b = randInt(3, isAdd ? 40 : a - 2);
   return isAdd
     ? {
-        text: `あおい テープが ${a}cm、あかい テープが ${b}cm あります。つなげると なんcm？`,
+        text: t("math.wordLength2.textAdd", { a, b }),
         answer: `${a + b}`,
         type: "number",
-        hint: "つなげた長さは、2本の長さを たすと もとめられるよ",
-        explain: `${a}＋${b}＝${a + b}（cm）`,
+        hint: t("math.wordLength2.hintAdd"),
+        explain: t("math.wordLength2.explainAdd", { a, b, sum: a + b }),
       }
     : {
-        text: `${a}cm の テープから ${b}cm きりとりました。のこりは なんcm？`,
+        text: t("math.wordLength2.textSub", { a, b }),
         answer: `${a - b}`,
         type: "number",
-        hint: "きりとった長さを ひくと、のこりが もとめられるよ",
-        explain: `${a}－${b}＝${a - b}（cm）`,
+        hint: t("math.wordLength2.hintSub"),
+        explain: t("math.wordLength2.explainSub", { a, b, diff: a - b }),
       };
 }
 
@@ -1530,11 +1673,11 @@ function genWordDivRemainder3() {
   const rest = randInt(1, perCar - 1);
   const total = perCar * cars + rest;
   return {
-    text: `${total}人が 1台に ${perCar}人ずつ 車に のります。ぜんいん のるには 車は なんだい いりますか？`,
+    text: t("math.wordDivRemainder3.text", { total, perCar }),
     answer: `${cars + 1}`,
     type: "number",
-    hint: `${total}÷${perCar} を計算して、あまった人のぶんも 1台 かぞえよう`,
-    explain: `${total}÷${perCar}＝${cars}あまり${rest}。あまった${rest}人にも 車が いるので ${cars}＋1＝${cars + 1}台 だよ`,
+    hint: t("math.wordDivRemainder3.hint", { total, perCar }),
+    explain: t("math.wordDivRemainder3.explain", { total, perCar, cars, rest, need: cars + 1 }),
   };
 }
 
@@ -1544,11 +1687,11 @@ function genWordMulArray2() {
   const rows = randInt(2, 9);
   const cols = randInt(2, 9);
   return {
-    text: `シールを たてに ${rows}れつ、よこに ${cols}れつ ならべて はりました。シールは ぜんぶで なんまい？`,
+    text: t("math.wordMulArray2.text", { rows, cols }),
     answer: `${rows * cols}`,
     type: "number",
-    hint: "「たて × よこ」で ぜんぶの数が もとめられるよ",
-    explain: `たて ${rows}れつ、よこ ${cols}れつ ならんでいるから ${rows}×${cols}＝${rows * cols}まい だよ`,
+    hint: t("math.wordMulArray2.hint"),
+    explain: t("math.wordMulArray2.explain", { rows, cols, total: rows * cols }),
   };
 }
 
@@ -1560,10 +1703,10 @@ function distributiveDivideExplain(rawDividend, divisor, rawQuotient) {
   const qOnes = rawQuotient % 10;
   const tensPart = divisor * qTens;
   if (qOnes === 0) {
-    return `${rawDividend}を ${divisor}で わると、ちょうど ${qTens}になる（${tensPart}÷${divisor}＝${qTens}）`;
+    return t("math.divLong4.explainExact", { a: rawDividend, b: divisor, qTens, tensPart });
   }
   const onesPart = divisor * qOnes;
-  return `${rawDividend}を ${tensPart}と${onesPart}に分けると、${tensPart}÷${divisor}＝${qTens}、${onesPart}÷${divisor}＝${qOnes}。あわせて ${rawQuotient}`;
+  return t("math.divLong4.explainSplit", { a: rawDividend, b: divisor, q: rawQuotient, qTens, qOnes, tensPart, onesPart });
 }
 
 function genDivLong4() {
@@ -1574,7 +1717,7 @@ function genDivLong4() {
     text: `${a} ÷ ${b} = ?`,
     answer: String(q),
     type: "number",
-    hint: "大きい位から じゅんばんに わっていく ひっ算で 計算しよう",
+    hint: t("math.divLong4.hint"),
     explain: distributiveDivideExplain(a, b, q),
   };
 }
@@ -1591,13 +1734,13 @@ function genDecimalAddSub4() {
     ? String(Math.round((a + b) * 100) / 100)
     : String(Math.round((big - small) * 100) / 100);
   const explain = isAdd
-    ? `${a}を 100ばいすると ${aRaw}、${b}を 100ばいすると ${bRaw}。${aRaw}＋${bRaw}＝${aRaw + bRaw}。100で わって もとに もどすと ${answer}`
-    : `${big}を 100ばいすると ${bigRaw}、${small}を 100ばいすると ${smallRaw}。${bigRaw}－${smallRaw}＝${bigRaw - smallRaw}。100で わって もとに もどすと ${answer}`;
+    ? t("math.decimalAddSub4.explainAdd", { a, b, aRaw, bRaw, raw: aRaw + bRaw, answer })
+    : t("math.decimalAddSub4.explainSub", { big, small, bigRaw, smallRaw, raw: bigRaw - smallRaw, answer });
   return {
     text: isAdd ? `${a} ＋ ${b} = ?` : `${big} － ${small} = ?`,
     answer,
     type: "number",
-    hint: "小数点の いちを そろえて、ひっ算で 計算しよう",
+    hint: t("math.decimalAddSub4.hint"),
     explain,
   };
 }
@@ -1609,34 +1752,30 @@ function genRectArea4() {
   const side = isSquare ? w : null;
   return {
     text: isSquare
-      ? `1辺が ${side}cm の 正方形の 面積は なんcm²？`
-      : `たて ${h}cm、よこ ${w}cm の 長方形の 面積は なんcm²？`,
+      ? t("math.rectArea4.textSquare", { side })
+      : t("math.rectArea4.textRect", { h, w }),
     answer: String(isSquare ? side * side : w * h),
     type: "number",
-    hint: isSquare ? "正方形の 面積 ＝ 1辺 × 1辺" : "長方形の 面積 ＝ たて × よこ",
+    hint: t(isSquare ? "math.rectArea4.hintSquare" : "math.rectArea4.hintRect"),
     explain: isSquare
-      ? `${side} × ${side} ＝ ${side * side}（cm²）`
-      : `${h} × ${w} ＝ ${h * w}（cm²）`,
+      ? t("math.rectArea4.explainSquare", { side, area: side * side })
+      : t("math.rectArea4.explainRect", { h, w, area: h * w }),
   };
 }
 
 function genRounding4() {
   const n = randInt(1234, 98765);
-  const places = [
-    { label: "十", unit: 10, lowerLabel: "一" },
-    { label: "百", unit: 100, lowerLabel: "十" },
-    { label: "千", unit: 1000, lowerLabel: "百" },
-  ];
-  const place = pick(places);
+  const place = pick(mathWords().roundPlaces);
   const answer = Math.round(n / place.unit) * place.unit;
   const lowerDigit = Math.floor(n / (place.unit / 10)) % 10;
-  const decision = lowerDigit >= 5 ? "5以上なので きりあげて" : "4以下なので きりさげて";
+  const decision = t(lowerDigit >= 5 ? "math.rounding4.up" : "math.rounding4.down");
+  const params = { n, place: place.label, lower: place.lower, lowerDigit, decision, answer };
   return {
-    text: `${n} を 四捨五入して、${place.label}の位までの がい数に すると?`,
+    text: t("math.rounding4.text", params),
     answer: String(answer),
     type: "number",
-    hint: `${place.label}の位の 1つ下の 数を 見て、4以下なら きりさげ、5以上なら きりあげ`,
-    explain: `${place.label}の位の 1つ下、${place.lowerLabel}の位の 数字は ${lowerDigit}。${decision} ${place.label}の位までの がい数に すると ${answer}`,
+    hint: t("math.rounding4.hint", params),
+    explain: t("math.rounding4.explain", params),
   };
 }
 
@@ -1644,11 +1783,11 @@ function genAngle4() {
   const a = randInt(20, 120);
   const b = randInt(20, 170 - a);
   return {
-    text: `1つの 直線の 上に 2つの 角が ならんでいます。1つが ${a}度、もう1つが ${b}度の とき、のこりの 角は なん度？`,
+    text: t("math.angle4.text", { a, b }),
     answer: String(180 - a - b),
     type: "number",
-    hint: "1つの 直線が つくる 角は ぜんぶで 180度",
-    explain: `180 － ${a} － ${b} ＝ ${180 - a - b}（度）`,
+    hint: t("math.angle4.hint"),
+    explain: t("math.angle4.explain", { a, b, rest: 180 - a - b }),
   };
 }
 
@@ -1657,11 +1796,11 @@ function genWordUnit4() {
   const cm = randInt(10, 99);
   const total = m * 100 + cm;
   return {
-    text: `テープが ${total}cm あります。これは なんm なんcm？（cm の 数を 答えてね。${m}m ◯cm）`,
+    text: t("math.wordUnit4.text", { total, m }),
     answer: String(cm),
     type: "number",
-    hint: "100cm ＝ 1m だよ。100で わった あまりを かんがえよう",
-    explain: `${total}cm ＝ ${m}m ${cm}cm（100cm が ${m}こ ぶんと、あまり ${cm}cm）`,
+    hint: t("math.wordUnit4.hint"),
+    explain: t("math.wordUnit4.explain", { total, m, cm }),
   };
 }
 
@@ -1673,36 +1812,37 @@ function genWordUnit4() {
 function genWordBigNumber4() {
   const base = randInt(12, 98);
   const times = randInt(2, 9);
-  const isMan = Math.random() < 0.6;
-  const unit = isMan ? "万" : "億";
-  const place = pick(["市", "町", "県"]);
-  const what = isMan ? "人口" : "予算";
-  const amount = isMan ? "人" : "円";
+  const w = mathWords();
+  // 6:4 で人口（万）と予算（億）を出し分ける。従来の比率を保つ。
+  const u = Math.random() < 0.6 ? w.bigUnits[0] : w.bigUnits[1];
+  const place = pick(w.bigPlaces);
+  const params = { base, times, place, unit: u.label, what: u.what, amount: u.amount, total: base * times };
   return {
-    text: `ある${place}の ${what}は ${base}${unit}${amount} です。となりの${place}は その ${times}ばい です。となりの${place}の ${what}は なん${unit}${amount}？（${unit}を のぞいた 数を 答えてね）`,
+    text: t("math.wordBigNumber4.text", params),
     answer: String(base * times),
     type: "number",
-    hint: `${unit}の いくつぶんか で かんがえよう。${base} × ${times} を 計算するよ`,
-    explain: `${base}${unit} の ${times}ばい は ${base}×${times}＝${base * times}。つまり ${base * times}${unit}${amount}`,
+    hint: t("math.wordBigNumber4.hint", params),
+    explain: t("math.wordBigNumber4.explain", params),
   };
 }
 
 // がい数で見積もる。正確な計算ではなく「およそいくつか」を考える単元。
 function genWordEstimate4() {
-  const unit = pick([100, 1000]);
-  const label = unit === 100 ? "百" : "千";
+  const place = pick(mathWords().estimatePlaces);
+  const unit = place.unit;
   // きりのいい数にならないよう、下の位に必ず端数を作る
   const make = () => randInt(unit * 2, unit * 9) + randInt(1, unit - 1);
   const a = make();
   const b = make();
   const ra = Math.round(a / unit) * unit;
   const rb = Math.round(b / unit) * unit;
+  const params = { a, b, ra, rb, label: place.label, total: ra + rb };
   return {
-    text: `ある店で 月よう日に ${a}人、火よう日に ${b}人 きました。それぞれ ${label}の位までの がい数に して、2日で およそ なん人か もとめましょう。`,
+    text: t("math.wordEstimate4.text", params),
     answer: String(ra + rb),
     type: "number",
-    hint: `先に それぞれを ${label}の位までの がい数に してから たすよ`,
-    explain: `${a}は およそ ${ra}、${b}は およそ ${rb}。${ra}＋${rb}＝${ra + rb}（人）`,
+    hint: t("math.wordEstimate4.hint", params),
+    explain: t("math.wordEstimate4.explain", params),
   };
 }
 
@@ -1713,20 +1853,21 @@ function genWordDivLarge4() {
   const rest = randInt(1, perBox - 1);
   const total = perBox * boxes + rest;
   const needAll = Math.random() < 0.5;
+  const params = { total, perBox, boxes, rest, need: boxes + 1 };
   return needAll
     ? {
-        text: `${total}この ボールを 1はこに ${perBox}こずつ 入れます。ぜんぶ 入れるには はこは なんこ いりますか？`,
+        text: t("math.wordDivLarge4.textNeed", params),
         answer: String(boxes + 1),
         type: "number",
-        hint: `${total}÷${perBox} を計算して、あまったぶんの はこも かぞえよう`,
-        explain: `${total}÷${perBox}＝${boxes}あまり${rest}。あまった ${rest}こにも はこが いるので ${boxes}＋1＝${boxes + 1}こ`,
+        hint: t("math.wordDivLarge4.hintNeed", params),
+        explain: t("math.wordDivLarge4.explainNeed", params),
       }
     : {
-        text: `${total}この ボールを 1はこに ${perBox}こずつ 入れます。いっぱいに なる はこは なんこ できますか？`,
+        text: t("math.wordDivLarge4.textFull", params),
         answer: String(boxes),
         type: "number",
-        hint: `${total}÷${perBox} の 商が、いっぱいに なった はこの 数だよ`,
-        explain: `${total}÷${perBox}＝${boxes}あまり${rest}。いっぱいに なるのは ${boxes}こ（${rest}こ あまる）`,
+        hint: t("math.wordDivLarge4.hintFull", params),
+        explain: t("math.wordDivLarge4.explainFull", params),
       };
 }
 
@@ -1734,22 +1875,23 @@ function genWordDivLarge4() {
 function genWordAreaRoom4() {
   const w = randInt(3, 12);
   const h = randInt(3, 12);
-  const place = pick(["きょうしつ", "花だん", "にわ", "ちゅう車場"]);
+  const place = pick(mathWords().areaPlaces);
   const isFindSide = Math.random() < 0.4;
+  const params = { w, h, place, area: w * h };
   return isFindSide
     ? {
-        text: `${place}の 面積は ${w * h}m² です。たての 長さが ${h}m の とき、よこの 長さは なんm？`,
+        text: t("math.wordAreaRoom4.textSide", params),
         answer: String(w),
         type: "number",
-        hint: "面積 ÷ たて ＝ よこ。かけ算の ぎゃくを かんがえよう",
-        explain: `${w * h}÷${h}＝${w}（m）`,
+        hint: t("math.wordAreaRoom4.hintSide"),
+        explain: t("math.wordAreaRoom4.explainSide", params),
       }
     : {
-        text: `たて ${h}m、よこ ${w}m の ${place}が あります。面積は なんm²？`,
+        text: t("math.wordAreaRoom4.textArea", params),
         answer: String(w * h),
         type: "number",
-        hint: "長方形の 面積 ＝ たて × よこ",
-        explain: `${h}×${w}＝${w * h}（m²）`,
+        hint: t("math.wordAreaRoom4.hintArea"),
+        explain: t("math.wordAreaRoom4.explainArea", params),
       };
 }
 
@@ -1759,25 +1901,23 @@ function genWordDecimalAmount4() {
   const bRaw = randInt(5, aRaw - 5);
   const a = aRaw / 10, b = bRaw / 10;
   const isAdd = Math.random() < 0.5;
-  const item = pick([
-    { name: "ジュース", unit: "L" },
-    { name: "水", unit: "L" },
-    { name: "さとう", unit: "kg" },
-  ]);
+  const item = pick(mathWords().amountItems);
+  const params = { name: item.name, unit: item.unit, a, b,
+    sum: Math.round((a + b) * 10) / 10, diff: Math.round((a - b) * 10) / 10 };
   return isAdd
     ? {
-        text: `${item.name}が 大きい入れものに ${a}${item.unit}、小さい入れものに ${b}${item.unit} あります。あわせて なん${item.unit}？`,
-        answer: String(Math.round((a + b) * 10) / 10),
+        text: t("math.wordDecimalAmount4.textAdd", params),
+        answer: String(params.sum),
         type: "number",
-        hint: "小数点の いちを そろえて たそう",
-        explain: `${a}＋${b}＝${Math.round((a + b) * 10) / 10}（${item.unit}）`,
+        hint: t("math.wordDecimalAmount4.hintAdd"),
+        explain: t("math.wordDecimalAmount4.explainAdd", params),
       }
     : {
-        text: `${item.name}が ${a}${item.unit} ありました。${b}${item.unit} つかいました。のこりは なん${item.unit}？`,
-        answer: String(Math.round((a - b) * 10) / 10),
+        text: t("math.wordDecimalAmount4.textSub", params),
+        answer: String(params.diff),
         type: "number",
-        hint: "小数点の いちを そろえて ひこう",
-        explain: `${a}－${b}＝${Math.round((a - b) * 10) / 10}（${item.unit}）`,
+        hint: t("math.wordDecimalAmount4.hintSub"),
+        explain: t("math.wordDecimalAmount4.explainSub", params),
       };
 }
 
@@ -1785,18 +1925,17 @@ function genWordDecimalAmount4() {
 function genWordProportion4() {
   const n1 = randInt(2, 6);
   const n2 = n1 + randInt(2, 8);
-  const item = pick([
-    // 1あたりの量は、場面として不自然にならない範囲にする（4mで12円のリボンは安すぎる）
-    { name: "はりがね", unit: "m", amount: "g", word: "重さ", per: randInt(3, 25) },
-    { name: "リボン", unit: "m", amount: "円", word: "ねだん", per: randInt(4, 30) * 10 },
-  ]);
-  const per = item.per;
+  // 1あたりの量は、場面として不自然にならない範囲にする（4mで12円のリボンは安すぎる）
+  const item = pick(mathWords().proportionItems);
+  const per = item.heavy ? randInt(3, 25) : randInt(4, 30) * 10;
+  const params = { name: item.name, unit: item.unit, amount: item.amount, word: item.word,
+    n1, n2, per, first: per * n1, total: per * n2 };
   return {
-    text: `${item.name} ${n1}${item.unit} の ${item.word}は ${per * n1}${item.amount} です。同じ ${item.name} ${n2}${item.unit} では なん${item.amount}？`,
+    text: t("math.wordProportion4.text", params),
     answer: String(per * n2),
     type: "number",
-    hint: `まず 1${item.unit} ぶんの ${item.word}を もとめよう`,
-    explain: `1${item.unit} ぶんは ${per * n1}÷${n1}＝${per}${item.amount}。${n2}${item.unit} では ${per}×${n2}＝${per * n2}${item.amount}`,
+    hint: t("math.wordProportion4.hint", params),
+    explain: t("math.wordProportion4.explain", params),
   };
 }
 
@@ -1809,8 +1948,8 @@ function genDecimalMul5() {
     text: `${a} × ${b} = ?`,
     answer: String(answer),
     type: "number",
-    hint: "小数点が ないものとして かけ算し、あとで 小数点を もどそう",
-    explain: `${a * 10} × ${b} ＝ ${a * 10 * b}。小数点を 1つ もどして ${answer}`,
+    hint: t("math.decimalMul5.hint"),
+    explain: t("math.decimalMul5.explain", { a10: a * 10, b, raw: a * 10 * b, answer }),
   };
 }
 
@@ -1824,8 +1963,8 @@ function genDecimalDiv5() {
     text: `${a} ÷ ${b} = ?`,
     answer: String(q),
     type: "number",
-    hint: "わられる数の 小数点の いちを そのまま 商に うつして 計算しよう",
-    explain: `${a}を 10ばいすると ${a10}。${distributiveDivideExplain(a10, b, q10)}。10で わって もとに もどすと ${q}`,
+    hint: t("math.decimalDiv5.hint"),
+    explain: t("math.decimalDiv5.explain", { a, a10, inner: distributiveDivideExplain(a10, b, q10), q }),
   };
 }
 
@@ -1839,11 +1978,11 @@ function genFractionAddDiff5() {
   const den = d1 * d2;
   const result = reduceFraction(num, den);
   return {
-    text: `${n1}/${d1} ＋ ${n2}/${d2} = ？（やくぶんしてね）`,
+    text: t("math.fractionAddDiff5.text", { n1, d1, n2, d2 }),
     answer: fractionToText(result),
     type: "fraction",
-    hint: "分母を そろえて（通分して）から たしざんしよう",
-    explain: `通分すると ${n1 * d2}/${den} ＋ ${n2 * d1}/${den} ＝ ${num}/${den}。やくぶんして ${fractionToText(result)}`,
+    hint: t("math.fractionAddDiff5.hint"),
+    explain: t("math.fractionAddDiff5.explain", { a: n1 * d2, b: n2 * d1, den, num, reduced: fractionToText(result) }),
   };
 }
 
@@ -1859,11 +1998,11 @@ function genAverage5() {
   }
   values.push(rest);
   return {
-    text: `${values.join("、")} の ${n}つの 数の 平均は いくつ？`,
+    text: t("math.average5.text", { values: values.join(t("math.listSeparator")), n }),
     answer: String(avg),
     type: "number",
-    hint: "平均 ＝ ぜんぶを たした数 ÷ 個数",
-    explain: `ぜんぶ たすと ${values.reduce((x, y) => x + y, 0)}。${n}で わって ${avg}`,
+    hint: t("math.average5.hint"),
+    explain: t("math.average5.explain", { sum: values.reduce((x, y) => x + y, 0), n, avg }),
   };
 }
 
@@ -1872,11 +2011,11 @@ function genPercent5() {
   const pct = pick([5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90]);
   const answer = Math.round(((base * pct) / 100) * 100) / 100;
   return {
-    text: `${base} の ${pct}％ は いくつ？`,
+    text: t("math.percent5.text", { base, pct }),
     answer: String(answer),
     type: "number",
-    hint: "◯％ は 100で わった わりあい。もとの数 × わりあい で もとまるよ",
-    explain: `${pct}％ ＝ ${pct / 100}。${base} × ${pct / 100} ＝ ${answer}`,
+    hint: t("math.percent5.hint"),
+    explain: t("math.percent5.explain", { base, pct, ratio: pct / 100, answer }),
   };
 }
 
@@ -1884,33 +2023,28 @@ function genTriangleArea5() {
   const base = randInt(3, 30);
   const height = randInt(1, 15) * 2;
   return {
-    text: `そこへんが ${base}cm、たかさが ${height}cm の 三角形の 面積は なんcm²？`,
+    text: t("math.triangleArea5.text", { base, height }),
     answer: String((base * height) / 2),
     type: "number",
-    hint: "三角形の 面積 ＝ そこへん × たかさ ÷ 2",
-    explain: `${base} × ${height} ÷ 2 ＝ ${(base * height) / 2}（cm²）`,
+    hint: t("math.triangleArea5.hint"),
+    explain: t("math.triangleArea5.explain", { base, height, area: (base * height) / 2 }),
   };
 }
-
-const PER_UNIT_TEMPLATES = [
-  { unit: "m", item: "リボン", per: "g", label: "おもさ" },
-  { unit: "こ", item: "あめ", per: "円", label: "ねだん" },
-  { unit: "L", item: "ペンキ", per: "㎡", label: "ぬれる面積" },
-  { unit: "さつ", item: "ノート", per: "円", label: "ねだん" },
-  { unit: "本", item: "えんぴつ", per: "円", label: "ねだん" },
-];
 
 function genWordPerUnit5() {
   const perUnit = randInt(3, 30);
   const units = randInt(3, 15);
   const total = perUnit * units;
-  const t = pick(PER_UNIT_TEMPLATES);
+  // ⚠️ ローカルに t という名前を使わない（i18n の t() を隠してしまうため）
+  const tpl = pick(mathWords().perUnitItems);
+  const params = { unit: tpl.unit, unitSg: tpl.unitSg || tpl.unit,
+    item: tpl.item, per: tpl.per, label: tpl.label, units, total, perUnit };
   return {
-    text: `${units}${t.unit}の ${t.item}の${t.label}は ${total}${t.per} です。1${t.unit}あたりの${t.label}は なん${t.per}？`,
+    text: t("math.wordPerUnit5.text", params),
     answer: String(perUnit),
     type: "number",
-    hint: "1あたりの 大きさ ＝ ぜんたい ÷ いくつ分",
-    explain: `${total} ÷ ${units} ＝ ${perUnit}（${t.per}）`,
+    hint: t("math.wordPerUnit5.hint"),
+    explain: t("math.wordPerUnit5.explain", params),
   };
 }
 
@@ -1926,20 +2060,21 @@ function genWordMultiple5() {
   const gcd = (x, y) => (y === 0 ? x : gcd(y, x % y));
   const lcm = (a * b) / gcd(a, b);
   const kind = pick(["bus", "light"]);
+  const params = { a, b, lcm };
   return kind === "bus"
     ? {
-        text: `駅から Aの バスは ${a}分ごと、Bの バスは ${b}分ごとに 出ます。2つが 同時に 出たあと、つぎに 同時に 出るのは なん分後？`,
+        text: t("math.wordMultiple5.textBus", params),
         answer: String(lcm),
         type: "number",
-        hint: `${a}と ${b}の 公倍数の うち、いちばん 小さい数（最小公倍数）を 見つけよう`,
-        explain: `${a}の倍数と ${b}の倍数に 共通する いちばん小さい数は ${lcm}。だから ${lcm}分後`,
+        hint: t("math.wordMultiple5.hintBus", params),
+        explain: t("math.wordMultiple5.explainBus", params),
       }
     : {
-        text: `たて ${a}cm、よこ ${b}cm の カードを すきまなく ならべて 正方形を つくります。いちばん 小さい 正方形の 1辺は なんcm？`,
+        text: t("math.wordMultiple5.textCard", params),
         answer: String(lcm),
         type: "number",
-        hint: `たてにも よこにも きっちり ならぶ長さ＝${a}と ${b}の 最小公倍数`,
-        explain: `${a}と ${b}の 最小公倍数は ${lcm}。だから 1辺 ${lcm}cm`,
+        hint: t("math.wordMultiple5.hintCard", params),
+        explain: t("math.wordMultiple5.explainCard", params),
       };
 }
 
@@ -1952,11 +2087,11 @@ function genWordDivisor5() {
   const a = gcdVal * m;
   const b = gcdVal * n;
   return {
-    text: `あめが ${a}こ、クッキーが ${b}こ あります。どちらも あまりが 出ないように 同じ数ずつ 分けます。いちばん 多くて なん人に 分けられますか？`,
+    text: t("math.wordDivisor5.text", { a, b }),
     answer: String(gcdVal),
     type: "number",
-    hint: `${a}と ${b}の 両方を わりきれる数の うち、いちばん 大きい数（最大公約数）だよ`,
-    explain: `${a}÷${gcdVal}＝${m}、${b}÷${gcdVal}＝${n} で どちらも わりきれる。${gcdVal}より大きい数では わりきれないので ${gcdVal}人`,
+    hint: t("math.wordDivisor5.hint", { a, b }),
+    explain: t("math.wordDivisor5.explain", { a, b, m, n, g: gcdVal }),
   };
 }
 
@@ -1967,20 +2102,22 @@ function genWordPercent5() {
   const pct = pick([10, 15, 20, 25, 30, 40, 50]);
   const isDiscount = Math.random() < 0.6;
   const diff = (price * pct) / 100;
+  const params = { price, pct, diff, ratio: pct / 100, rest: 100 - pct,
+    lower: price - diff, higher: price + diff };
   return isDiscount
     ? {
-        text: `定価 ${price}円の 品物が ${pct}％引きに なりました。ねだんは いくらに なりますか？`,
+        text: t("math.wordPercent5.textDiscount", params),
         answer: String(price - diff),
         type: "number",
-        hint: `${pct}％引き ＝ 定価の (100－${pct})％ を はらうということ`,
-        explain: `ひく分は ${price}×${pct / 100}＝${diff}円。${price}－${diff}＝${price - diff}円`,
+        hint: t("math.wordPercent5.hintDiscount", params),
+        explain: t("math.wordPercent5.explainDiscount", params),
       }
     : {
-        text: `もとの ねだんが ${price}円の 品物が ${pct}％ ねあがりしました。いまの ねだんは いくら？`,
+        text: t("math.wordPercent5.textRaise", params),
         answer: String(price + diff),
         type: "number",
-        hint: `ふえる分は もとの ねだんの ${pct}％。それを もとの ねだんに たすよ`,
-        explain: `ふえる分は ${price}×${pct / 100}＝${diff}円。${price}＋${diff}＝${price + diff}円`,
+        hint: t("math.wordPercent5.hintRaise", params),
+        explain: t("math.wordPercent5.explainRaise", params),
       };
 }
 
@@ -1992,11 +2129,12 @@ function genWordAverage5() {
   const targetAvg = avgSoFar + randInt(2, 8);
   const need = targetAvg * (n + 1) - avgSoFar * n;
   return {
-    text: `テストを ${n}回 うけて、平均は ${avgSoFar}点でした。つぎの テストで なん点 とれば、${n + 1}回の 平均が ${targetAvg}点に なりますか？`,
+    text: t("math.wordAverage5.text", { n, n1: n + 1, avgSoFar, targetAvg }),
     answer: String(need),
     type: "number",
-    hint: `${n + 1}回ぶんの 合計が いくつ 必要か を 先に もとめよう`,
-    explain: `いまの合計は ${avgSoFar}×${n}＝${avgSoFar * n}点。ほしい合計は ${targetAvg}×${n + 1}＝${targetAvg * (n + 1)}点。差の ${need}点が 必要`,
+    hint: t("math.wordAverage5.hint", { n1: n + 1 }),
+    explain: t("math.wordAverage5.explain", { n, n1: n + 1, avgSoFar, targetAvg,
+      now: avgSoFar * n, want: targetAvg * (n + 1), need }),
   };
 }
 
@@ -2014,11 +2152,11 @@ function genWordDensity5() {
   const denser = perA > perB ? "A" : "B";
   const dense = Math.max(perA, perB);
   return {
-    text: `Aの うさぎ小屋は ${areaA}m²に ${totalA}ひき、Bの うさぎ小屋は ${areaB}m²に ${totalB}ひき います。こんでいる ほうの 小屋の 1m²あたりの 数は なんひき？`,
+    text: t("math.wordDensity5.text", { areaA, totalA, areaB, totalB }),
     answer: String(dense),
     type: "number",
-    hint: "どちらも 1m²あたり なんひきか を もとめて くらべよう",
-    explain: `Aは ${totalA}÷${areaA}＝${perA}ひき、Bは ${totalB}÷${areaB}＝${perB}ひき。こんでいるのは ${denser}で ${dense}ひき`,
+    hint: t("math.wordDensity5.hint"),
+    explain: t("math.wordDensity5.explain", { areaA, totalA, perA, areaB, totalB, perB, denser, dense }),
   };
 }
 
@@ -2037,11 +2175,12 @@ function genFractionMul6() {
   const rawNum = a * c, rawDen = b * d;
   const result = reduceFraction(rawNum, rawDen);
   return {
-    text: `${a}/${b} × ${c}/${d} = ？（やくぶんしてね）`,
+    text: t("math.fractionMul6.text", { a, b, c, d }),
     answer: fractionToText(result),
     type: "fraction",
-    hint: "分子どうし、分母どうしを かけてから やくぶんしよう",
-    explain: `分子: ${a}×${c}＝${rawNum}、分母: ${b}×${d}＝${rawDen}。だから ${rawNum}/${rawDen}${reduceExplainSuffix(rawNum, rawDen, result)}`,
+    hint: t("math.fractionMul6.hint"),
+    explain: t("math.fractionMul6.explain", { a, b, c, d, rawNum, rawDen })
+      + reduceExplainSuffix(rawNum, rawDen, result),
   };
 }
 
@@ -2053,11 +2192,12 @@ function genFractionDiv6() {
   const rawNum = n1 * d2, rawDen = d1 * n2;
   const result = reduceFraction(rawNum, rawDen);
   return {
-    text: `${n1}/${d1} ÷ ${n2}/${d2} = ？（やくぶんしてね）`,
+    text: t("math.fractionDiv6.text", { n1, d1, n2, d2 }),
     answer: fractionToText(result),
     type: "fraction",
-    hint: "わる数の分数をひっくり返して、かけ算にしよう",
-    explain: `${n2}/${d2} を ひっくり返すと ${d2}/${n2}。${n1}/${d1} × ${d2}/${n2} ＝ ${rawNum}/${rawDen}${reduceExplainSuffix(rawNum, rawDen, result)}`,
+    hint: t("math.fractionDiv6.hint"),
+    explain: t("math.fractionDiv6.explain", { n1, d1, n2, d2, rawNum, rawDen })
+      + reduceExplainSuffix(rawNum, rawDen, result),
   };
 }
 
@@ -2065,11 +2205,11 @@ function genCircleArea6() {
   const r = randInt(2, 40);
   const area = Math.round(r * r * 3.14 * 100) / 100;
   return {
-    text: `半径 ${r}cm の円の面積は？（cm²、円周率は3.14）`,
+    text: t("math.circleArea6.text", { r }),
     answer: `${area}`,
     type: "number",
-    hint: "円の面積 ＝ 半径 × 半径 × 3.14 の公式を つかおう",
-    explain: `${r} × ${r} × 3.14 ＝ ${area}`,
+    hint: t("math.circleArea6.hint"),
+    explain: t("math.circleArea6.explain", { r, area }),
   };
 }
 
@@ -2078,11 +2218,11 @@ function genVolume6() {
   const w = randInt(2, 12);
   const h = randInt(2, 12);
   return {
-    text: `たて${w}cm、よこ${l}cm、たかさ${h}cm の 直方体の体積は？（cm³）`,
+    text: t("math.volume6.text", { w, l, h }),
     answer: `${l * w * h}`,
     type: "number",
-    hint: "直方体の体積 ＝ たて × よこ × たかさ の公式を つかおう",
-    explain: `${w} × ${l} × ${h} ＝ ${l * w * h}`,
+    hint: t("math.volume6.hint"),
+    explain: t("math.volume6.explain", { w, l, h, volume: l * w * h }),
   };
 }
 
@@ -2096,12 +2236,12 @@ function genRatio6() {
   const a = simpleX * factor;
   const b = simpleY * factor;
   return {
-    text: `${a} : ${b} を いちばん かんたんな 比に すると？`,
+    text: t("math.ratio6.text", { a, b }),
     answer: `${simpleX}:${simpleY}`,
     accept: [`${simpleX}:${simpleY}`, `${simpleX}：${simpleY}`],
     type: "text",
-    hint: "公約数で わって、これ以上われない形にしよう",
-    explain: `${a}と${b}の 最大公約数は ${factor}。両方を それで わると ${simpleX}:${simpleY}`,
+    hint: t("math.ratio6.hint"),
+    explain: t("math.ratio6.explain", { a, b, factor, simpleX, simpleY }),
   };
 }
 
@@ -2110,30 +2250,31 @@ function genWordSpeed() {
   const hours = randInt(2, 9);
   const dist = speed * hours;
   const kind = pick(["distance", "time", "speed"]);
+  const params = { speed, hours, dist };
   if (kind === "time") {
     return {
-      text: `時速 ${speed}kmで はしる 車が ${dist}km すすむのに かかる時間は なん時間？`,
+      text: t("math.wordSpeed.textTime", params),
       answer: `${hours}`,
       type: "number",
-      hint: "時間 ＝ 道のり ÷ 速さ の公式を つかおう",
-      explain: `${dist} ÷ ${speed} ＝ ${hours}（時間）`,
+      hint: t("math.wordSpeed.hintTime"),
+      explain: t("math.wordSpeed.explainTime", params),
     };
   }
   if (kind === "speed") {
     return {
-      text: `車が ${hours}時間で ${dist}km すすみました。時速は なんkm？`,
+      text: t("math.wordSpeed.textSpeed", params),
       answer: `${speed}`,
       type: "number",
-      hint: "速さ ＝ 道のり ÷ 時間 の公式を つかおう",
-      explain: `${dist} ÷ ${hours} ＝ ${speed}（km）`,
+      hint: t("math.wordSpeed.hintSpeed"),
+      explain: t("math.wordSpeed.explainSpeed", params),
     };
   }
   return {
-    text: `時速 ${speed}kmで はしる 車が ${hours}時間 はしると、なんkm すすむ？`,
+    text: t("math.wordSpeed.textDist", params),
     answer: `${dist}`,
     type: "number",
-    hint: "道のり ＝ 速さ × 時間 の公式を つかおう",
-    explain: `時速${speed}km × ${hours}時間 ＝ ${dist}km`,
+    hint: t("math.wordSpeed.hintDist"),
+    explain: t("math.wordSpeed.explainDist", params),
   };
 }
 
@@ -2145,26 +2286,24 @@ function genProportion6() {
   if (x2 === x1) x2 = x1 === 9 ? 1 : x1 + 1;
   const y2 = k * x2;
   return {
-    text: `yはxに比例します。x＝${x1}のとき y＝${y1}です。x＝${x2}のとき yはいくつ？`,
+    text: t("math.proportion6.text", { x1, y1, x2 }),
     answer: `${y2}`,
     type: "number",
-    hint: "比例の関係では、yはいつも「xに決まった数をかけた形」になっているよ",
-    explain: `x＝${x1}のとき y＝${y1}だから、決まった数は ${y1}÷${x1}＝${k}。x＝${x2}のとき y ＝ ${x2} × ${k} ＝ ${y2}`,
+    hint: t("math.proportion6.hint"),
+    explain: t("math.proportion6.explain", { x1, y1, x2, y2, k }),
   };
 }
-
-const COMBINATION_ITEM_POOL = ["あか", "あお", "きいろ", "みどり", "むらさき", "オレンジ", "ピンク", "みずいろ"];
 
 function genCombination6() {
   const n = randInt(3, 5);
   const fact = Array.from({ length: n }, (_, i) => i + 1).reduce((p, c) => p * c, 1);
-  const items = shuffle(COMBINATION_ITEM_POOL).slice(0, n);
+  const items = shuffle(mathWords().colors).slice(0, n);
   return {
-    text: `${items.join("・")}の ${n}まいの カードを 横一列に ならべます。ならべ方は 何通り？`,
+    text: t("math.combination6.text", { items: items.join(t("math.itemSeparator")), n }),
     answer: `${fact}`,
     type: "number",
-    hint: `さいしょの1まいの えらび方は${n}通り、つぎは${n - 1}通り…と かけ算していこう`,
-    explain: `${Array.from({ length: n }, (_, i) => n - i).join("×")}＝${fact}通り`,
+    hint: t("math.combination6.hint", { n, n1: n - 1 }),
+    explain: t("math.combination6.explain", { terms: Array.from({ length: n }, (_, i) => n - i).join("×"), fact }),
   };
 }
 
@@ -2177,11 +2316,11 @@ function genWordRatioSplit6() {
   const total = totalUnits * perUnit;
   const answer = Math.max(rx, ry) * perUnit;
   return {
-    text: `${total}円を ${rx}:${ry}の 比で 2人に わけます。おおい方は いくら？`,
+    text: t("math.wordRatioSplit6.text", { total, rx, ry }),
     answer: `${answer}`,
     type: "number",
-    hint: "比の合計にあわせて、全体をいくつ分にわけるか考えよう",
-    explain: `比の合計は ${rx}＋${ry}＝${totalUnits}。${total}÷${totalUnits}＝${perUnit}円が1あたり。おおい方は ${Math.max(rx, ry)}×${perUnit}＝${answer}円`,
+    hint: t("math.wordRatioSplit6.hint"),
+    explain: t("math.wordRatioSplit6.explain", { rx, ry, totalUnits, total, perUnit, bigger: Math.max(rx, ry), answer }),
   };
 }
 
@@ -2201,11 +2340,11 @@ function genWordFractionMul6() {
   const len = den * randInt(1, 4);
   const answer = (num / den) * len;
   return {
-    text: `1mの 重さが ${num}/${den}kg の ぼうが あります。この ぼう ${len}m の 重さは なんkg？`,
+    text: t("math.wordFractionMul6.text", { num, den, len }),
     answer: String(answer),
     type: "number",
-    hint: "1mあたりの 重さ × 長さ で もとめられるよ",
-    explain: `${num}/${den} × ${len} ＝ ${num}×${len}/${den} ＝ ${num * len}/${den} ＝ ${answer}（kg）`,
+    hint: t("math.wordFractionMul6.hint"),
+    explain: t("math.wordFractionMul6.explain", { num, den, len, prod: num * len, answer }),
   };
 }
 
@@ -2215,20 +2354,21 @@ function genWordCombinationPick6() {
   const n = randInt(4, 8);
   const answer = (n * (n - 1)) / 2;
   const kind = pick(["team", "handshake"]);
+  const params = { n, n1: n - 1, answer };
   return kind === "team"
     ? {
-        text: `${n}つの チームが、どのチームとも 1回ずつ 試合を します。試合は ぜんぶで なん試合？`,
+        text: t("math.wordCombinationPick6.textTeam", params),
         answer: String(answer),
         type: "number",
-        hint: `${n}チームから 2チームを えらぶ 組み合わせの 数だよ。順番は 区別しない`,
-        explain: `${n}×(${n}－1)÷2 ＝ ${n}×${n - 1}÷2 ＝ ${answer}試合（AとBの試合は 1回と数える）`,
+        hint: t("math.wordCombinationPick6.hintTeam", params),
+        explain: t("math.wordCombinationPick6.explainTeam", params),
       }
     : {
-        text: `${n}人が、おたがいに 1回ずつ あくしゅを します。あくしゅは ぜんぶで なん回？`,
+        text: t("math.wordCombinationPick6.textShake", params),
         answer: String(answer),
         type: "number",
-        hint: `${n}人から 2人を えらぶ 組み合わせの 数だよ`,
-        explain: `${n}×(${n}－1)÷2 ＝ ${n}×${n - 1}÷2 ＝ ${answer}回`,
+        hint: t("math.wordCombinationPick6.hintShake", params),
+        explain: t("math.wordCombinationPick6.explainShake", params),
       };
 }
 
@@ -2241,11 +2381,11 @@ function genWordInverse6() {
   let x2 = pick(divisors);
   if (x2 === x1) x2 = divisors[(divisors.indexOf(x1) + 1) % divisors.length];
   return {
-    text: `面積が ${total}cm²の 長方形が あります。たての 長さが ${x1}cm の とき よこは ${total / x1}cm でした。たてを ${x2}cm に すると、よこは なんcm？`,
+    text: t("math.wordInverse6.text", { total, x1, y1: total / x1, x2 }),
     answer: String(total / x2),
     type: "number",
-    hint: "たて × よこ が いつも 同じ数（面積）に なる。これが 反比例の 関係だよ",
-    explain: `たて×よこ＝${total} で いつも 同じ。${total}÷${x2}＝${total / x2}（cm）`,
+    hint: t("math.wordInverse6.hint"),
+    explain: t("math.wordInverse6.explain", { total, x2, y2: total / x2 }),
   };
 }
 
@@ -2256,11 +2396,11 @@ function genWordCircle6() {
   const d = r * 2;
   const area = Math.round(r * r * 3.14 * 100) / 100;
   return {
-    text: `直径 ${d}m の まるい 花だんが あります。この 花だんの 面積は なんm²？（円周率は3.14）`,
+    text: t("math.wordCircle6.text", { d }),
     answer: String(area),
     type: "number",
-    hint: "先に 半径を もとめよう。半径 ＝ 直径 ÷ 2",
-    explain: `半径は ${d}÷2＝${r}m。${r}×${r}×3.14＝${area}（m²）`,
+    hint: t("math.wordCircle6.hint"),
+    explain: t("math.wordCircle6.explain", { d, r, area }),
   };
 }
 
@@ -2274,11 +2414,11 @@ function genWordRatioFind6() {
   const known = rx * unit;
   const answer = ry * unit;
   return {
-    text: `すと あぶらを ${rx}:${ry} の 比で まぜます。すを ${known}mL つかうとき、あぶらは なんmL？`,
+    text: t("math.wordRatioFind6.text", { rx, ry, known }),
     answer: String(answer),
     type: "number",
-    hint: `すの ${rx} が ${known}mL なので、比の 1あたりが いくつかを もとめよう`,
-    explain: `比の1あたりは ${known}÷${rx}＝${unit}mL。あぶらは ${ry}×${unit}＝${answer}mL`,
+    hint: t("math.wordRatioFind6.hint", { rx, known }),
+    explain: t("math.wordRatioFind6.explain", { rx, ry, known, unit, answer }),
   };
 }
 
@@ -2564,7 +2704,21 @@ const CATEGORY_DEFS = {
 };
 
 function categoriesFor(grade, subject) {
+  if (!subjectAvailable(subject)) return [];
   return CATEGORY_DEFS[subject].filter((c) => grade >= c.minGrade).map((c) => c.def);
+}
+
+// 「国語」は日本語のバンク（漢字・ことわざ・四字熟語など）そのものなので、
+// 他の言語には中身が無い。スペイン語版の Lengua（Antónimos・Refranes・
+// Ortografía・Comprensión）を書いたら、ここに "es" を足す。
+//
+// 算数は生成器が数値を作るだけ、英語は英語側が問題本体なので、どちらも
+// 言語に依存しない（es-handoff.md §2）。
+const SUBJECT_LOCALES = { japanese: ["ja"] };
+
+function subjectAvailable(subject) {
+  const allowed = SUBJECT_LOCALES[subject];
+  return !allowed || allowed.includes(getLocale());
 }
 
 // idx は出題する語の位置。呼ぶたびにランダムに選ぶと同じ語が何度も出るため、
@@ -2600,17 +2754,29 @@ function buildReverseMeaningProblem(bank, idx) {
   };
 }
 
-// 英語（外国語）。単語は日→英・英→日の両方向、表現は空所補充。
+// 英語バンクの母語ラベル。英語側（word / text / answer / options）が問題本体で、
+// ja / es はその訳にすぎないので、表示言語に合わせて引き替えるだけで
+// スペイン語話者向けの英語教材になる（es-handoff.md §2）。
+//
+// 訳が無い言語のときは日本語に落とす。t() と揃えた挙動だが、静かに混ざると
+// 気づけないので tools/check_i18n_keys.js が欠落を検出する。
+function nativeGloss(item) {
+  const gloss = item[getLocale()];
+  return gloss !== undefined ? gloss : item.ja;
+}
+
+// 英語（外国語）。単語は母語→英・英→母語の両方向、表現は空所補充。
 function buildEnglishPool(grade, category) {
   const pool = [];
 
   if (category === "tango") {
     const bank = upTo(EN_WORDS, grade, category);
     bank.forEach((item, idx) => {
-      const { word, ja } = item;
+      const word = item.word;
+      const ja = nativeGloss(item);
       const others = shuffle(bank.filter((_, i) => i !== idx));
       const enOptions = others.slice(0, 3).map((x) => x.word);
-      const jaOptions = others.slice(0, 3).map((x) => x.ja);
+      const jaOptions = others.slice(0, 3).map((x) => nativeGloss(x));
       if (enOptions.length < 3) return;
       pool.push({
         grade: item.grade,
@@ -2644,7 +2810,7 @@ function buildEnglishPool(grade, category) {
         options: shuffle([...item.options]),
         answer: item.answer,
         hint: t("q.choiceHint"),
-        explain: t("q.enPhraseExplain", { sentence: item.text.replace("___", item.answer), ja: item.ja }),
+        explain: t("q.enPhraseExplain", { sentence: item.text.replace("___", item.answer), ja: nativeGloss(item) }),
       });
     });
   }
@@ -2947,6 +3113,12 @@ function refreshHome() {
 function openSubjectScreen() {
   document.getElementById("subject-title").textContent = t("grade.course", { grade: gradeLabel(getGrade()) });
 
+  // 中身のない科目はカードごと出さない（いまは日本語以外での「国語」）。
+  // 押せるのに空、という状態を作らないため。
+  document.querySelectorAll(".level-card[data-subject]").forEach((btn) => {
+    btn.classList.toggle("hidden", !subjectAvailable(btn.dataset.subject));
+  });
+
   // 英語は3年から。それ未満の学年では選べないことを示す
   const english = document.getElementById("subject-english");
   const enabled = categoriesFor(getGrade(), "english").length > 0;
@@ -3082,6 +3254,7 @@ function openSettingsScreen() {
     });
   });
 
+  renderLanguageSetting();
   renderYearStartSetting();
   renderPlanSetting();
 
@@ -3093,6 +3266,41 @@ function openSettingsScreen() {
   showScreen("screen-settings");
 }
 
+// 表示言語。ボタンのラベルは LOCALES[x].label（その言語自身の表記）なので、
+// いま読めない言語で表示されていても自分の言語を見つけられる。
+//
+// 切り替えたら location.reload() する。applyTranslations() が入れ替えるのは
+// data-i18n の付いた静的な要素だけで、分野一覧・ずかん・プランなど innerHTML で
+// 組み立てている画面は再描画されない。読み込み直すのが確実で、影響も一度きり。
+function renderLanguageSetting() {
+  const box = document.getElementById("settings-language");
+  if (!box) return;
+  const current = getLocale();
+
+  box.innerHTML = Object.keys(LOCALES).map((code) => `
+    <button type="button" class="grade-option${code === current ? " active" : ""}" data-locale="${code}" lang="${code}">
+      ${LOCALES[code].label}
+    </button>
+  `).join("");
+
+  box.querySelectorAll("[data-locale]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const code = btn.dataset.locale;
+      if (code === getLocale()) return;
+      playClickSound();
+      setLocale(code);
+      location.reload();
+    });
+  });
+}
+
+// 月の名前。日本語は「4月」と数字で足りるが、スペイン語は "abril" と名前で呼ぶ。
+// settings.yearStartMonth には n（数字）と name（名前）の両方を渡し、
+// どちらを使うかは各言語の文言側で決める。
+function monthLabel(m) {
+  return tList("months")[m - 1] || String(m);
+}
+
 // 年度の開始月。よく使う3つ（4月=日本、9月=米国・欧州、3月=韓国・南半球）を
 // ボタンで、それ以外は12ヶ月から選べるようにする。
 function renderYearStartSetting() {
@@ -3102,12 +3310,12 @@ function renderYearStartSetting() {
 
   const quick = SCHOOL_YEAR_START_QUICK.map((m) => `
     <button type="button" class="grade-option${m === current ? " active" : ""}" data-year-start="${m}">
-      ${t("settings.yearStartMonth", { n: m })}
+      ${t("settings.yearStartMonth", { n: m, name: monthLabel(m) })}
     </button>
   `).join("");
 
   const options = Array.from({ length: 12 }, (_, i) => i + 1)
-    .map((m) => `<option value="${m}"${m === current ? " selected" : ""}>${t("settings.yearStartMonth", { n: m })}</option>`)
+    .map((m) => `<option value="${m}"${m === current ? " selected" : ""}>${t("settings.yearStartMonth", { n: m, name: monthLabel(m) })}</option>`)
     .join("");
 
   box.innerHTML = `${quick}
@@ -3142,11 +3350,15 @@ function renderPlanSetting() {
   // 有料会員：状態と「契約の管理」だけ。売り込みは出さない
   if (isPaidPlan()) {
     line.textContent = t("plan.paidLine");
-    // ポータル未設定の間は空の枠を出さない（見た目が壊れて見えるのを防ぐ）
-    box.classList.toggle("hidden", !STRIPE_CUSTOMER_PORTAL_URL);
+    box.classList.remove("hidden");
+    // 解約手段は必ず示す。ポータル未設定でも「解約できない」状態にしてはいけない
+    // （tokusho.html で「せっていのプランからいつでも解約できます」と表示しているため、
+    //   ここが空だと表示と実装が食い違い、特商法上も問題になる）。
     box.innerHTML = STRIPE_CUSTOMER_PORTAL_URL
-      ? `<a class="btn-secondary plan-portal-link" href="${STRIPE_CUSTOMER_PORTAL_URL}" target="_blank" rel="noopener">${t("plan.managePortal")}</a>`
-      : "";
+      ? `<a class="btn-secondary plan-portal-link" href="${STRIPE_CUSTOMER_PORTAL_URL}" target="_blank" rel="noopener">${t("plan.managePortal")}</a>
+         <p class="plan-note">${t("plan.manageNote")}</p>`
+      : `<p class="plan-note">${t("plan.cancelByMail", { email: SUPPORT_EMAIL })}</p>`;
+    box.innerHTML += `<p class="plan-legal"><a href="tokusho.html" target="_blank" rel="noopener">${t("plan.legalLink")}</a></p>`;
     return;
   }
   box.classList.remove("hidden");

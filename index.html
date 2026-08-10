@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=27">
+<link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
 
@@ -151,6 +151,12 @@
     <h2 data-i18n="settings.title"></h2>
     <p class="sub" data-i18n="settings.sub"></p>
     <div class="settings-box" id="settings-grade-list"></div>
+
+    <!-- ことば（表示言語）。言語名はその言語自身で書くので、読めない言語の画面からでも
+         自分の言語を見つけられる。初回は navigator.languages から推測している -->
+    <h3 class="settings-section-title" data-i18n="settings.languageTitle"></h3>
+    <p class="sub" data-i18n="settings.languageDesc"></p>
+    <div class="settings-box" id="settings-language"></div>
 
     <h3 class="settings-section-title" data-i18n="settings.yearStartTitle"></h3>
     <p class="sub" data-i18n="settings.yearStartDesc"></p>
@@ -397,9 +403,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=25"></script>
+<script src="i18n.js?v=29"></script>
 <script src="content-ja.js?v=15"></script>
-<script src="content-en.js?v=6"></script>
-<script src="script.js?v=50"></script>
+<script src="content-en.js?v=7"></script>
+<script src="script.js?v=53"></script>
 </body>
 </html>

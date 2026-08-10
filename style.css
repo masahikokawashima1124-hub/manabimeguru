@@ -300,8 +300,9 @@
   font-size: 0.8rem;
   text-align: center;
 }
+/* 法定表示への導線なので、ほかの注記（--text-muted）より濃くしてコントラストを確保する */
 .plan-legal a {
-  color: var(--text-muted);
+  color: var(--text);
   font-weight: 700;
 }
 
