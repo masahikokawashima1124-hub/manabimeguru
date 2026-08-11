@@ -1180,16 +1180,6 @@ h2 {
   box-shadow: 0 0 0 3px var(--secondary-soft);
 }
 
-.mail-settings-feedback {
-  font-size: 0.85rem;
-  font-weight: 700;
-  min-height: 1.4em;
-  margin: 10px 0 0;
-  text-align: center;
-}
-.mail-settings-feedback.error { color: var(--wrong-dark); }
-.mail-settings-feedback.ok { color: var(--correct-dark); }
-
 .btn-email {
   background: linear-gradient(180deg, var(--secondary-light), var(--secondary));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 0 var(--secondary-dark), 0 10px 20px rgba(28, 122, 168, 0.32);

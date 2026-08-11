@@ -991,7 +991,7 @@ const LOCALES = {
     "math.divRemainder3.accept": ["{q}resto{r}", "{q} r {r}"],
     "math.divRemainder3.hint": "Busca en la tabla del {b} el número más grande que no pase de {a}.",
     "math.divRemainder3.explain": "{b} × {q} = {product}. {a} − {product} = {r}, que es lo que sobra. Por eso, {q} resto {r}.",
-    "math.decimal3.hint": "Alinea las comas y luego calcula.",
+    "math.decimal3.hint": "Alinea los puntos decimales y luego calcula.",
     "math.decimal3.explainAdd": "{a} por 10 es {na}, y {b} por 10 es {nb}. {na}+{nb}={raw}. Dividiendo entre 10 vuelves a {answer}.",
     "math.decimal3.explainSub": "{hi} por 10 es {hiRaw}, y {lo} por 10 es {loRaw}. {hiRaw}−{loRaw}={raw}. Dividiendo entre 10 vuelves a {answer}.",
     "math.fraction.reduceSuffix": ". Dividiendo {rawNum} y {d} entre {g} se simplifica a {reduced}",
@@ -1041,9 +1041,12 @@ const LOCALES = {
 
     // --- 算数の生成器（4年） ---
     "math.divLong4.hint": "Divide con la cuenta larga, empezando por la cifra de mayor valor.",
-    "math.divLong4.explainExact": "{a} entre {b} da justo {qTens} ({tensPart}÷{b}={qTens}).",
-    "math.divLong4.explainSplit": "Separa {a} en {tensPart} y {onesPart}: {tensPart}÷{b}={qTens} y {onesPart}÷{b}={qOnes}. En total, {q}.",
-    "math.decimalAddSub4.hint": "Alinea las comas y calcula en columna.",
+    // ⚠️ 末尾にピリオドを付けないこと。この2つは decimalDiv5.explain の {inner} として
+    //    差し込まれ、呼び出し側が「. Dividiendo...」と続けるため、二重ピリオドになる。
+    //    日本語版も同じ理由で句点を付けていない。
+    "math.divLong4.explainExact": "{a} entre {b} da justo {qTens} ({tensPart}÷{b}={qTens})",
+    "math.divLong4.explainSplit": "Separa {a} en {tensPart} y {onesPart}: {tensPart}÷{b}={qTens} y {onesPart}÷{b}={qOnes}. En total, {q}",
+    "math.decimalAddSub4.hint": "Alinea los puntos decimales y calcula en columna.",
     "math.decimalAddSub4.explainAdd": "{a} por 100 es {aRaw}, y {b} por 100 es {bRaw}. {aRaw}+{bRaw}={raw}. Dividiendo entre 100 vuelves a {answer}.",
     "math.decimalAddSub4.explainSub": "{big} por 100 es {bigRaw}, y {small} por 100 es {smallRaw}. {bigRaw}−{smallRaw}={raw}. Dividiendo entre 100 vuelves a {answer}.",
     "math.rectArea4.textSquare": "Un cuadrado tiene {side} cm de lado. ¿Cuál es su área en cm²?",
@@ -1082,10 +1085,10 @@ const LOCALES = {
     "math.wordAreaRoom4.hintArea": "Área del rectángulo = largo × ancho",
     "math.wordAreaRoom4.explainArea": "{h}×{w}={area} (m²)",
     "math.wordDecimalAmount4.textAdd": "Hay {a} {unit} de {name} en un recipiente grande y {b} {unit} en uno pequeño. ¿Cuántos {unit} hay en total?",
-    "math.wordDecimalAmount4.hintAdd": "Alinea las comas y suma.",
+    "math.wordDecimalAmount4.hintAdd": "Alinea los puntos decimales y suma.",
     "math.wordDecimalAmount4.explainAdd": "{a}+{b}={sum} ({unit})",
     "math.wordDecimalAmount4.textSub": "Había {a} {unit} de {name} y se usaron {b} {unit}. ¿Cuántos {unit} quedan?",
-    "math.wordDecimalAmount4.hintSub": "Alinea las comas y resta.",
+    "math.wordDecimalAmount4.hintSub": "Alinea los puntos decimales y resta.",
     "math.wordDecimalAmount4.explainSub": "{a}−{b}={diff} ({unit})",
     "math.wordProportion4.text": "{n1} {unit} de {name} tienen {word} de {first} {amount}. ¿Y {n2} {unit} del mismo {name}?",
     "math.wordProportion4.hint": "Primero calcula {word} de 1 {unit}.",
@@ -1094,9 +1097,9 @@ const LOCALES = {
     // --- 算数の生成器（5・6年） ---
     "math.listSeparator": ", ",
     "math.itemSeparator": ", ",
-    "math.decimalMul5.hint": "Multiplica como si no hubiera coma y al final vuelve a ponerla.",
-    "math.decimalMul5.explain": "{a10} × {b} = {raw}. Corriendo la coma un lugar sale {answer}.",
-    "math.decimalDiv5.hint": "La coma del dividendo pasa igual al cociente.",
+    "math.decimalMul5.hint": "Multiplica como si no hubiera punto decimal y al final vuelve a ponerlo.",
+    "math.decimalMul5.explain": "{a10} × {b} = {raw}. Corriendo el punto decimal un lugar sale {answer}.",
+    "math.decimalDiv5.hint": "El punto decimal del dividendo pasa igual al cociente.",
     "math.decimalDiv5.explain": "{a} por 10 es {a10}. {inner}. Dividiendo entre 10 vuelves a {q}.",
     "math.fractionAddDiff5.text": "{n1}/{d1} + {n2}/{d2} = ? (simplifica el resultado)",
     "math.fractionAddDiff5.hint": "Pon el mismo denominador en las dos fracciones y después suma.",

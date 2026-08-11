@@ -1191,11 +1191,18 @@ function openCollectionScreen(returnScreen, scope) {
   });
 
   const owned = isFamily ? getFamilyOwnedCards() : getOwnedCards();
-  const ownedCount = Object.keys(owned).length;
 
   // 無料プランのときの分母は「引けるカードの数」。集めきれない枚数を分母に入れると
   // 永久に埋まらないバーになってしまうため。
-  const drawableTotal = drawableCardPool().length;
+  const drawable = drawableCardPool();
+  const drawableTotal = drawable.length;
+
+  // 🔴 分子は分母と同じ母集団だけを数える。
+  //    所持カード全部を数えると「30 / 28」のように分子が分母を超える。
+  //    有料をやめた人は SR・UR を取り上げられない仕様なので、無料に戻ると必ずこうなった。
+  //    持っているプレミアムは図鑑に通常表示され、下の premiumNote でも案内される。
+  const ownedCount = drawable.filter((c) => owned[c.id]).length;
+
   document.getElementById("collection-count-line").textContent =
     t(isFamily ? "collection.countFamily" : "collection.count", { owned: ownedCount, total: drawableTotal });
 
