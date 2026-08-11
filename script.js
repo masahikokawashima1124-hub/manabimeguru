@@ -39,7 +39,7 @@ function isPremiumRarity(rarity) {
 // いま引けるカードの母集団。無料プランではSR・URが出ない（出てから鍵をかけると萎えるので、
 // そもそも抽選に混ぜない）。ずかんにはシルエットで並べて、集める目標としては見せ続ける。
 function drawableCardPool() {
-  return isPaidPlan() ? CARD_POOL : CARD_POOL.filter((c) => !isPremiumRarity(c.rarity));
+  return isPaidPlan() ? RELEASED_CARD_POOL : RELEASED_CARD_POOL.filter((c) => !isPremiumRarity(c.rarity));
 }
 
 // 無料プランのプロフィール上限。プレミアムで PROFILE_MAX 人まで増える。
@@ -758,7 +758,132 @@ const CARD_POOL = [
   { id: "sr7", name: "たなばたかざりのふうせん", rarity: "SR", theme: "starrysky", shape: "round", color: "#fff176", accessory: "book", eye: "star", sparkle: true, flavor: "たんざくと いっしょに かざられていた、ちいさな かみの せいれい。みんなの ねがいごとを よみあげるのが しゅみ。", image: "sr7.webp" },
   { id: "sr8", name: "せいざつなぎのはかせ", rarity: "SR", theme: "starrysky", shape: "round", color: "#283593", accessory: "glasses", eye: "star", sparkle: true, flavor: "よぞらの ほしを せんで つないで、いきものの かたちを つくるのが とくい。まだ だれも しらない せいざを さがしている。", image: "sr8.webp" },
   { id: "ur4", name: "つきよのじょうおう", rarity: "UR", theme: "starrysky", shape: "round", color: "#c5cae9", accessory: "crown", eye: "star", sparkle: true, flavor: "まんげつの よるだけ すがたを あらわす、でんせつの おうひ。なつぞらの せいれいおうと ならんで、よるの そらを おさめている。", image: "ur4.webp" },
+  // ─── 秋冬春120体（2026-08-12・No.041〜160／released:false で当面は非公開） ───
+  { id: "aki-n1", name: "もみじのちいさなて", rarity: "N", theme: "momiji", shape: "round", color: "#e53935", accessory: "none", eye: "dot", flavor: "ちいさな てのひらの かたちで、かぜに ひらひら てを ふっている", image: "aki-n1.webp", released: false },
+  { id: "aki-n2", name: "いちょうのきんいろ", rarity: "N", theme: "momiji", shape: "round", color: "#fdd835", accessory: "ear-tufts", eye: "dot", flavor: "きんいろに ひかる はっぱ。あしもとを まっきんきんに してしまう", image: "aki-n2.webp", released: false },
+  { id: "aki-r1", name: "おちばのやま", rarity: "R", theme: "momiji", shape: "round", color: "#8d6e63", accessory: "none", eye: "sleepy", flavor: "みんなが とびこんでくる、ふかふかの おちばの やま", image: "aki-r1.webp", released: false },
+  { id: "aki-r2", name: "かぜまかせのひとひら", rarity: "R", theme: "momiji", shape: "egg", color: "#ff7043", accessory: "tuft", eye: "dot", flavor: "かぜが ふくほうへ、どこまでも とんでいく", image: "aki-r2.webp", released: false },
+  { id: "aki-sr1", name: "にしきのおりひめ", rarity: "SR", theme: "momiji", shape: "oval", color: "#ad1457", accessory: "none", eye: "star", sparkle: true, flavor: "やまぜんたいを あかや きいろに そめあげる、あきの ぬのおり", image: "aki-sr1.webp", released: false },
+  { id: "aki-sr2", name: "やまぞめのふであるじ", rarity: "SR", theme: "momiji", shape: "oval", color: "#5d4037", accessory: "none", eye: "star", sparkle: true, flavor: "ふでを ひとふりすると、きの てっぺんから いろが おりてくる", image: "aki-sr2.webp", released: false },
+  { id: "aki-n3", name: "どんぐりぼうや", rarity: "N", theme: "nuts", shape: "egg", color: "#a1887f", accessory: "none", eye: "dot", flavor: "ぼうしが ぬげないか いつも きにしている、ちいさな どんぐり", image: "aki-n3.webp", released: false },
+  { id: "aki-n4", name: "まつぼっくりのかさや", rarity: "N", theme: "nuts", shape: "oval", color: "#795548", accessory: "none", eye: "dot", flavor: "あめの ひは かさを とじ、はれた ひは ぱっと ひらく", image: "aki-n4.webp", released: false },
+  { id: "aki-n5", name: "くりのいがぼうず", rarity: "N", theme: "nuts", shape: "round", color: "#689f38", accessory: "none", eye: "dot", flavor: "とげとげの いがの なかに、あまい なかみを かくしている", image: "aki-n5.webp", released: false },
+  { id: "aki-r3", name: "かきのみあかね", rarity: "R", theme: "nuts", shape: "round", color: "#fb8c00", accessory: "none", eye: "dot", flavor: "えだの さきで、ひとつだけ のこって あかく なっている", image: "aki-r3.webp", released: false },
+  { id: "aki-r4", name: "くるみのかたいこ", rarity: "R", theme: "nuts", shape: "round", color: "#4e342e", accessory: "none", eye: "dot", flavor: "だれにも わってもらえない、いちばん かたい からの もちぬし", image: "aki-r4.webp", released: false },
+  { id: "aki-sr3", name: "みのりのかごもち", rarity: "SR", theme: "nuts", shape: "oval", color: "#d7ccc8", accessory: "none", eye: "star", sparkle: true, flavor: "あきの みのりを ぜんぶ かごに いれて はこんでくる", image: "aki-sr3.webp", released: false },
+  { id: "aki-n6", name: "おだんごつみっこ", rarity: "N", theme: "moonviewing", shape: "round", color: "#fff8e1", accessory: "none", eye: "dot", flavor: "だんごを たかく つみあげるのが しごと。ときどき くずれる", image: "aki-n6.webp", released: false },
+  { id: "aki-n7", name: "すすきのほさき", rarity: "N", theme: "moonviewing", shape: "egg", color: "#bcaaa4", accessory: "none", eye: "sleepy", flavor: "かぜが ふくと いっせいに おなじ ほうへ おじぎする", image: "aki-n7.webp", released: false },
+  { id: "aki-r5", name: "つきみうさぎのつきたて", rarity: "R", theme: "moonviewing", shape: "round", color: "#fafafa", accessory: "ear-tufts", eye: "dot", flavor: "つきの うえで、いちねんじゅう もちを ついている", image: "aki-r5.webp", released: false },
+  { id: "aki-r6", name: "くもがくれのいたずら", rarity: "R", theme: "moonviewing", shape: "round", color: "#b0bec5", accessory: "none", eye: "dot", flavor: "いちばん いい ところで つきを かくしてしまう", image: "aki-r6.webp", released: false },
+  { id: "aki-sr4", name: "まんげつのおおきなめ", rarity: "SR", theme: "moonviewing", shape: "round", color: "#ffd54f", accessory: "none", eye: "star", sparkle: true, flavor: "よぞらの まんなかで、まちを ぜんぶ みおろしている", image: "aki-sr4.webp", released: false },
+  { id: "aki-ur1", name: "あきのよのせいれいおうひ", rarity: "UR", theme: "moonviewing", shape: "round", color: "#9575cd", accessory: "crown", eye: "star", sparkle: true, flavor: "あきの よぞらを おさめる、しずかな おうひ", image: "aki-ur1.webp", released: false },
+  { id: "aki-n8", name: "きのこのかさっこ", rarity: "N", theme: "mushroom", shape: "round", color: "#d84315", accessory: "none", eye: "dot", flavor: "あめあがりに ぽこっと あらわれる、ちいさな きのこ", image: "aki-n8.webp", released: false },
+  { id: "aki-n9", name: "しめじのむれっこ", rarity: "N", theme: "mushroom", shape: "round", color: "#bf8f6f", accessory: "none", eye: "dot", flavor: "いつも なかまと かたまって いる。ひとりだと おちつかない", image: "aki-n9.webp", released: false },
+  { id: "aki-n10", name: "まいたけのおどりや", rarity: "N", theme: "mushroom", shape: "oval", color: "#6f4e37", accessory: "none", eye: "dot", flavor: "みつけると おもわず まいたく なるほど うれしい きのこ", image: "aki-n10.webp", released: false },
+  { id: "aki-r7", name: "どくきのこのはでこ", rarity: "R", theme: "mushroom", shape: "round", color: "#e91e63", accessory: "none", eye: "star", flavor: "だれよりも きれいな いろ。でも さわっては いけない", image: "aki-r7.webp", released: false },
+  { id: "aki-sr5", name: "もりのきのこはかせ", rarity: "SR", theme: "mushroom", shape: "oval", color: "#455a64", accessory: "glasses", eye: "star", sparkle: true, flavor: "どの きのこが たべられるか、ぜんぶ しっている", image: "aki-sr5.webp", released: false },
+  { id: "aki-n11", name: "こおろぎのねいろ", rarity: "N", theme: "insects", shape: "oval", color: "#2e7d32", accessory: "tuft", eye: "dot", flavor: "くさむらの したから、りりりと すきとおる おとを ならす", image: "aki-n11.webp", released: false },
+  { id: "aki-n12", name: "すずむしのりんりん", rarity: "N", theme: "insects", shape: "oval", color: "#558b2f", accessory: "none", eye: "dot", flavor: "ちいさな すずを ふるような おとで、あきを しらせる", image: "aki-n12.webp", released: false },
+  { id: "aki-n13", name: "きりぎりすのぎいこ", rarity: "N", theme: "insects", shape: "oval", color: "#9e9d24", accessory: "none", eye: "dot", flavor: "ぎーっちょん、と かたい おとで きざむ", image: "aki-n13.webp", released: false },
+  { id: "aki-r8", name: "むしのねのしきしゃ", rarity: "R", theme: "insects", shape: "egg", color: "#37474f", accessory: "none", eye: "dot", flavor: "くさむら ぜんたいの ねいろを そろえる、よるの しきしゃ", image: "aki-r8.webp", released: false },
+  { id: "aki-r9", name: "あきのねのうたひめ", rarity: "R", theme: "insects", shape: "oval", color: "#880e4f", accessory: "book", eye: "star", flavor: "いちばん とおくまで とどく こえで、あきの おわりを うたう", image: "aki-r9.webp", released: false },
+  { id: "aki-n14", name: "やきいもホカホカ", rarity: "N", theme: "autumnfood", shape: "oval", color: "#8e24aa", accessory: "none", eye: "dot", flavor: "おちばの したで じっくり やかれた、あつあつの やきいも", image: "aki-n14.webp", released: false },
+  { id: "aki-n15", name: "さつまのほりだしっこ", rarity: "N", theme: "autumnfood", shape: "egg", color: "#ce93d8", accessory: "none", eye: "closed", flavor: "つちの なかから、ずぼっと ひきぬかれるのが すき", image: "aki-n15.webp", released: false },
+  { id: "aki-n16", name: "ぎんなんのにおいや", rarity: "N", theme: "autumnfood", shape: "egg", color: "#f9a825", accessory: "tuft", eye: "dot", flavor: "きんいろで きれいなのに、においで おぼえられている", image: "aki-n16.webp", released: false },
+  { id: "aki-r10", name: "あきざけのつきあかり", rarity: "R", theme: "autumnfood", shape: "round", color: "#ffcc80", accessory: "none", eye: "sleepy", flavor: "つきを うつした さかずきの なかに すんでいる", image: "aki-r10.webp", released: false },
+  { id: "aki-r11", name: "さんまのけむりもく", rarity: "R", theme: "autumnfood", shape: "egg", color: "#78909c", accessory: "none", eye: "dot", flavor: "やくと けむりで あたりが まっしろに なる", image: "aki-r11.webp", released: false },
+  { id: "aki-sr6", name: "みのりのしょくたくぬし", rarity: "SR", theme: "autumnfood", shape: "oval", color: "#bf360c", accessory: "none", eye: "star", sparkle: true, flavor: "あきの たべものを ぜんぶ ならべた しょくたくの ぬし", image: "aki-sr6.webp", released: false },
+  { id: "aki-r12", name: "かかしのみはりばん", rarity: "R", theme: "harvest", shape: "egg", color: "#d4a373", accessory: "book", eye: "dot", flavor: "いちねんじゅう おなじ ばしょで、たんぼを みまもっている", image: "aki-r12.webp", released: false },
+  { id: "aki-sr7", name: "いねほのこうべたれ", rarity: "SR", theme: "harvest", shape: "egg", color: "#f0d264", accessory: "none", eye: "closed", sparkle: true, flavor: "みのるほど あたまを さげる、たんぼの おてほん", image: "aki-sr7.webp", released: false },
+  { id: "aki-sr8", name: "とりでのわたりどり", rarity: "SR", theme: "harvest", shape: "oval", color: "#607d8b", accessory: "none", eye: "star", sparkle: true, flavor: "さむく なるまえに、みんなを つれて とおくへ とんでいく", image: "aki-sr8.webp", released: false },
+  { id: "aki-ur2", name: "みのりのおおかまど", rarity: "UR", theme: "harvest", shape: "round", color: "#e64a19", accessory: "none", eye: "star", sparkle: true, flavor: "いちねんの みのりを ぜんぶ たきあげる、でんせつの かまど", image: "aki-ur2.webp", released: false },
+  { id: "aki-ur3", name: "からっかぜのはしりや", rarity: "UR", theme: "harvest", shape: "egg", color: "#90a4ae", accessory: "none", eye: "dot", sparkle: true, flavor: "やまから いっきに ふきおろして、ふゆを つれてくる", image: "aki-ur3.webp", released: false },
+  { id: "aki-ur4", name: "あきぞらのせいれいおう", rarity: "UR", theme: "harvest", shape: "round", color: "#ef6c00", accessory: "crown", eye: "star", sparkle: true, flavor: "あきの すべての せいれいたちを まとめる、みのりの おうさま", image: "aki-ur4.webp", released: false },
+  { id: "fuyu-n1", name: "ゆきのひとひら", rarity: "N", theme: "snow", shape: "round", color: "#e1f5fe", accessory: "tuft", eye: "dot", flavor: "おなじ かたちが ふたつと ない、ちいさな ゆきの けっしょう", image: "fuyu-n1.webp", released: false },
+  { id: "fuyu-n2", name: "こなゆきのさらさら", rarity: "N", theme: "snow", shape: "round", color: "#f5f5f5", accessory: "none", eye: "sleepy", flavor: "さわると さらさら くずれて、かたちに ならない", image: "fuyu-n2.webp", released: false },
+  { id: "fuyu-r1", name: "ぼたゆきのおおつぶ", rarity: "R", theme: "snow", shape: "round", color: "#eceff1", accessory: "none", eye: "dot", flavor: "おおきくて ゆっくり、まうように おちてくる", image: "fuyu-r1.webp", released: false },
+  { id: "fuyu-r2", name: "つららのさかさぼう", rarity: "R", theme: "snow", shape: "egg", color: "#b3e5fc", accessory: "none", eye: "dot", flavor: "のきさきに さかさまに のびる、すきとおった ぼう", image: "fuyu-r2.webp", released: false },
+  { id: "fuyu-sr1", name: "しもばしらのあしおと", rarity: "SR", theme: "snow", shape: "egg", color: "#9fd8df", accessory: "none", eye: "star", sparkle: true, flavor: "あさ いちばんに ふむと、さくさくと おとが なる", image: "fuyu-sr1.webp", released: false },
+  { id: "fuyu-ur1", name: "ゆきげしきのえかき", rarity: "UR", theme: "snow", shape: "oval", color: "#f0f4f8", accessory: "none", eye: "star", sparkle: true, flavor: "ひとばんで まちを まっしろに ぬりかえる", image: "fuyu-ur1.webp", released: false },
+  { id: "fuyu-n3", name: "ゆきだるまのまるこ", rarity: "N", theme: "snowplay", shape: "round", color: "#fcfcfc", accessory: "none", eye: "dot", flavor: "あたまと からだ、ふたつの たまで できている", image: "fuyu-n3.webp", released: false },
+  { id: "fuyu-n4", name: "ゆきがっせんのたまや", rarity: "N", theme: "snowplay", shape: "round", color: "#e3f2fd", accessory: "ear-tufts", eye: "dot", flavor: "いちばん まるい ゆきだまを つくる めいじん", image: "fuyu-n4.webp", released: false },
+  { id: "fuyu-n5", name: "そりのすべりんこ", rarity: "N", theme: "snowplay", shape: "oval", color: "#ef5350", accessory: "none", eye: "star", flavor: "さかを いっきに すべりおりるのが なにより すき", image: "fuyu-n5.webp", released: false },
+  { id: "fuyu-r3", name: "かまくらのなかっこ", rarity: "R", theme: "snowplay", shape: "round", color: "#ffe0b2", accessory: "none", eye: "dot", flavor: "ゆきの いえの なかで、ろうそくを ともして まっている", image: "fuyu-r3.webp", released: false },
+  { id: "fuyu-r4", name: "あしあとのついてくる", rarity: "R", theme: "snowplay", shape: "round", color: "#90caf9", accessory: "none", eye: "dot", flavor: "だれかの あしあとを、そっと ついて あるく", image: "fuyu-r4.webp", released: false },
+  { id: "fuyu-sr2", name: "ゆきやまのちょうじょう", rarity: "SR", theme: "snowplay", shape: "round", color: "#e8eaf6", accessory: "crown", eye: "closed", sparkle: true, flavor: "だれも のぼったことのない、まっしろな やまの てっぺん", image: "fuyu-sr2.webp", released: false },
+  { id: "fuyu-n6", name: "かがみもちのかさねっこ", rarity: "N", theme: "newyear", shape: "round", color: "#fff3e0", accessory: "none", eye: "dot", flavor: "おおきいのと ちいさいの、ふたつ かさなって すわっている", image: "fuyu-n6.webp", released: false },
+  { id: "fuyu-n7", name: "こまのまわりんぼ", rarity: "N", theme: "newyear", shape: "egg", color: "#d81b60", accessory: "none", eye: "star", flavor: "まわっている あいだだけ、まっすぐ たっていられる", image: "fuyu-n7.webp", released: false },
+  { id: "fuyu-n8", name: "たこあげのいととり", rarity: "N", theme: "newyear", shape: "oval", color: "#29b6f6", accessory: "tuft", eye: "dot", flavor: "そらの たかいところまで あがるのが ゆめ", image: "fuyu-n8.webp", released: false },
+  { id: "fuyu-r5", name: "おとしだまのぽちぶくろ", rarity: "R", theme: "newyear", shape: "oval", color: "#d32f2f", accessory: "none", eye: "dot", flavor: "なかみを あけるまで、だれにも わからない", image: "fuyu-r5.webp", released: false },
+  { id: "fuyu-r6", name: "はつもうでのぎょうれつ", rarity: "R", theme: "newyear", shape: "round", color: "#616161", accessory: "none", eye: "dot", flavor: "ながい ながい れつの いちばん うしろに いる", image: "fuyu-r6.webp", released: false },
+  { id: "fuyu-sr3", name: "はつひのでのいちばんぼし", rarity: "SR", theme: "newyear", shape: "egg", color: "#ff8f00", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "いちねんで いちばん さいしょの ひかりを つれてくる", image: "fuyu-sr3.webp", released: false },
+  { id: "fuyu-n9", name: "こたつのもぐりんこ", rarity: "N", theme: "warmth", shape: "round", color: "#f4511e", accessory: "none", eye: "sleepy", flavor: "いちど はいると、にどと でてこられない", image: "fuyu-n9.webp", released: false },
+  { id: "fuyu-n10", name: "みかんのむきじょうず", rarity: "N", theme: "warmth", shape: "round", color: "#ffa726", accessory: "none", eye: "dot", flavor: "かわを ひとつづきで むくのが じまん", image: "fuyu-n10.webp", released: false },
+  { id: "fuyu-n11", name: "なべのぐつぐつ", rarity: "N", theme: "warmth", shape: "round", color: "#6d4c41", accessory: "none", eye: "dot", flavor: "みんなが かこむと、いちばん げんきに なる", image: "fuyu-n11.webp", released: false },
+  { id: "fuyu-r7", name: "ゆたんぽのあしもと", rarity: "R", theme: "warmth", shape: "oval", color: "#ef9a9a", accessory: "none", eye: "closed", flavor: "ふとんの いちばん したで、あさまで あたためる", image: "fuyu-r7.webp", released: false },
+  { id: "fuyu-r8", name: "おでんのしみしみ", rarity: "R", theme: "warmth", shape: "round", color: "#a97142", accessory: "none", eye: "sleepy", flavor: "じかんを かけるほど、あじが しみて おいしくなる", image: "fuyu-r8.webp", released: false },
+  { id: "fuyu-sr4", name: "ふゆのだんろばん", rarity: "SR", theme: "warmth", shape: "oval", color: "#b71c1c", accessory: "none", eye: "star", sparkle: true, flavor: "いえの まんなかで、ひとばんじゅう ひを まもっている", image: "fuyu-sr4.webp", released: false },
+  { id: "fuyu-n12", name: "ろうそくのちいさなひ", rarity: "N", theme: "winterlights", shape: "egg", color: "#fff59d", accessory: "none", eye: "dot", flavor: "ふけば きえてしまう、ちいさくて まっすぐな ひ", image: "fuyu-n12.webp", released: false },
+  { id: "fuyu-n13", name: "まちのイルミネーション", rarity: "N", theme: "winterlights", shape: "round", color: "#7c4dff", accessory: "none", eye: "star", flavor: "まちじゅうを いっせいに きらきらさせる", image: "fuyu-n13.webp", released: false },
+  { id: "fuyu-r9", name: "まどのゆげもよう", rarity: "R", theme: "winterlights", shape: "round", color: "#cfd8dc", accessory: "none", eye: "dot", flavor: "くもった まどに、ゆびで えを かける", image: "fuyu-r9.webp", released: false },
+  { id: "fuyu-r10", name: "ほしぞらのふゆのおおいぬ", rarity: "R", theme: "winterlights", shape: "oval", color: "#1b2a80", accessory: "none", eye: "star", flavor: "ふゆの よぞらで、いちばん あかるく ひかる", image: "fuyu-r10.webp", released: false },
+  { id: "fuyu-sr5", name: "ゆきあかりのしずけさ", rarity: "SR", theme: "winterlights", shape: "round", color: "#e0f7fa", accessory: "none", eye: "closed", sparkle: true, flavor: "ゆきが つもった よるだけ、まちが ほんのり あかるくなる", image: "fuyu-sr5.webp", released: false },
+  { id: "fuyu-n14", name: "くまのねぼすけどん", rarity: "N", theme: "hibernation", shape: "round", color: "#7f5539", accessory: "none", eye: "closed", flavor: "はるまで ずっと ねている。おこしても おきない", image: "fuyu-n14.webp", released: false },
+  { id: "fuyu-n15", name: "りすのためこみや", rarity: "N", theme: "hibernation", shape: "egg", color: "#d2691e", accessory: "tuft", eye: "dot", flavor: "どこに かくしたか、いつも わすれてしまう", image: "fuyu-n15.webp", released: false },
+  { id: "fuyu-n16", name: "かえるのつちのなか", rarity: "N", theme: "hibernation", shape: "round", color: "#4caf50", accessory: "none", eye: "closed", flavor: "つちの したで、まるくなって はるを まつ", image: "fuyu-n16.webp", released: false },
+  { id: "fuyu-r11", name: "ふゆごしのたねつぶ", rarity: "R", theme: "hibernation", shape: "egg", color: "#3e2723", accessory: "none", eye: "closed", flavor: "つちの したで、いちばん ちいさく なって まっている", image: "fuyu-r11.webp", released: false },
+  { id: "fuyu-sr6", name: "ねむりのこもりうた", rarity: "SR", theme: "hibernation", shape: "oval", color: "#5e35b1", accessory: "book", eye: "closed", sparkle: true, flavor: "ふゆじゅう、つちの したの みんなに うたっている", image: "fuyu-sr6.webp", released: false },
+  { id: "fuyu-sr7", name: "きたかぜのふきぬけ", rarity: "SR", theme: "wintersky", shape: "egg", color: "#546e7a", accessory: "none", eye: "dot", sparkle: true, flavor: "まちを いっきに ふきぬけて、みんなを ちぢこませる", image: "fuyu-sr7.webp", released: false },
+  { id: "fuyu-r12", name: "しばれるあさのしろいき", rarity: "R", theme: "wintersky", shape: "round", color: "#edf3f7", accessory: "none", eye: "dot", flavor: "いきを はくと、しろく かたちに なる", image: "fuyu-r12.webp", released: false },
+  { id: "fuyu-ur2", name: "オーロラのゆらめきひめ", rarity: "UR", theme: "wintersky", shape: "oval", color: "#69f0ae", accessory: "none", eye: "star", sparkle: true, flavor: "よぞらに みどりの ぬのを ひろげて ゆらめく", image: "fuyu-ur2.webp", released: false },
+  { id: "fuyu-sr8", name: "ふゆのだいさんかく", rarity: "SR", theme: "wintersky", shape: "round", color: "#3949ab", accessory: "crown", eye: "star", sparkle: true, flavor: "みっつの ほしを むすんで、ふゆの よぞらを ささえる", image: "fuyu-sr8.webp", released: false },
+  { id: "fuyu-ur3", name: "こおりのおおとりで", rarity: "UR", theme: "wintersky", shape: "oval", color: "#0097a7", accessory: "none", eye: "star", sparkle: true, flavor: "かわも うみも いっしゅんで こおらせる、でんせつの ふゆの ぬし", image: "fuyu-ur3.webp", released: false },
+  { id: "fuyu-ur4", name: "ふゆぞらのせいれいおう", rarity: "UR", theme: "wintersky", shape: "round", color: "#bbdefb", accessory: "crown", eye: "closed", sparkle: true, flavor: "ふゆの すべての せいれいたちを まもる、しずかな おうさま", image: "fuyu-ur4.webp", released: false },
+  { id: "haru-n1", name: "さくらのはつひとえ", rarity: "N", theme: "sakura", shape: "round", color: "#f8bbd0", accessory: "none", eye: "dot", flavor: "いちばん さいしょに ひらく、たったひとつの はなびら", image: "haru-n1.webp", released: false },
+  { id: "haru-n2", name: "はなびらのまいおち", rarity: "N", theme: "sakura", shape: "egg", color: "#fce4ec", accessory: "tuft", eye: "closed", flavor: "ちった あとの ほうが、いちばん きれいに まう", image: "haru-n2.webp", released: false },
+  { id: "haru-r1", name: "はざくらのみどりっこ", rarity: "R", theme: "sakura", shape: "round", color: "#81c784", accessory: "none", eye: "dot", flavor: "はなが おわった あとに、そっと でてくる みどりの は", image: "haru-r1.webp", released: false },
+  { id: "haru-r2", name: "よざくらのぼんぼり", rarity: "R", theme: "sakura", shape: "round", color: "#ffecb3", accessory: "none", eye: "dot", flavor: "よるの さくらを したから てらす、ちいさな あかり", image: "haru-r2.webp", released: false },
+  { id: "haru-ur1", name: "さくらふぶきのまいひめ", rarity: "UR", theme: "sakura", shape: "oval", color: "#ff80ab", accessory: "none", eye: "star", sparkle: true, flavor: "かぜが ふくと、はなびらを ぜんぶ まいあげて おどる", image: "haru-ur1.webp", released: false },
+  { id: "haru-sr1", name: "いちりんのおくれざき", rarity: "SR", theme: "sakura", shape: "round", color: "#f06292", accessory: "none", eye: "dot", sparkle: true, flavor: "みんなが ちった あとに、ひとつだけ おそく さく", image: "haru-sr1.webp", released: false },
+  { id: "haru-n3", name: "つくしのぼうやたち", rarity: "N", theme: "sprout", shape: "egg", color: "#aed581", accessory: "none", eye: "dot", flavor: "つちから いっせいに、せのびして あたまを だす", image: "haru-n3.webp", released: false },
+  { id: "haru-n4", name: "たんぽぽのわたげとび", rarity: "N", theme: "sprout", shape: "round", color: "#fffde7", accessory: "none", eye: "dot", flavor: "かぜが ふいたら、みんな ばらばらに とんでいく", image: "haru-n4.webp", released: false },
+  { id: "haru-n5", name: "ふきのとうのにがみくん", rarity: "N", theme: "sprout", shape: "round", color: "#8bc34a", accessory: "none", eye: "dot", flavor: "はるいちばんに でてくる。ちょっと にがい", image: "haru-n5.webp", released: false },
+  { id: "haru-n6", name: "しんめのちいさなて", rarity: "N", theme: "sprout", shape: "egg", color: "#c5e1a5", accessory: "none", eye: "closed", flavor: "えだの さきで、まだ ひらいていない ちいさな め", image: "haru-n6.webp", released: false },
+  { id: "haru-r3", name: "ねっこのしたばたらき", rarity: "R", theme: "sprout", shape: "egg", color: "#6b4f3a", accessory: "none", eye: "dot", flavor: "つちの したで、だれにも みられずに みずを はこぶ", image: "haru-r3.webp", released: false },
+  { id: "haru-sr2", name: "めばえのめざましや", rarity: "SR", theme: "sprout", shape: "round", color: "#ffd740", accessory: "none", eye: "star", sparkle: true, flavor: "つちの したの みんなを、ひとりずつ おこして まわる", image: "haru-sr2.webp", released: false },
+  { id: "haru-n7", name: "もんしろちょうのふらり", rarity: "N", theme: "springlife", shape: "round", color: "#f7f7f2", accessory: "tuft", eye: "dot", flavor: "まっすぐ とべない。いつも ふらふら している", image: "haru-n7.webp", released: false },
+  { id: "haru-r4", name: "つばめのおかえり", rarity: "R", theme: "springlife", shape: "oval", color: "#263238", accessory: "tuft", eye: "dot", flavor: "とおい くにから、まいとし おなじ のきさきに もどってくる", image: "haru-r4.webp", released: false },
+  { id: "haru-n8", name: "おたまじゃくしのあしはえ", rarity: "N", theme: "springlife", shape: "round", color: "#26c6da", accessory: "none", eye: "dot", flavor: "ある あさ、きゅうに あしが はえて びっくりする", image: "haru-n8.webp", released: false },
+  { id: "haru-r5", name: "みつばちのはこびや", rarity: "R", theme: "springlife", shape: "round", color: "#fbc02d", accessory: "none", eye: "dot", flavor: "はなから はなへ、いちにちじゅう はたらいている", image: "haru-r5.webp", released: false },
+  { id: "haru-r6", name: "はるのうぐいすこえならし", rarity: "R", theme: "springlife", shape: "oval", color: "#827717", accessory: "book", eye: "dot", flavor: "まだ うまく なけない。まいにち れんしゅうしている", image: "haru-r6.webp", released: false },
+  { id: "haru-sr3", name: "ちょうのむれのみちしるべ", rarity: "SR", theme: "springlife", shape: "oval", color: "#ffb300", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "むれの せんとうを とんで、みんなを はなばたけへ みちびく", image: "haru-sr3.webp", released: false },
+  { id: "haru-n9", name: "なのはなのきいろばたけ", rarity: "N", theme: "flowerfield", shape: "round", color: "#ffee58", accessory: "crown", eye: "dot", flavor: "みわたす かぎり、いちめんの きいろ", image: "haru-n9.webp", released: false },
+  { id: "haru-n10", name: "チューリップのならびっこ", rarity: "N", theme: "flowerfield", shape: "egg", color: "#ff5252", accessory: "none", eye: "dot", flavor: "いろちがいで きれいに ならんで さいている", image: "haru-n10.webp", released: false },
+  { id: "haru-n11", name: "すみれのすみっこ", rarity: "N", theme: "flowerfield", shape: "round", color: "#673ab7", accessory: "none", eye: "dot", flavor: "みちの すみで、だれにも きづかれずに さいている", image: "haru-n11.webp", released: false },
+  { id: "haru-r7", name: "はなつみのかごもち", rarity: "R", theme: "flowerfield", shape: "round", color: "#dce775", accessory: "none", eye: "dot", flavor: "つんだ はなを かごに いれて、まちじゅうに くばる", image: "haru-r7.webp", released: false },
+  { id: "haru-sr4", name: "はなばたけのおうひ", rarity: "SR", theme: "flowerfield", shape: "oval", color: "#ba68c8", accessory: "none", eye: "star", sparkle: true, flavor: "はなばたけ ぜんたいの さくじゅんを きめる", image: "haru-sr4.webp", released: false },
+  { id: "haru-n12", name: "はるさめのしとしと", rarity: "N", theme: "springrain", shape: "egg", color: "#aed9e0", accessory: "none", eye: "closed", flavor: "おとを たてずに、しずかに いちにちじゅう ふる", image: "haru-n12.webp", released: false },
+  { id: "haru-n13", name: "かすみのぼんやり", rarity: "N", theme: "springrain", shape: "round", color: "#e6e0ec", accessory: "none", eye: "sleepy", flavor: "まちを ぼんやり かすませて、とおくを かくす", image: "haru-n13.webp", released: false },
+  { id: "haru-r8", name: "はるかぜのいたずら", rarity: "R", theme: "springrain", shape: "egg", color: "#40c4ff", accessory: "tuft", eye: "star", flavor: "ぼうしや せんたくものを、ふわっと さらっていく", image: "haru-r8.webp", released: false },
+  { id: "haru-sr5", name: "にじのかけはし", rarity: "SR", theme: "springrain", shape: "round", color: "#f5f0ff", accessory: "comb-gold", eye: "star", sparkle: true, flavor: "あめが あがると、そらに はしを かける", image: "haru-sr5.webp", released: false },
+  { id: "haru-sr6", name: "はなぐもりのそらもよう", rarity: "SR", theme: "springrain", shape: "round", color: "#d1c4e9", accessory: "none", eye: "sleepy", sparkle: true, flavor: "さくらの ころだけ、そらが うすぐもりに なる", image: "haru-sr6.webp", released: false },
+  { id: "haru-n14", name: "ひなにんぎょうのだんかざり", rarity: "N", theme: "springevents", shape: "round", color: "#e57373", accessory: "tuft", eye: "dot", flavor: "いちねんに いちにちだけ、ならんで かざられる", image: "haru-n14.webp", released: false },
+  { id: "haru-n15", name: "こいのぼりのおよぎや", rarity: "N", theme: "springevents", shape: "oval", color: "#1e88e5", accessory: "tuft", eye: "star", flavor: "かぜが ふいたときだけ、そらを およげる", image: "haru-n15.webp", released: false },
+  { id: "haru-n16", name: "さくらもちのはっぱごと", rarity: "N", theme: "springevents", shape: "round", color: "#ffc1d8", accessory: "none", eye: "dot", flavor: "はっぱごと たべるか、のこすかで いつも もめる", image: "haru-n16.webp", released: false },
+  { id: "haru-r9", name: "いちごのつぶつぶ", rarity: "R", theme: "springevents", shape: "round", color: "#f44336", accessory: "none", eye: "star", flavor: "あかくて あまい。はるの いちばん にんきもの", image: "haru-r9.webp", released: false },
+  { id: "haru-r10", name: "よもぎのくさもち", rarity: "R", theme: "springevents", shape: "round", color: "#388e3c", accessory: "none", eye: "dot", flavor: "のはらの かおりを、そのまま もちに とじこめた", image: "haru-r10.webp", released: false },
+  { id: "haru-sr7", name: "はるのしんがくぼう", rarity: "SR", theme: "springevents", shape: "egg", color: "#303f9f", accessory: "none", eye: "star", sparkle: true, flavor: "まっさらな かばんを もって、あたらしい みちを あるきだす", image: "haru-sr7.webp", released: false },
+  { id: "haru-r11", name: "ひばりのたかのぼり", rarity: "R", theme: "springsky", shape: "oval", color: "#ab9080", accessory: "none", eye: "dot", flavor: "そらの たかいところで、とまったまま さえずる", image: "haru-r11.webp", released: false },
+  { id: "haru-r12", name: "かげろうのゆらゆら", rarity: "R", theme: "springsky", shape: "egg", color: "#ffd8a8", accessory: "none", eye: "sleepy", flavor: "あたたかい ひに、じめんが ゆらゆら ゆれてみえる", image: "haru-r12.webp", released: false },
+  { id: "haru-ur2", name: "はるのおぼろづき", rarity: "UR", theme: "springsky", shape: "round", color: "#fff9c4", accessory: "none", eye: "closed", sparkle: true, flavor: "かすんで、ぼんやり やさしく ひかる つき", image: "haru-ur2.webp", released: false },
+  { id: "haru-sr8", name: "はるいちばんのかけぬけ", rarity: "SR", theme: "springsky", shape: "egg", color: "#4fc3f7", accessory: "none", eye: "star", sparkle: true, flavor: "いちねんで さいしょの つよい みなみかぜ", image: "haru-sr8.webp", released: false },
+  { id: "haru-ur3", name: "めざめのおおとりで", rarity: "UR", theme: "springsky", shape: "oval", color: "#43a047", accessory: "none", eye: "star", sparkle: true, flavor: "つちの したの すべてを いっせいに めざめさせる、はるの ぬし", image: "haru-ur3.webp", released: false },
+  { id: "haru-ur4", name: "はるぞらのせいれいおう", rarity: "UR", theme: "springsky", shape: "round", color: "#ffca28", accessory: "crown", eye: "star", sparkle: true, flavor: "はるの すべての せいれいたちを おこす、あかるい おうさま", image: "haru-ur4.webp", released: false },
 ];
+
+// 秋冬春120体は追加コンテンツとして温存中（released:false）。公開までは
+// ガチャ・図鑑・カード総数表示のいずれからも見えない（夏40体のみ運用）。
+const RELEASED_CARD_POOL = CARD_POOL.filter((c) => c.released !== false);
 
 const GACHA_KEY = "gacha_owned";
 
@@ -1077,7 +1202,7 @@ function openCollectionScreen(returnScreen, scope) {
   // プレミアム限定のうち、まだ持っていない枚数だけを案内する
   const premiumLockedCount = isPaidPlan()
     ? 0
-    : CARD_POOL.filter((c) => isPremiumRarity(c.rarity) && !owned[c.id]).length;
+    : RELEASED_CARD_POOL.filter((c) => isPremiumRarity(c.rarity) && !owned[c.id]).length;
   const premiumNote = document.getElementById("collection-premium-note");
   if (premiumNote) {
     premiumNote.textContent = premiumLockedCount ? t("collection.premiumNote", { n: premiumLockedCount }) : "";
@@ -1085,7 +1210,7 @@ function openCollectionScreen(returnScreen, scope) {
   }
 
   const grid = document.getElementById("collection-grid");
-  grid.innerHTML = CARD_POOL.map((card) => {
+  grid.innerHTML = RELEASED_CARD_POOL.map((card) => {
     const count = owned[card.id] || 0;
     // すでに持っているカードは、あとから無料プランになっても取り上げない
     const premium = count === 0 && !isPaidPlan() && isPremiumRarity(card.rarity);
@@ -3370,7 +3495,7 @@ function renderPlanSetting() {
   const benefits = `
     <ul class="plan-benefits">
       <li>${t("plan.benefit1", { n: PROFILE_MAX })}</li>
-      <li>${t("plan.benefit2", { n: CARD_POOL.length })}</li>
+      <li>${t("plan.benefit2", { n: RELEASED_CARD_POOL.length })}</li>
       <li>${t("plan.benefit3")}</li>
     </ul>
     <p class="plan-promise">${t("plan.gachaPromise")}</p>`;
