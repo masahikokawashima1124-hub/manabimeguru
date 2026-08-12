@@ -156,6 +156,11 @@ const LOCALES = {
     "home.weekTitle": "1しゅうかんの がんばり",
     "home.drawGacha": "🎰 ガチャをひく",
 
+    // --- 公式YouTube（アプリの外に出る） ---
+    "youtube.linkHome": "📺 せいれいの どうがを みる",
+    "youtube.linkCollection": "📺 せいれい図鑑チャンネル",
+    "youtube.external": "YouTube がひらきます",
+
     // --- 学年 ---
     "grade.1": "小学1年生",
     "grade.2": "小学2年生",
@@ -734,6 +739,8 @@ const LOCALES = {
     "plan.guestNote": "Para comprar es necesario que una persona adulta cree antes una cuenta.",
     "plan.afterBuyNote": "El pago debe realizarlo una persona adulta. Una vez completado, se aplicará en la aplicación.",
     "plan.managePortal": "Gestionar la suscripción (cancelar o cambiar el pago)",
+    "plan.manageNote": "Escribe el correo electrónico con el que te registraste y te enviaremos un enlace de confirmación. Aunque canceles, podrás seguir usando la aplicación hasta que termine el periodo que ya has pagado.",
+    "plan.cancelByMail": "Si deseas cancelar, escríbenos a {email}. Podrás seguir usando la aplicación hasta que termine el periodo que ya has pagado.",
     "plan.legalLink": "Información legal (Ley japonesa de transacciones comerciales)",
     "plan.upgradedNotice": "🎉 ¡Ya tienes el plan Familia! Puedes conseguir todas las cartas",
 
@@ -748,6 +755,11 @@ const LOCALES = {
     "home.startStudy": "📖 Empezar a estudiar",
     "home.weekTitle": "Tu semana",
     "home.drawGacha": "🎰 Abrir un sobre",
+
+    // --- YouTube oficial (sale de la app) ---
+    "youtube.linkHome": "📺 Ver los vídeos de los espíritus",
+    "youtube.linkCollection": "📺 Canal del álbum de espíritus",
+    "youtube.external": "Se abre YouTube",
 
     // --- 学年 ---
     // Primaria は6年制（España・México とも 6〜12歳）。日本の小1〜6と1対1で対応する。
@@ -1198,12 +1210,88 @@ const LOCALES = {
   },
 };
 
-// ⚠️ **算数のスペイン語化が終わるまで false のままにすること。**
-// true にすると、スペイン語ブラウザの訪問者が自動でスペイン語版に入る。
-// いまは算数の生成器（ヒント・解説・文章題）が日本語のままなので、
-// 「算数だけ日本語」という状態を初見の人に見せることになる。
-// es-handoff.md §5 の⑤が終わったら true に戻す。
-// それまでも、せってい画面からの手動切り替えでは普通に検証できる。
+// ── カードの表示（画像と alt） ──────────────────────────────
+//
+// カード画像は名前・レアリティ・説明文をデザインに焼き込んだフルアートで、
+// script.js の renderCardHTML はその上に文字を重ねない。
+// つまり言語の切り替えは「画像そのものの差し替え」になる。
+//
+// 同じファイル名（n1.webp など）を使うので、スペイン語版は必ず別ディレクトリに置く。
+// assets/cards/ を上書きすると main へマージした瞬間に日本語版が壊れる。
+const LOCALE_CARD_DIR = {
+  ja: "assets/cards",
+  es: "assets/cards-es",
+};
+
+// 説明文（flavor）は画像の中だけにあり、HTMLには一度も描画されない。
+// なので翻訳が要るのは alt 属性に使う名前だけ。
+// 正典は card-es-names.md。並びは図鑑番号順（tools/build_es_cards.py と同じ）。
+const CARD_NAMES = {
+  es: {
+    n1: "Espíritu Hanabi",                    // No.001
+    n2: "Burbujita",                          // No.002
+    n3: "Gorrión de Feria",                   // No.003
+    n4: "Ciervo Volante",                     // No.004
+    n5: "Hielo Picado",                       // No.005
+    n6: "Chispita de Bengala",                // No.006
+    n7: "Peque Flotador",                     // No.007
+    n8: "Pececillo Rojo",                     // No.008
+    r1: "Señor del Gran BUM",                 // No.009
+    r2: "Espíritu del Oleaje",                // No.010
+    r3: "Chico del Tambor",                   // No.011
+    r4: "Capitán Escarabajo",                 // No.012
+    r5: "Espíritu del Polo",                  // No.013
+    r6: "Luciérnaga Brillo",                  // No.014
+    sr1: "Fuego de Arcoíris",                 // No.015
+    sr2: "Señor del Abismo",                  // No.016
+    sr3: "Bailarina de Verano",               // No.017
+    sr4: "Princesa de Hielo",                 // No.018
+    ur1: "Dragón de la Montaña",              // No.019
+    ur2: "Rey de los Espíritus",              // No.020
+    n9: "Chispa Saltarina",                   // No.021
+    r7: "Aprendiz Pirotécnico",               // No.022
+    n10: "Olita",                             // No.023
+    r8: "Buscaconchas",                       // No.024
+    n11: "Algodoncito",                       // No.025
+    r9: "Manzana Brillante",                  // No.026
+    n12: "Cigarra Cantora",                   // No.027
+    n13: "Don Libélula",                      // No.028
+    sr5: "Escarabajo Joya",                   // No.029
+    n14: "Pepita de Sandía",                  // No.030
+    r10: "Dragoncito de Soda",                // No.031
+    n15: "Campanita de Viento",               // No.032
+    r11: "Sombra Fresca",                     // No.033
+    sr6: "Chaparrón de Tarde",                // No.034
+    ur3: "Señor de la Brisa",                 // No.035
+    n16: "Trocito de Estrella",               // No.036
+    r12: "Nana de la Vía Láctea",             // No.037
+    sr7: "Globo de los Deseos",               // No.038
+    sr8: "Sabio de Estrellas",                // No.039
+    ur4: "Reina de la Luna",                  // No.040
+  },
+};
+
+function cardImageDir() {
+  return LOCALE_CARD_DIR[getLocale()] || LOCALE_CARD_DIR[DEFAULT_LOCALE];
+}
+
+// 未登録のIDでは日本語名に落ちる。alt が空になるよりは読める名前が入るほうがまし。
+// 漏れは tools/check_i18n_keys.js が検出する。
+function cardName(cardDef) {
+  const names = CARD_NAMES[getLocale()];
+  return (names && names[cardDef.id]) || cardDef.name;
+}
+
+// ── 言語の決め方 ────────────────────────────────────────
+//
+// スペイン語版は別URLで配る方針のため、そのデプロイでは実行時に推測せず
+// ここを "es" に固定する（配信先が決まった時点で設定する）。
+// null のあいだは日本語版としてふるまい、せってい画面から手動で切り替えられる。
+const FORCED_LOCALE = null;
+
+// 自動判定は、別URL方式にしたことで役目が無くなった。
+// （スペイン語圏の訪問者は最初からスペイン語版のURLに来るため）
+// 日本語版と同居させる構成に戻すときだけ true にする意味が出る。
 const LOCALE_AUTODETECT = false;
 
 // まだ一度も選んでいない人には、ブラウザの表示言語から推測した言語を出す。
@@ -1222,6 +1310,8 @@ function detectLocale() {
 }
 
 function getLocale() {
+  // 単一言語で配るデプロイでは、保存値もブラウザ設定も見ない。
+  if (FORCED_LOCALE && LOCALES[FORCED_LOCALE]) return FORCED_LOCALE;
   const saved = localStorage.getItem(LOCALE_KEY);
   if (saved && LOCALES[saved]) return saved;
   return detectLocale();

@@ -973,7 +973,7 @@ function drawGachaCard() {
 
 function cardArtMarkup(cardDef) {
   if (cardDef.image) {
-    return `<img class="card-art" src="assets/cards/${cardDef.image}" alt="${cardDef.name}" loading="lazy">`;
+    return `<img class="card-art" src="${cardImageDir()}/${cardDef.image}" alt="${cardName(cardDef)}" loading="lazy">`;
   }
   const cfg = { shape: cardDef.shape, color: cardDef.color, accessory: cardDef.accessory, eye: cardDef.eye, sparkle: !!cardDef.sparkle };
   return renderCreatureHTML(cfg, "creature-slot--card");
@@ -1011,14 +1011,14 @@ function renderCardHTML(cardDef, opts) {
     return `
       <div class="card card--full-art rarity-${cardDef.rarity}">
         ${isNew ? `<div class="card-new-badge">NEW!</div>` : ""}
-        <img class="card-art card-art--full" src="assets/cards/${cardDef.image}" alt="${cardDef.name}" loading="lazy">
+        <img class="card-art card-art--full" src="${cardImageDir()}/${cardDef.image}" alt="${cardName(cardDef)}" loading="lazy">
         ${count > 1 ? `<div class="card-count">× ${count}</div>` : ""}
       </div>
     `;
   }
 
   const theme = THEME_INFO[cardDef.theme];
-  const nameLine = `${theme ? `<span class="card-theme-icon" title="${theme.label}">${theme.icon}</span> ` : ""}${cardDef.name}`;
+  const nameLine = `${theme ? `<span class="card-theme-icon" title="${theme.label}">${theme.icon}</span> ` : ""}${cardName(cardDef)}`;
   return `
     <div class="card rarity-${cardDef.rarity}">
       <div class="card-rarity-badge">${cardDef.rarity}</div>
