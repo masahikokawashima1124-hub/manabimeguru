@@ -53,10 +53,11 @@ function profileLimit() {
 // account-design.md §10-9。Stripe ダッシュボードで Payment Link を作り、
 // そのURLをここに貼る（手順は functions/README.md）。
 // 空の間は、せっていの「プラン」に「準備中」と出るだけで、購入ボタンは動かない。
-// テストモードのURL（buy.stripe.com/test_...）を貼れば、テスト決済で一連の流れを確認できる。
+// 【2026-08-13 本番モードに切り替え済み】webhookエンドポイント・シークレットキーも
+// 本番用に差し替え済み（HANDOFF.md参照）。
 const STRIPE_PAYMENT_LINKS = {
-  monthly: "https://buy.stripe.com/test_5kQ9AVdeH845fWNaVT1ZS01", // 月払い ¥1,480。テストモード
-  yearly: "https://buy.stripe.com/test_5kQaEZ8YrgABfWN1lj1ZS00", // 年払い ¥14,800（2か月ぶん無料）。テストモード
+  monthly: "https://buy.stripe.com/fZudRaeqC067gwq9tK7kc00", // 月払い ¥1,480
+  yearly: "https://buy.stripe.com/cNi9AU0zM4mn1BwaxO7kc01", // 年払い ¥14,800（2か月ぶん無料）
 };
 
 // 契約の管理（解約・お支払い方法の変更）。Stripe カスタマーポータルのURL。
@@ -1384,6 +1385,43 @@ function genAdd3() {
   };
 }
 
+// 3〜4桁のひき算を、位ごとに くり下がりの有無を示しながら説明する。
+// genAdd2 の explainCarry（一の位→十の位の1回のくり上がり）を、
+// 桁数可変・複数回のくり下がりに対応させたもの。
+const SUB3_PLACE_KEYS = ["math.placeOnes", "math.placeTens", "math.placeHundreds", "math.placeThousands"];
+function subtractStepsExplain(a, b) {
+  const digitAt = (n, i) => Math.floor(n / 10 ** i) % 10;
+  const len = String(a).length;
+  let borrowIn = 0;
+  const lines = [];
+  for (let i = 0; i < len; i++) {
+    const place = t(SUB3_PLACE_KEYS[i]);
+    const bot = digitAt(b, i);
+    const hadBorrowIn = borrowIn > 0;
+    // 位の数字が0で、さらに下の位への貸し出し分も差し引く場合、そのままだと負の数になる。
+    // 「-1」のようなマイナスをそのまま見せると小学生には分からないので、10を足して
+    // 正しい1桁の数字（＝さらに上の位からも借りている状態）にそろえる。
+    let top = digitAt(a, i) - borrowIn;
+    let cascaded = false;
+    if (top < 0) {
+      top += 10;
+      cascaded = true;
+    }
+    if (top < bot) {
+      const borrowedTop = top + 10;
+      lines.push(t("math.sub3.stepBorrowOut", { place, top, bot, borrowedTop, digit: borrowedTop - bot }));
+      borrowIn = 1;
+    } else if (cascaded || hadBorrowIn) {
+      lines.push(t("math.sub3.stepBorrowIn", { place, top, bot, digit: top - bot }));
+      borrowIn = cascaded ? 1 : 0;
+    } else {
+      lines.push(t("math.sub3.step", { place, top, bot, digit: top - bot }));
+      borrowIn = 0;
+    }
+  }
+  return `${lines.join("。")}。${t("math.sub3.final", { a, b, diff: a - b })}`;
+}
+
 function genSub3() {
   let a = randInt(100, 9000);
   let b = randInt(100, 9000);
@@ -1394,7 +1432,7 @@ function genSub3() {
     answer: `${a - b}`,
     type: "number",
     hint: t("math.sub3.hint"),
-    explain: t("math.sub3.explain", { a, b, diff: a - b }),
+    explain: subtractStepsExplain(a, b),
   };
 }
 
@@ -1646,8 +1684,8 @@ function pickWordPlaces(n) {
 
 function genWordAdd() {
   const w = pickWordItem();
-  const a = randInt(5, 40);
-  const b = randInt(2, 30);
+  const a = randInt(3, 12);
+  const b = randInt(2, Math.min(12, 20 - a));
   return {
     text: t("math.wordAdd.text", { ...w, a, b }),
     answer: `${a + b}`,
@@ -1667,8 +1705,8 @@ function pickConsumable() {
 
 function genWordSub() {
   const w = pickConsumable();
-  const b = randInt(2, 30);
-  const bigger = randInt(5, 40) + b;
+  const bigger = randInt(3, 18);
+  const b = randInt(1, bigger - 1);
   return {
     text: t("math.wordSub.text", { ...w, bigger, b }),
     answer: `${bigger - b}`,
@@ -1728,8 +1766,8 @@ function genWordAddCombine() {
   // 種類の違うものを合算すると不自然になるので、同じものが2か所にある形にする
   const w = pickWordItem();
   const [place1, place2] = pickWordPlaces(2);
-  const a = randInt(3, 30);
-  const b = randInt(2, 25);
+  const a = randInt(3, 12);
+  const b = randInt(2, Math.min(12, 20 - a));
   const params = { ...w, place1, place2, a, b, sum: a + b };
   return {
     text: t("math.wordAddCombine.text", params),
@@ -1745,8 +1783,8 @@ function genWordAddCombine() {
 function genWordSubDiff1() {
   const [nameA, nameB] = pickWordNames(2);
   const w = pickWordItem();
-  const a = randInt(6, 40);
-  const b = randInt(2, a - 1);
+  const a = randInt(3, 18);
+  const b = randInt(1, a - 1);
   const params = { ...w, nameA, nameB, a, b, diff: a - b };
   return {
     text: t("math.wordSubDiff1.text", params),
@@ -1760,10 +1798,10 @@ function genWordSubDiff1() {
 // 3口の計算（たして、ひく）。2つの式を順にたどる練習。
 function genWordAddSub1() {
   const w = pickConsumable();
-  const a = randInt(5, 25);
-  const b = randInt(2, 15);
+  const a = randInt(3, 12);
+  const b = randInt(2, Math.min(8, 20 - a));
   // のこりが0以下にならないようにする（答えが0の問題は学習価値が低い）
-  const c = randInt(2, Math.min(12, a + b - 1));
+  const c = randInt(2, Math.min(10, a + b - 1));
   // ⚠️ ローカル変数 c（3つ目の数）と、語彙側の c（助数詞）が名前でぶつかる。
   //    数のほうを c2 として渡す。逆にすると助数詞が数字に化ける。
   const params = { ...w, a, b, c2: c, sum: a + b, rest: a + b - c };
@@ -3409,6 +3447,13 @@ function openSettingsScreen() {
 function renderLanguageSetting() {
   const box = document.getElementById("settings-language");
   if (!box) return;
+
+  // 単一言語で配るデプロイでは切替を出さない。getLocale() が FORCED_LOCALE を
+  // 返すので、押しても何も起きないボタンが残ってしまう。見出しと説明文ごと隠す。
+  const row = document.getElementById("settings-language-row") || box;
+  row.classList.toggle("hidden", !!FORCED_LOCALE);
+  if (FORCED_LOCALE) return;
+
   const current = getLocale();
 
   box.innerHTML = Object.keys(LOCALES).map((code) => `
@@ -3500,6 +3545,7 @@ function renderPlanSetting() {
   line.textContent = t("plan.freeLine");
 
   const benefits = `
+    <p class="plan-benefit-intro">${t("plan.benefitIntro")}</p>
     <ul class="plan-benefits">
       <li>${t("plan.benefit1", { n: PROFILE_MAX })}</li>
       <li>${t("plan.benefit2", { n: RELEASED_CARD_POOL.length })}</li>
@@ -3843,6 +3889,7 @@ function openCategoryScreen() {
     list.appendChild(btn);
   });
 
+  setGuide("category");
   showScreen("screen-category");
 }
 
@@ -4087,7 +4134,7 @@ function finishSession() {
 }
 
 function buildResultSummary(r) {
-  const grade = gradeLabel(r.level);
+  const grade = gradeLabel(r.grade);
   const subjectLabel = t(`subject.${r.subject}`);
   const date = new Date().toLocaleDateString(t("locale.dateFormat"), {
     year: "numeric", month: "long", day: "numeric",

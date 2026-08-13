@@ -240,6 +240,13 @@
   margin-top: 10px;
 }
 
+.plan-benefit-intro {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
 .plan-benefits {
   margin: 0 0 12px;
   padding-left: 1.3em;
@@ -1093,6 +1100,15 @@ h2 {
   background: #fff;
   border-radius: 22px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+/* ログイン・新規登録・プロフィール作成画面：カード下の余白を埋める飾り */
+.auth-mascot {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  margin: 32px auto 0;
+  filter: drop-shadow(0 8px 12px rgba(90, 40, 90, 0.18));
 }
 .profile-field-label {
   font-weight: 800;
