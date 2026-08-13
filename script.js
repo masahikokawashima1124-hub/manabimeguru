@@ -55,10 +55,38 @@ function profileLimit() {
 // 空の間は、せっていの「プラン」に「準備中」と出るだけで、購入ボタンは動かない。
 // 【2026-08-13 本番モードに切り替え済み】webhookエンドポイント・シークレットキーも
 // 本番用に差し替え済み（HANDOFF.md参照）。
-const STRIPE_PAYMENT_LINKS = {
-  monthly: "https://buy.stripe.com/fZudRaeqC067gwq9tK7kc00", // 月払い ¥1,480
-  yearly: "https://buy.stripe.com/cNi9AU0zM4mn1BwaxO7kc01", // 年払い ¥14,800（2か月ぶん無料）
+//
+// ⚠️ **ロケールごとに分けてある。** 1つの定数を全言語で共有してはいけない。
+//    Payment Link は通貨と価格が焼き付いているので、日本語版のリンクをスペイン語版に
+//    出すと「Mensual: 1.480 JPY」という円建ての購入ボタンをスペイン語圏の保護者に
+//    見せることになる（es-handoff.md §6 が明確に避けるとしている状態）。
+//    価格が決まっていない言語は空のままにしておけば「準備中」が出る。
+const STRIPE_PAYMENT_LINKS_BY_LOCALE = {
+  ja: {
+    monthly: "https://buy.stripe.com/fZudRaeqC067gwq9tK7kc00", // 月払い ¥1,480
+    yearly: "https://buy.stripe.com/cNi9AU0zM4mn1BwaxO7kc01", // 年払い ¥14,800（2か月ぶん無料）
+  },
+  // スペイン語圏の価格は未定（account-design.md §8-2 のPPP調整が前提）。
+  // 対象国・通貨・現地の表示義務が決まるまでは空のままにする。
+  es: { monthly: "", yearly: "" },
 };
+
+function stripePaymentLinks() {
+  return STRIPE_PAYMENT_LINKS_BY_LOCALE[getLocale()] || { monthly: "", yearly: "" };
+}
+
+// 法的情報のページを配っている言語かどうか。
+// tokusho.html は日本の特定商取引法の表示なので、日本語版にしか配布していない
+// （tools/sync-public.sh の --locale es は配布対象から外す）。
+// リンクだけ出すと404になるので、配っている言語でのみ出す。
+function hasLegalPage() {
+  return getLocale() === "ja";
+}
+
+function legalLinkHTML() {
+  if (!hasLegalPage()) return "";
+  return `<p class="plan-legal"><a href="tokusho.html" target="_blank" rel="noopener">${t("plan.legalLink")}</a></p>`;
+}
 
 // 契約の管理（解約・お支払い方法の変更）。Stripe カスタマーポータルのURL。
 // ダッシュボード →「設定」→「Billing」→「カスタマーポータル」で有効化すると発行される。
@@ -3537,7 +3565,7 @@ function renderPlanSetting() {
       ? `<a class="btn-secondary plan-portal-link" href="${STRIPE_CUSTOMER_PORTAL_URL}" target="_blank" rel="noopener">${t("plan.managePortal")}</a>
          <p class="plan-note">${t("plan.manageNote")}</p>`
       : `<p class="plan-note">${t("plan.cancelByMail", { email: SUPPORT_EMAIL })}</p>`;
-    box.innerHTML += `<p class="plan-legal"><a href="tokusho.html" target="_blank" rel="noopener">${t("plan.legalLink")}</a></p>`;
+    box.innerHTML += legalLinkHTML();
     return;
   }
   box.classList.remove("hidden");
@@ -3566,8 +3594,9 @@ function renderPlanSetting() {
     return;
   }
 
-  const monthly = buildUpgradeUrl(STRIPE_PAYMENT_LINKS.monthly);
-  const yearly = buildUpgradeUrl(STRIPE_PAYMENT_LINKS.yearly);
+  const links = stripePaymentLinks();
+  const monthly = buildUpgradeUrl(links.monthly);
+  const yearly = buildUpgradeUrl(links.yearly);
 
   // Payment Link 未設定＝まだ販売を始めていない。買えそうで買えないボタンは出さない
   if (!monthly && !yearly) {
@@ -3582,7 +3611,7 @@ function renderPlanSetting() {
       ${yearly ? `<a class="btn-primary plan-buy-link" href="${yearly}" target="_blank" rel="noopener">${t("plan.yearly")}</a>` : ""}
     </div>
     <p class="plan-note">${t("plan.afterBuyNote")}</p>
-    <p class="plan-legal"><a href="tokusho.html" target="_blank" rel="noopener">${t("plan.legalLink")}</a></p>`;
+    ${legalLinkHTML()}`;
 }
 
 // ===== プロフィール画面 =====
