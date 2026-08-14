@@ -673,7 +673,11 @@ const GUIDE_CHARACTER = {
 const GUIDE_MOOD_POSE = {
   home: "greet",
   subject: "happy",
+  category: "greet",
   start: "happy",
+  gacha: "cheer",
+  collection: "happy",
+  settings: "greet",
   correct: "cheer",
   wrong: "think",
   resultHigh: "cheer",
@@ -1263,6 +1267,7 @@ function openCollectionScreen(returnScreen, scope) {
     });
   });
 
+  setGuide("collection");
   showScreen("screen-collection");
 }
 
@@ -2182,7 +2187,8 @@ function genFractionAddDiff5() {
     answer: fractionToText(result),
     type: "fraction",
     hint: t("math.fractionAddDiff5.hint"),
-    explain: t("math.fractionAddDiff5.explain", { a: n1 * d2, b: n2 * d1, den, num, reduced: fractionToText(result) }),
+    explain: t("math.fractionAddDiff5.explain", { a: n1 * d2, b: n2 * d1, den, num })
+      + reduceExplainSuffix(num, den, result),
   };
 }
 
@@ -3350,7 +3356,8 @@ function openGachaScreen() {
   document.getElementById("gacha-levelup-box").classList.add("hidden");
   document.getElementById("gacha-insufficient-msg").classList.add("hidden");
   refreshGachaPointsDisplay();
-  setGuide("start");
+  // クイズの start と共用にしていたので「10もん がんばろう！」がガチャ画面に出ていた
+  setGuide("gacha");
   showScreen("screen-gacha");
 }
 
@@ -3463,6 +3470,7 @@ function openSettingsScreen() {
     ? t("profile.currentLine", { name: profile.name })
     : "";
 
+  setGuide("settings");
   showScreen("screen-settings");
 }
 

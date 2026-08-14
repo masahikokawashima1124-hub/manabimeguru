@@ -318,10 +318,14 @@
   <p><a href="tokusho.html">特定商取引法に基づく表記</a></p>
 </footer>
 
+<!-- アクセス計測（Firebase Analytics）。Auth・Firestoreは使わないので読み込まない -->
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-analytics-compat.js"></script>
+<script src="lp-analytics.js"></script>
+
 <script>
-  // CTAクリックの計測。計測手段は未確定（lp-plan.md 第6章）なので、
-  // 送信先を決め打ちせず window.trackEvent が定義されていれば呼ぶだけにしておく。
-  // 手段が決まったら、この関数をそのサービスの呼び出しに差し替える。
+  // CTAクリックの計測。window.trackEvent は lp-analytics.js が定義する。
+  // 定義されていなくても（読み込み順の問題や将来の変更で）壊れないよう、存在チェックは残す。
   document.querySelectorAll('[data-cta]').forEach(function (el) {
     el.addEventListener('click', function () {
       if (typeof window.trackEvent === 'function') {

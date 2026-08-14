@@ -321,6 +321,18 @@ const LOCALES = {
       "どのもんだいに ちょうせんする？",
       "すきなぶんやから やってみよう！",
     ],
+    "guide.gacha": [
+      "どの せいれいに あえるかな？",
+      "いいカードが でると いいね！",
+    ],
+    "guide.collection": [
+      "あつめた せいれいを みてみよう！",
+      "ぜんぶ あつめられるかな？",
+    ],
+    "guide.settings": [
+      "せっていは おうちの人と いっしょにね",
+      "こまったら ここを みてね",
+    ],
     "guide.start": [
       "じゅんびは いいかな？10もん がんばろう！",
       "がんばると ガチャが ひけるよ。せいれいずかんを ふやそう！",
@@ -395,7 +407,10 @@ const LOCALES = {
     "math.mul2.explain": "{a} × {b} は {a}を {b}回 たすことだから、{terms}＝{product}",
     "math.add3.hint": "位をそろえて、一の位からじゅんばんに たしざんしてみよう",
     "math.add3.explain": "{a} は {aParts}、{b} は {bParts}。同じ位どうしを たすと {sum} になるよ",
-    "math.sub3.hint": "大きい位から順にひき算しよう。くり下がりに注意",
+    // ⚠️ ひき算はくり下がりがあるので「一の位から」が正しい。
+    //    以前は「大きい位から順に」と書いてあり、解説（subtractStepsExplain は一の位から）
+    //    ・math.add3.hint・スペイン語版のいずれとも矛盾していた（2026-08-13 修正）。
+    "math.sub3.hint": "位をそろえて、一の位からじゅんばんに ひき算してみよう。くり下がりに注意",
     "math.placeOnes": "一の位",
     "math.placeTens": "十の位",
     "math.placeHundreds": "百の位",
@@ -523,7 +538,9 @@ const LOCALES = {
     "math.decimalDiv5.explain": "{a}を 10ばいすると {a10}。{inner}。10で わって もとに もどすと {q}",
     "math.fractionAddDiff5.text": "{n1}/{d1} ＋ {n2}/{d2} = ？（やくぶんしてね）",
     "math.fractionAddDiff5.hint": "分母を そろえて（通分して）から たしざんしよう",
-    "math.fractionAddDiff5.explain": "通分すると {a}/{den} ＋ {b}/{den} ＝ {num}/{den}。やくぶんして {reduced}",
+    // 末尾に句点を置かない。約分が起きたときだけ reduceExplainSuffix が
+    //「。…やくぶんすると …」を足す（fractionMul6・fractionSame3 と同じ作り）。
+    "math.fractionAddDiff5.explain": "通分すると {a}/{den} ＋ {b}/{den} ＝ {num}/{den}",
     "math.average5.text": "{values} の {n}つの 数の 平均は いくつ？",
     "math.average5.hint": "平均 ＝ ぜんぶを たした数 ÷ 個数",
     "math.average5.explain": "ぜんぶ たすと {sum}。{n}で わって {avg}",
@@ -941,6 +958,18 @@ const LOCALES = {
       "¿Qué tipo de preguntas quieres practicar?",
       "¡Elige el que más te guste!",
     ],
+    "guide.gacha": [
+      "¿Qué espíritu te tocará?",
+      "¡Ojalá te salga una carta genial!",
+    ],
+    "guide.collection": [
+      "¡Mira los espíritus que has reunido!",
+      "¿Podrás conseguirlos todos?",
+    ],
+    "guide.settings": [
+      "Mira los ajustes con una persona adulta",
+      "Si tienes dudas, echa un vistazo aquí",
+    ],
     "guide.start": [
       "¿Preparado? ¡Vamos con 10 preguntas!",
       "Si te esfuerzas conseguirás sobres. ¡A llenar el álbum!",
@@ -1144,7 +1173,7 @@ const LOCALES = {
     "math.decimalDiv5.explain": "{a} por 10 es {a10}. {inner}. Dividiendo entre 10 vuelves a {q}.",
     "math.fractionAddDiff5.text": "{n1}/{d1} + {n2}/{d2} = ? (simplifica el resultado)",
     "math.fractionAddDiff5.hint": "Pon el mismo denominador en las dos fracciones y después suma.",
-    "math.fractionAddDiff5.explain": "Con el mismo denominador: {a}/{den} + {b}/{den} = {num}/{den}. Simplificando queda {reduced}.",
+    "math.fractionAddDiff5.explain": "Con el mismo denominador: {a}/{den} + {b}/{den} = {num}/{den}",
     "math.average5.text": "¿Cuál es la media de estos {n} números: {values}?",
     "math.average5.hint": "Media = suma de todos ÷ cuántos son",
     "math.average5.explain": "La suma es {sum}. Dividiendo entre {n} sale {avg}.",
