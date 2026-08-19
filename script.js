@@ -666,6 +666,9 @@ const GUIDE_CHARACTER = {
     happy: "assets/characters/hanabi-happy.png",
     cheer: "assets/characters/hanabi-cheer.png",
     think: "assets/characters/hanabi-think.png",
+    // 100%正解専用ポーズ。他は元PNGのままだが、この1枚はwebpのみ用意されている
+    // （52KB。他もいずれ同じ変換をすると配信サイズを削減できる。ASSETS.md参照）。
+    perfect: "assets/characters/hanabi-perfect.webp",
   },
 };
 
@@ -680,6 +683,7 @@ const GUIDE_MOOD_POSE = {
   settings: "greet",
   correct: "cheer",
   wrong: "think",
+  resultPerfect: "perfect",
   resultHigh: "cheer",
   resultMid: "happy",
   resultLow: "think",
@@ -3259,6 +3263,9 @@ const PROFILE_SCREENS = ["screen-login", "screen-signup", "screen-profile-select
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  // 前の画面でスクロールしていた位置が引き継がれ、ステータスバーが画面外に隠れたまま
+  // 新しい画面が始まる不具合があった（2026-08-15 日次QAで発見）。
+  window.scrollTo(0, 0);
 
   const chromeHidden = PROFILE_SCREENS.includes(id);
   document.getElementById("status-bar").classList.toggle("hidden", chromeHidden);
@@ -3997,6 +4004,10 @@ function startSession() {
 }
 
 function renderProblem() {
+  // 次の問題への遷移は showScreen() を経由しないので、ここでも同様にリセットする
+  // （長文の読解問題でスクロールしたまま次の問題に進むと、ステータスバーが
+  // 隠れたままになっていた。2026-08-15 日次QAで発見）。
+  window.scrollTo(0, 0);
   const p = state.problems[state.index];
   document.getElementById("quiz-progress").textContent = t("quiz.progress", { current: state.index + 1, total: state.problems.length });
   document.getElementById("quiz-stamps").textContent = t("quiz.stamps", { n: state.sessionStamps });
@@ -4148,9 +4159,10 @@ function finishSession() {
   document.getElementById("result-rate").textContent = t("result.rate", { rate });
   document.getElementById("stamp-anim").textContent = "⭐".repeat(state.sessionStamps);
   document.getElementById("points-earned-line").textContent =
-    `🎰 ガチャポイント ＋${state.sessionStamps}pt（るいけい ${totalAfter}pt）`;
+    t("result.points", { pt: state.sessionStamps, total: totalAfter });
 
-  if (rate >= 80) setGuide("resultHigh");
+  if (rate === 100) setGuide("resultPerfect");
+  else if (rate >= 80) setGuide("resultHigh");
   else if (rate >= 50) setGuide("resultMid");
   else setGuide("resultLow");
 

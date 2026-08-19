@@ -348,8 +348,12 @@ const LOCALES = {
       "だいじょうぶ、もう一回かんがえてみよう！",
       "ちょっとむずかしかったね。こたえを おぼえておこう！",
     ],
+    "guide.resultPerfect": [
+      "すごい！ぜんもん せいかいだね！かんぺきだよ！",
+      "パーフェクト！やったね！",
+    ],
     "guide.resultHigh": [
-      "すごい！ほとんど せいかいだね！かんぺきだよ！",
+      "すごい！ほとんど せいかいだね！",
       "やったー！だいせいこう！",
     ],
     "guide.resultMid": [
@@ -984,6 +988,10 @@ const LOCALES = {
       "¡Casi! ¡La próxima seguro!",
       "Tranquilo, piénsalo otra vez.",
       "Esta era un poco difícil. ¡Quédate con la respuesta!",
+    ],
+    "guide.resultPerfect": [
+      "¡Guau! ¡Todas correctas! ¡Perfecto!",
+      "¡Puntuación perfecta! ¡Genial!",
     ],
     "guide.resultHigh": [
       "¡Guau! ¡Casi todas correctas!",
