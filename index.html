@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=33">
+<link rel="stylesheet" href="style.css?v=35">
 </head>
 <body>
 
@@ -174,6 +174,11 @@
     <h3 class="settings-section-title" data-i18n="settings.yearStartTitle"></h3>
     <p class="sub" data-i18n="settings.yearStartDesc"></p>
     <div class="settings-box" id="settings-year-start"></div>
+
+    <!-- にがて分野（保護者向け）。間違えた問題の復習キューをそのまま可視化している -->
+    <h3 class="settings-section-title" data-i18n="review.title"></h3>
+    <p class="sub" data-i18n="review.desc"></p>
+    <div class="review-box" id="settings-review-list"></div>
 
     <h3 class="settings-section-title" data-i18n="profile.settingsTitle"></h3>
     <p class="sub" id="profile-current-line"></p>
@@ -424,9 +429,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=40"></script>
+<script src="i18n.js?v=42"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=7"></script>
-<script src="script.js?v=68"></script>
+<script src="script.js?v=70"></script>
 </body>
 </html>

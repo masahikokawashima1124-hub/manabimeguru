@@ -392,7 +392,7 @@ function fractionToText(f) {
 }
 
 function parseFractionInput(str) {
-  str = str.trim();
+  str = str.trim().replace(/／/g, "/"); // 全角スラッシュも受理する
   if (str.includes("/")) {
     const [n, d] = str.split("/").map((s) => parseInt(s.trim(), 10));
     if (Number.isFinite(n) && Number.isFinite(d) && d !== 0) return reduceFraction(n, d);
@@ -1213,6 +1213,13 @@ function closeGachaOverlay(gachaResult) {
     });
     document.getElementById("gacha-reveal-box").classList.remove("hidden");
   }
+
+  // ランクアップ演出は、オーバーレイを閉じて body の overflow:hidden が外れたあとで
+  // スクロールしないと無効化される（閉じる前はスクロールしても画面に反映されない）。
+  const levelupBox = document.getElementById("gacha-levelup-box");
+  if (!levelupBox.classList.contains("hidden")) {
+    levelupBox.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
 function openCollectionScreen(returnScreen, scope) {
@@ -1414,7 +1421,7 @@ function genAdd3() {
   const a = randInt(100, 9000);
   const b = randInt(100, 9000);
   return {
-    text: `${a} ＋ ${b} = ？`,
+    text: `${a} ＋ ${b} = ?`,
     answer: `${a + b}`,
     type: "number",
     hint: t("math.add3.hint"),
@@ -1456,7 +1463,8 @@ function subtractStepsExplain(a, b) {
       borrowIn = 0;
     }
   }
-  return `${lines.join("。")}。${t("math.sub3.final", { a, b, diff: a - b })}`;
+  const sep = t("common.sentenceSep");
+  return `${lines.join(sep)}${sep}${t("math.sub3.final", { a, b, diff: a - b })}`;
 }
 
 function genSub3() {
@@ -1465,7 +1473,7 @@ function genSub3() {
   if (b > a) [a, b] = [b, a];
   if (a === b) a += 1;
   return {
-    text: `${a} － ${b} = ？`,
+    text: `${a} － ${b} = ?`,
     answer: `${a - b}`,
     type: "number",
     hint: t("math.sub3.hint"),
@@ -1479,7 +1487,7 @@ function genMul3() {
   const tens = Math.floor(a / 10) * 10;
   const ones = a % 10;
   return {
-    text: `${a} × ${b} = ？`,
+    text: `${a} × ${b} = ?`,
     answer: `${a * b}`,
     type: "number",
     hint: t("math.mul3.hint", { a, b }),
@@ -1492,7 +1500,7 @@ function genDiv3() {
   const q = randInt(2, 9);
   const a = b * q;
   return {
-    text: `${a} ÷ ${b} = ？`,
+    text: `${a} ÷ ${b} = ?`,
     answer: `${q}`,
     type: "number",
     hint: t("math.div3.hint", { a, b }),
@@ -1524,6 +1532,14 @@ function randNonMultipleOf10(min, max) {
   return n;
 }
 
+// 小数の表示をロケールに合わせる（スペイン語の学校では小数点にカンマを使う）。
+// checkAnswer() は既にカンマ入力を許容しているので、表示側もここで揃える。
+// 内部で比較に使う answer 文字列（ピリオド区切り）自体は変えず、画面に出す直前だけ通す。
+function fmtDecimal(n) {
+  const s = String(n);
+  return getLocale() === "es" ? s.replace(".", ",") : s;
+}
+
 function genDecimal3() {
   const na = randNonMultipleOf10(1, 50);
   let nb;
@@ -1533,14 +1549,14 @@ function genDecimal3() {
   const hint = t("math.decimal3.hint");
   if (isAdd) {
     const answer = roundedText(a + b);
-    const explain = t("math.decimal3.explainAdd", { a, b, na, nb, raw: na + nb, answer });
-    return { text: `${a} ＋ ${b} = ？`, answer, type: "number", hint, explain };
+    const explain = t("math.decimal3.explainAdd", { a: fmtDecimal(a), b: fmtDecimal(b), na, nb, raw: na + nb, answer: fmtDecimal(answer) });
+    return { text: `${fmtDecimal(a)} ＋ ${fmtDecimal(b)} = ?`, answer, type: "number", hint, explain };
   }
   const hiRaw = Math.max(na, nb), loRaw = Math.min(na, nb);
   const hi = hiRaw / 10, lo = loRaw / 10;
   const answer = roundedText(hi - lo);
-  const explain = t("math.decimal3.explainSub", { hi, lo, hiRaw, loRaw, raw: hiRaw - loRaw, answer });
-  return { text: `${hi} － ${lo} = ？`, answer, type: "number", hint, explain };
+  const explain = t("math.decimal3.explainSub", { hi: fmtDecimal(hi), lo: fmtDecimal(lo), hiRaw, loRaw, raw: hiRaw - loRaw, answer: fmtDecimal(answer) });
+  return { text: `${fmtDecimal(hi)} － ${fmtDecimal(lo)} = ?`, answer, type: "number", hint, explain };
 }
 
 // 約分が起きたときは解説に一手足す。起きなければ何も足さない（S3-2）。
@@ -1559,7 +1575,7 @@ function genFractionSame3() {
     const sum = n1 + n2;
     const result = reduceFraction(sum, d);
     return {
-      text: `${n1}/${d} ＋ ${n2}/${d} = ？`,
+      text: `${n1}/${d} ＋ ${n2}/${d} = ?`,
       answer: fractionToText(result),
       type: "fraction",
       hint: t("math.fractionSame3.hintAdd"),
@@ -1571,7 +1587,7 @@ function genFractionSame3() {
   const diff = n1 - n2;
   const result = reduceFraction(diff, d);
   return {
-    text: `${n1}/${d} － ${n2}/${d} = ？`,
+    text: `${n1}/${d} － ${n2}/${d} = ?`,
     answer: fractionToText(result),
     type: "fraction",
     hint: t("math.fractionSame3.hintSub"),
@@ -1932,9 +1948,9 @@ function genDivLong4() {
 }
 
 function genDecimalAddSub4() {
-  const aRaw = randInt(101, 999);
-  let bRaw = randInt(101, 999);
-  if (bRaw === aRaw) bRaw += 1;
+  let aRaw, bRaw;
+  do { aRaw = randInt(101, 999); } while (aRaw % 100 === 0);
+  do { bRaw = randInt(101, 999); } while (bRaw % 100 === 0 || bRaw === aRaw);
   const a = aRaw / 100, b = bRaw / 100;
   const isAdd = Math.random() < 0.5;
   const bigRaw = Math.max(aRaw, bRaw), smallRaw = Math.min(aRaw, bRaw);
@@ -1943,10 +1959,10 @@ function genDecimalAddSub4() {
     ? String(Math.round((a + b) * 100) / 100)
     : String(Math.round((big - small) * 100) / 100);
   const explain = isAdd
-    ? t("math.decimalAddSub4.explainAdd", { a, b, aRaw, bRaw, raw: aRaw + bRaw, answer })
-    : t("math.decimalAddSub4.explainSub", { big, small, bigRaw, smallRaw, raw: bigRaw - smallRaw, answer });
+    ? t("math.decimalAddSub4.explainAdd", { a: fmtDecimal(a), b: fmtDecimal(b), aRaw, bRaw, raw: aRaw + bRaw, answer: fmtDecimal(answer) })
+    : t("math.decimalAddSub4.explainSub", { big: fmtDecimal(big), small: fmtDecimal(small), bigRaw, smallRaw, raw: bigRaw - smallRaw, answer: fmtDecimal(answer) });
   return {
-    text: isAdd ? `${a} ＋ ${b} = ?` : `${big} － ${small} = ?`,
+    text: isAdd ? `${fmtDecimal(a)} ＋ ${fmtDecimal(b)} = ?` : `${fmtDecimal(big)} － ${fmtDecimal(small)} = ?`,
     answer,
     type: "number",
     hint: t("math.decimalAddSub4.hint"),
@@ -2084,7 +2100,10 @@ function genWordDivLarge4() {
 function genWordAreaRoom4() {
   const w = randInt(3, 12);
   const h = randInt(3, 12);
-  const place = pick(mathWords().areaPlaces);
+  // areaPlaces はスペイン語だと冠詞つき（"el aula" 等）で、この生成器の文では常に文頭に来るので大文字化する。
+  // 日本語は大文字小文字の区別が無いので影響しない。
+  const rawPlace = pick(mathWords().areaPlaces);
+  const place = rawPlace.charAt(0).toUpperCase() + rawPlace.slice(1);
   const isFindSide = Math.random() < 0.4;
   const params = { w, h, place, area: w * h };
   return isFindSide
@@ -2113,20 +2132,22 @@ function genWordDecimalAmount4() {
   const item = pick(mathWords().amountItems);
   const params = { name: item.name, unit: item.unit, a, b,
     sum: Math.round((a + b) * 10) / 10, diff: Math.round((a - b) * 10) / 10 };
+  // 表示用（スペイン語はカンマ小数）。answer など内部の比較用文字列は params の生の数値から作る。
+  const dparams = { ...params, a: fmtDecimal(a), b: fmtDecimal(b), sum: fmtDecimal(params.sum), diff: fmtDecimal(params.diff) };
   return isAdd
     ? {
-        text: t("math.wordDecimalAmount4.textAdd", params),
+        text: t("math.wordDecimalAmount4.textAdd", dparams),
         answer: String(params.sum),
         type: "number",
         hint: t("math.wordDecimalAmount4.hintAdd"),
-        explain: t("math.wordDecimalAmount4.explainAdd", params),
+        explain: t("math.wordDecimalAmount4.explainAdd", dparams),
       }
     : {
-        text: t("math.wordDecimalAmount4.textSub", params),
+        text: t("math.wordDecimalAmount4.textSub", dparams),
         answer: String(params.diff),
         type: "number",
         hint: t("math.wordDecimalAmount4.hintSub"),
-        explain: t("math.wordDecimalAmount4.explainSub", params),
+        explain: t("math.wordDecimalAmount4.explainSub", dparams),
       };
 }
 
@@ -2150,30 +2171,33 @@ function genWordProportion4() {
 
 // ===== 算数（小学5年生・新しく習う内容）=====
 function genDecimalMul5() {
-  const a = randInt(11, 99) / 10;
+  const a = randNonMultipleOf10(11, 99) / 10;
   const b = randInt(2, 9);
   const answer = Math.round(a * b * 10) / 10;
   return {
-    text: `${a} × ${b} = ?`,
+    text: `${fmtDecimal(a)} × ${b} = ?`,
     answer: String(answer),
     type: "number",
     hint: t("math.decimalMul5.hint"),
-    explain: t("math.decimalMul5.explain", { a10: a * 10, b, raw: a * 10 * b, answer }),
+    explain: t("math.decimalMul5.explain", { a10: a * 10, b, raw: a * 10 * b, answer: fmtDecimal(answer) }),
   };
 }
 
 function genDecimalDiv5() {
   const b = randInt(2, 9);
-  const q10 = randInt(11, 99);
+  let q10, a10;
+  do {
+    q10 = randInt(11, 99);
+    a10 = q10 * b;
+  } while (a10 % 10 === 0);
   const q = q10 / 10;
-  const a10 = q10 * b;
   const a = a10 / 10;
   return {
-    text: `${a} ÷ ${b} = ?`,
+    text: `${fmtDecimal(a)} ÷ ${b} = ?`,
     answer: String(q),
     type: "number",
     hint: t("math.decimalDiv5.hint"),
-    explain: t("math.decimalDiv5.explain", { a, a10, inner: distributiveDivideExplain(a10, b, q10), q }),
+    explain: t("math.decimalDiv5.explain", { a: fmtDecimal(a), a10, inner: distributiveDivideExplain(a10, b, q10), q: fmtDecimal(q) }),
   };
 }
 
@@ -2812,6 +2836,139 @@ function recordSeenTexts(subject, category, texts) {
   markSyncDirty();
 }
 
+// ===== 復習キュー（間違えた問題の間隔反復） =====
+// 間違えた問題を覚えておき、翌日→3日後→7日後→20日後に もう一度出す。
+// 「あと何日」ではなく「いつ出すか（期日）」で持つのが肝心。こうしておくと
+// 毎日やらなくても間隔が勝手に進まず、次に開いた日に期日到来ぶんが出る。
+const REVIEW_KEY = "review_queue";
+const REVIEW_INTERVALS = [1, 3, 7, 20];
+// 1セッションに混ぜる復習の上限。長く空けると期日到来が溜まるので、
+// 上限を置かないと10問すべてが復習で埋まり、新しい問題に触れられなくなる。
+const REVIEW_MAX_PER_SESSION = 3;
+
+function getReviewQueue() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(pk(REVIEW_KEY)) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveReviewQueue(queue) {
+  localStorage.setItem(pk(REVIEW_KEY), JSON.stringify(queue));
+  markSyncDirty();
+}
+
+// 算数は毎回ランダム生成で同じ問題が再現しないため、生成器（＝単元）を覚える。
+// 国語・英語は問題バンクから出しているので、問題そのものを覚える。
+function reviewKeyFor(problem) {
+  if (!problem) return null;
+  if (problem.subject === "math") {
+    return problem.genName ? `math|${problem.category}|${problem.genName}` : null;
+  }
+  return `${problem.subject}|${problem.category}|${problem.text}`;
+}
+
+function addDays(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+// 期日は日付だけで比べたいので、時刻を持たない "YYYY-M-D" のまま数値化する
+function dayKeyToNumber(key) {
+  const [y, m, d] = String(key).split("-").map(Number);
+  if (!y || !m || !d) return 0;
+  return y * 10000 + m * 100 + d;
+}
+
+function dayKeyToDate(key) {
+  const [y, m, d] = String(key).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+// 期日まであと何日か。今日以前なら 0（＝もう出せる）。
+function daysUntilDue(dueKey) {
+  const due = dayKeyToDate(dueKey);
+  if (!due) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((due - today) / 86400000));
+}
+
+function scheduleReview(item, stage) {
+  const interval = REVIEW_INTERVALS[Math.min(stage, REVIEW_INTERVALS.length - 1)];
+  item.stage = stage;
+  item.due = dayKey(addDays(new Date(), interval));
+  return item;
+}
+
+// 間違えたときに呼ぶ。すでに復習中の問題を また間違えたら、最初の段階に戻す。
+function recordWrongAnswer(problem) {
+  const key = reviewKeyFor(problem);
+  if (!key) return;
+  const queue = getReviewQueue();
+  const existing = queue[key];
+  queue[key] = scheduleReview({
+    subject: problem.subject,
+    category: problem.category,
+    grade: problem.grade || getGrade(),
+    genName: problem.genName,
+    text: problem.text,
+    wrongCount: (existing ? existing.wrongCount : 0) + 1,
+  }, 0);
+  saveReviewQueue(queue);
+}
+
+// 復習で出した問題に正解したときに呼ぶ。最後の段階まで通ったらキューから外す（卒業）。
+function recordReviewSuccess(problem) {
+  const key = reviewKeyFor(problem);
+  if (!key) return;
+  const queue = getReviewQueue();
+  const item = queue[key];
+  if (!item) return;
+  const nextStage = (item.stage || 0) + 1;
+  if (nextStage >= REVIEW_INTERVALS.length) {
+    delete queue[key];
+  } else {
+    queue[key] = scheduleReview(item, nextStage);
+  }
+  saveReviewQueue(queue);
+}
+
+// 今日以前が期日のものを、期日の古い順に返す
+function getDueReviewItems(subject, category, grade) {
+  const today = dayKeyToNumber(dayKey(new Date()));
+  return Object.entries(getReviewQueue())
+    .filter(([, item]) =>
+      item.subject === subject &&
+      item.category === category &&
+      (item.grade || grade) <= grade &&
+      dayKeyToNumber(item.due) <= today
+    )
+    .sort((a, b) => dayKeyToNumber(a[1].due) - dayKeyToNumber(b[1].due))
+    .map(([key, item]) => ({ key, ...item }));
+}
+
+// 生成器を名前から引く（復習で同じ単元の問題を作り直すため）
+let _mathGenByName = null;
+function mathGenByName(name) {
+  if (!_mathGenByName) {
+    _mathGenByName = new Map();
+    Object.values(MATH_GENS_BY_GRADE).forEach((byCategory) => {
+      Object.values(byCategory || {}).forEach((entries) => {
+        (entries || []).forEach((entry) => {
+          const { fn } = normalizeMathGen(entry);
+          if (fn && fn.name) _mathGenByName.set(fn.name, fn);
+        });
+      });
+    });
+  }
+  return _mathGenByName.get(name) || null;
+}
+
 // 設定学年に近い内容ほど多く出す。「学年」単位で出現の割合を決め、
 // 同じ学年の中で問題を均等に分け合う（1問あたりの重みではなく、学年グループ単位の配分）。
 // こうしないと、語数が多い学年（例：漢字の1・2年）が下の学年でも合計で重くなり、
@@ -3155,11 +3312,46 @@ function pickSessionQuestions(pool, count, grade, recentSet) {
 
 // 1セッション分の問題を作る。算数は毎回ランダム生成するため、
 // そのままだと同じ問題が並ぶことがある。問題文で重複を除く。
+// 復習の期日が来た問題を、実際に出せる問題に組み立て直す。
+// 算数は同じ生成器（＝単元）から作り直し、国語・英語はプールから同じ問題を探す。
+function materializeReviewProblem(item, pool) {
+  if (item.subject === "math") {
+    const fn = mathGenByName(item.genName);
+    if (!fn) return null;
+    const problem = fn();
+    problem.genName = item.genName;
+    return problem;
+  }
+  const found = (pool || []).find((q) => q.text === item.text);
+  return found ? { ...found } : null;
+}
+
 function buildSessionProblems(grade, subject, category, count) {
+  // 期日が来た復習を先に確保してから、残りを通常どおり埋める
+  const dueItems = getDueReviewItems(subject, category, grade).slice(0, REVIEW_MAX_PER_SESSION);
+  const tag = (problem) => {
+    problem.subject = subject;
+    problem.category = category;
+    return problem;
+  };
+
   if (subject === "japanese" || subject === "english") {
     const pool = subject === "japanese" ? buildJapanesePool(grade, category) : buildEnglishPool(grade, category);
+    const reviews = [];
+    dueItems.forEach((item) => {
+      const problem = materializeReviewProblem(item, pool);
+      if (problem) {
+        problem.isReview = true;
+        reviews.push(tag(problem));
+      }
+    });
+    const reviewTexts = new Set(reviews.map((q) => q.text));
     const recentSet = new Set(getRecentTexts(subject, category));
-    const result = pickSessionQuestions(pool, count, grade, recentSet);
+    // 復習ぶんと重複しないよう多めに取ってから間引く
+    const fresh = pickSessionQuestions(pool, count, grade, recentSet)
+      .filter((q) => !reviewTexts.has(q.text))
+      .slice(0, Math.max(0, count - reviews.length));
+    const result = shuffle(reviews.concat(fresh.map(tag)));
     recordSeenTexts(subject, category, result.map((q) => q.text));
     return result;
   }
@@ -3171,8 +3363,17 @@ function buildSessionProblems(grade, subject, category, count) {
   const usedGenCounts = new Map();
   const accept = (problem) => {
     usedGenCounts.set(problem.genName, (usedGenCounts.get(problem.genName) || 0) + 1);
-    result.push(problem);
+    result.push(tag(problem));
   };
+  // 復習ぶんを先に確保する。accept を通すので、同じ単元が新規側で重ならないよう重みも下がる。
+  dueItems.forEach((item) => {
+    const problem = materializeReviewProblem(item, null);
+    if (problem && !seen.has(problem.text)) {
+      seen.add(problem.text);
+      problem.isReview = true;
+      accept(problem);
+    }
+  });
   // 直近に出た問題は避けつつ生成する。生成器の出力の幅が狭い分野では
   // 除外条件で埋まりきらないことがあるため、まずは避けて集め、
   // 足りない分だけ「直近OK」に条件をゆるめて埋める。
@@ -3197,24 +3398,40 @@ function buildSessionProblems(grade, subject, category, count) {
     problem.isRepeat = recentSet.has(problem.text);
     accept(problem);
   }
-  recordSeenTexts(subject, category, result.map((q) => q.text));
-  return result;
+  // 復習ぶんを先頭に固めず、通常の問題に紛れさせる
+  const mixed = shuffle(result);
+  recordSeenTexts(subject, category, mixed.map((q) => q.text));
+  return mixed;
 }
 
 // ===== 採点 =====
+// スペイン語などカンマを小数点として使う入力に対応（ピリオドが無い場合のみカンマを小数点として扱う）。
+// 数値として読めなければ NaN を返す。
+function parseLocaleNumber(str) {
+  let numStr = str.replace(/[^\d.,\-]/g, "");
+  numStr = numStr.includes(".") ? numStr.replace(/,/g, "") : numStr.replace(",", ".");
+  return parseFloat(numStr);
+}
+
 function checkAnswer(userInput, problem) {
   const trimmed = (userInput ?? "").toString().trim();
   if (trimmed === "") return false;
 
   if (problem.type === "fraction") {
-    const userFrac = parseFractionInput(trimmed);
     const correctFrac = parseFractionInput(problem.answer);
-    if (!userFrac || !correctFrac) return false;
-    return userFrac.num === correctFrac.num && userFrac.den === correctFrac.den;
+    if (!correctFrac) return false;
+    const userFrac = parseFractionInput(trimmed);
+    if (userFrac && userFrac.num === correctFrac.num && userFrac.den === correctFrac.den) {
+      return true;
+    }
+    // n/d のスラッシュ表記に加えて、小数の同値も正解にする（例: 3/4 → 0.75）。
+    const userNum = parseLocaleNumber(trimmed);
+    if (!Number.isFinite(userNum)) return false;
+    return Math.abs(userNum - correctFrac.num / correctFrac.den) < 0.001;
   }
 
   if (problem.type === "number") {
-    const userNum = parseFloat(trimmed.replace(/[^\d.\-]/g, ""));
+    const userNum = parseLocaleNumber(trimmed);
     const correctNum = parseFloat(problem.answer);
     if (!Number.isFinite(userNum)) return false;
     return Math.abs(userNum - correctNum) < 0.001;
@@ -3410,8 +3627,8 @@ document.getElementById("btn-pull-gacha").addEventListener("click", () => {
       document.getElementById("gacha-levelup-emoji").innerHTML = `<div class="level-badge-large">Lv.${compendiumAfter.count}</div>`;
       document.getElementById("gacha-levelup-title").textContent = compendiumAfter.title;
       playLevelUpSound();
-      // カード演出の下に隠れて見えないままになりがちなので、必ずスクロールして見せる
-      levelupBox.scrollIntoView({ behavior: "smooth", block: "center" });
+      // スクロールは closeGachaOverlay() 側で行う（オーバーレイが開いたまま＝
+      // body.gacha-open で overflow:hidden の間はスクロールしても無効なため）
     }
     refreshHome();
   });
@@ -3470,6 +3687,7 @@ function openSettingsScreen() {
 
   renderLanguageSetting();
   renderYearStartSetting();
+  renderReviewSetting();
   renderPlanSetting();
 
   const profile = getActiveProfile();
@@ -3559,6 +3777,63 @@ function renderYearStartSetting() {
     setSchoolYearStart(parseInt(select.value, 10));
     renderYearStartSetting();
   });
+}
+
+// にがて分野（保護者向け）。復習キューをそのまま読み取って一覧にする。
+// 問題文をそのまま出すので、innerHTML ではなく textContent で組み立てる。
+function renderReviewSetting() {
+  const box = document.getElementById("settings-review-list");
+  if (!box) return;
+  box.innerHTML = "";
+
+  const queue = getReviewQueue();
+  const items = Object.values(queue);
+  if (items.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "review-empty";
+    empty.textContent = t("review.empty");
+    box.appendChild(empty);
+    return;
+  }
+
+  const today = dayKeyToNumber(dayKey(new Date()));
+  const dueCount = items.filter((it) => dayKeyToNumber(it.due) <= today).length;
+
+  const summary = document.createElement("p");
+  summary.className = "review-summary";
+  summary.textContent = t("review.summary", { n: items.length, due: dueCount });
+  box.appendChild(summary);
+
+  // 出る順（期日の古い順）に並べる。間違えた回数が多いものが上に来やすい
+  items
+    .slice()
+    .sort((a, b) => dayKeyToNumber(a.due) - dayKeyToNumber(b.due))
+    .forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "review-row";
+
+      const title = document.createElement("div");
+      title.className = "review-row-title";
+      // 算数は単元名、国語・英語は問題そのもの
+      title.textContent = item.subject === "math"
+        ? (mathGenLabel(item.genName) || t(`cat.${item.category === "bunsho" ? "bunshoMath" : item.category}`))
+        : item.text;
+      row.appendChild(title);
+
+      const meta = document.createElement("div");
+      meta.className = "review-row-meta";
+      const remaining = daysUntilDue(item.due);
+      const parts = [
+        t(`subject.${item.subject}`),
+        remaining === 0 ? t("review.dueToday") : t("review.dueLater", { n: remaining }),
+        t("review.stage", { current: (item.stage || 0) + 1, total: REVIEW_INTERVALS.length }),
+        t("review.wrongCount", { n: item.wrongCount || 1 }),
+      ];
+      meta.textContent = parts.join(" ・ ");
+      row.appendChild(meta);
+
+      box.appendChild(row);
+    });
 }
 
 // プラン（無料→ファミリーの切り替え）。account-design.md §10-9。
@@ -4017,8 +4292,10 @@ function renderProblem() {
   problemTextEl.classList.toggle("long-text", p.text.length > 40);
 
   const badgeEl = document.getElementById("problem-badge");
-  badgeEl.textContent = p.isRepeat ? t("quiz.badgeRepeat") : t("quiz.badgeNew");
-  badgeEl.classList.toggle("is-repeat", !!p.isRepeat);
+  if (p.isReview) badgeEl.textContent = t("quiz.badgeReview");
+  else badgeEl.textContent = p.isRepeat ? t("quiz.badgeRepeat") : t("quiz.badgeNew");
+  badgeEl.classList.toggle("is-repeat", !!p.isRepeat && !p.isReview);
+  badgeEl.classList.toggle("is-review", !!p.isReview);
 
   document.getElementById("feedback").textContent = "";
   document.getElementById("feedback").className = "feedback";
@@ -4053,6 +4330,9 @@ function renderProblem() {
     input.disabled = false;
     // 数字だけの答えは数字キーパッドの方が打ちやすい。分数は "/" が要るのでフルキーボードのまま
     input.inputMode = p.type === "number" ? "decimal" : "text";
+    // 分数は「スラッシュで n/d の形に書く」という入力形式を誰も教えていなかったため、
+    // プレースホルダーで例を示す（正しく解けているのに書式で不正解になるのを防ぐ）。
+    input.placeholder = p.type === "fraction" ? t("quiz.fractionPlaceholder") : t("quiz.answerPlaceholder");
     form.querySelector("button").disabled = false;
     input.focus();
   }
@@ -4065,12 +4345,17 @@ function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
   if (isCorrect) {
     playCorrectSound();
     state.correctCount++;
-    const gained = problem && problem.isRepeat ? REPEAT_STAMP_RATIO : 1;
+    // 復習の問題は「直近に出た問題」でもあるが、苦手を克服できた回なのでポイントは満額にする
+    const isReview = !!(problem && problem.isReview);
+    const gained = problem && problem.isRepeat && !isReview ? REPEAT_STAMP_RATIO : 1;
     state.sessionStampsExact += gained;
     state.sessionStamps = Math.round(state.sessionStampsExact);
     feedback.textContent = pick(tList("guide.correct"));
     feedback.className = "feedback correct";
-    if (problem && problem.isRepeat) {
+    if (isReview) {
+      feedback.textContent += " " + t("quiz.reviewCleared");
+      recordReviewSuccess(problem);
+    } else if (problem && problem.isRepeat) {
       feedback.textContent += " " + t("quiz.repeatNote");
     }
     setGuide("correct");
@@ -4079,6 +4364,8 @@ function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
     feedback.textContent = feedbackWrongText;
     feedback.className = "feedback wrong";
     setGuide("wrong");
+    // 間違えた問題は、翌日→3日後→7日後→20日後 に もう一度出す
+    recordWrongAnswer(problem);
 
     if (problem && problem.explain) {
       const explainBox = document.getElementById("explain-box");
@@ -4102,7 +4389,7 @@ document.getElementById("answer-form").addEventListener("submit", (e) => {
 
   input.disabled = true;
   e.target.querySelector("button").disabled = true;
-  applyAnswerResult(isCorrect, t("quiz.wrongText", { answer: p.answer }), p);
+  applyAnswerResult(isCorrect, t("quiz.wrongText", { answer: p.type === "number" ? fmtDecimal(p.answer) : p.answer }), p);
 });
 
 function handleChoiceAnswer(clickedBtn, problem) {
@@ -4355,6 +4642,7 @@ function buildProgressDoc(profileId) {
     ownedCards: (function () { try { return JSON.parse(r(GACHA_KEY) || "{}"); } catch { return {}; } })(),
     pity: parseInt(r(PITY_KEY) || "0", 10) || 0,
     dailyPoints: (function () { try { return JSON.parse(r(DAILY_POINTS_KEY) || "{}"); } catch { return {}; } })(),
+    reviewQueue: (function () { try { return JSON.parse(r(REVIEW_KEY) || "{}"); } catch { return {}; } })(),
     seenHistory: collectSeenHistory(profileId),
     grade: parseInt(r(GRADE_KEY) || String(DEFAULT_GRADE), 10) || DEFAULT_GRADE,
     schoolYearStart: parseInt(r(SCHOOL_YEAR_START_KEY) || "", 10) || defaultSchoolYearStart(),
@@ -4459,6 +4747,9 @@ async function pullProfileFromFirestore(profileId) {
   if (server.pity !== undefined) localStorage.setItem(pre(PITY_KEY), String(server.pity));
   if (server.dailyPoints && typeof server.dailyPoints === "object") {
     localStorage.setItem(pre(DAILY_POINTS_KEY), JSON.stringify(server.dailyPoints));
+  }
+  if (server.reviewQueue && typeof server.reviewQueue === "object") {
+    localStorage.setItem(pre(REVIEW_KEY), JSON.stringify(server.reviewQueue));
   }
   if (server.seenHistory) applySeenHistory(profileId, server.seenHistory);
 
