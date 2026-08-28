@@ -2862,12 +2862,24 @@ function saveReviewQueue(queue) {
 
 // 算数は毎回ランダム生成で同じ問題が再現しないため、生成器（＝単元）を覚える。
 // 国語・英語は問題バンクから出しているので、問題そのものを覚える。
+//
+// ⚠️ 国語・英語の目印は「表示される問題文」ではなく `pairKey` を使う。
+// 問題文は t() で翻訳されるため、表示言語を切り替えると同じ問題でも文字列が変わり、
+// 「バンクから消えた」と誤判定してしまう（実際に英語の復習が消える不具合になった）。
+// pairKey は語そのもの（`tango:apple` など）なので言語に依らない。
+// pairKey は「表と裏」の2問（漢字の読み↔書きなど）で共有しているので、
+// それだけだと復習で逆向きの問題が出てしまう。向き（dir）まで含めて1問を特定する。
+function reviewIdFor(problem) {
+  if (!problem.pairKey) return problem.text;
+  return problem.dir ? `${problem.pairKey}#${problem.dir}` : problem.pairKey;
+}
+
 function reviewKeyFor(problem) {
   if (!problem) return null;
   if (problem.subject === "math") {
     return problem.genName ? `math|${problem.category}|${problem.genName}` : null;
   }
-  return `${problem.subject}|${problem.category}|${problem.text}`;
+  return `${problem.subject}|${problem.category}|${reviewIdFor(problem)}`;
 }
 
 function addDays(date, n) {
@@ -2916,6 +2928,8 @@ function recordWrongAnswer(problem) {
     category: problem.category,
     grade: problem.grade || getGrade(),
     genName: problem.genName,
+    // reviewId が照合に使う言語非依存の目印。text は保護者向け一覧の表示用
+    reviewId: reviewIdFor(problem),
     text: problem.text,
     wrongCount: (existing ? existing.wrongCount : 0) + 1,
   }, 0);
@@ -3102,6 +3116,7 @@ function buildChoiceProblemFromMeaningBank(bank, idx) {
     hint: t("q.choiceHint"),
     explain: t("q.meaningExplain", { word, meaning }),
     pairKey: `meaning:${word}`,
+    dir: "a",
   };
 }
 
@@ -3118,6 +3133,7 @@ function buildReverseMeaningProblem(bank, idx) {
     hint: t("q.choiceHint"),
     explain: t("q.meaningExplain", { word, meaning }),
     pairKey: `meaning:${word}`,
+    dir: "b",
   };
 }
 
@@ -3154,6 +3170,7 @@ function buildEnglishPool(grade, category) {
         hint: t("q.choiceHint"),
         explain: t("q.enExplain", { word, ja }),
         pairKey: `tango:${word}`,
+        dir: "a",
       });
       pool.push({
         grade: item.grade,
@@ -3164,6 +3181,7 @@ function buildEnglishPool(grade, category) {
         hint: t("q.choiceHint"),
         explain: t("q.enExplain", { word, ja }),
         pairKey: `tango:${word}`,
+        dir: "b",
       });
     });
   }
@@ -3172,6 +3190,8 @@ function buildEnglishPool(grade, category) {
     upTo(EN_PHRASES, grade, category).forEach((item) => {
       pool.push({
         grade: item.grade,
+        // 英文そのものは翻訳されないので、復習の目印として言語に依らず使える
+        pairKey: `kaiwa:${item.text}`,
         text: t("q.enPhrase", { sentence: item.text }),
         type: "choice",
         options: shuffle([...item.options]),
@@ -3228,6 +3248,7 @@ function buildJapanesePool(grade, category) {
         hint: reading.length >= 3 ? t("q.kanjiReadHint", { first: reading[0] }) : t("q.shortAnswerHint"),
         explain: t("q.kanjiReadExplain", { kanji: word, reading: readings.join("・") }),
         pairKey: `kanji:${word}`,
+        dir: "a",
       });
     });
     bank.forEach((item, idx) => {
@@ -3244,6 +3265,7 @@ function buildJapanesePool(grade, category) {
         hint: t("q.choiceHint"),
         explain: t("q.kanjiReadExplain", { kanji: word, reading }),
         pairKey: `kanji:${word}`,
+        dir: "b",
       });
     });
   }
@@ -3253,7 +3275,7 @@ function buildJapanesePool(grade, category) {
     upTo(JA_ANTONYM, grade, category).forEach((item, idx) => {
       const left = answerList(item.a);
       const right = answerList(item.b);
-      [[left, right], [right, left]].forEach(([fromList, toList]) => {
+      [[left, right], [right, left]].forEach(([fromList, toList], dirIdx) => {
         pool.push({
           grade: item.grade,
           text: t("q.antonym", { word: fromList[0] }),
@@ -3263,6 +3285,7 @@ function buildJapanesePool(grade, category) {
           hint: toList[0].length >= 3 ? t("q.antonymHint", { first: toList[0][0] }) : t("q.shortAnswerHint"),
           explain: t("q.antonymExplain", { word: fromList[0], opposite: toList[0] }),
           pairKey: `antonym:${idx}`,
+          dir: dirIdx === 0 ? "a" : "b",
         });
       });
     });
@@ -3314,7 +3337,11 @@ function pickSessionQuestions(pool, count, grade, recentSet) {
 // そのままだと同じ問題が並ぶことがある。問題文で重複を除く。
 // 復習の期日が来た問題を、実際に出せる問題に組み立て直す。
 // 算数は同じ生成器（＝単元）から作り直し、国語・英語はプールから同じ問題を探す。
-function materializeReviewProblem(item, pool) {
+//
+// ⚠️ 国語・英語のプールは「その問題を間違えたときの学年」で組み立てる。
+// セッションの学年で組むと、学年が上がったときに gradeFloor（2学年下まで）から
+// 外れて見つからなくなり、コンテンツはあるのに「消えた」と誤判定してしまう。
+function materializeReviewProblem(item, poolFor) {
   if (item.subject === "math") {
     const fn = mathGenByName(item.genName);
     if (!fn) return null;
@@ -3322,29 +3349,72 @@ function materializeReviewProblem(item, pool) {
     problem.genName = item.genName;
     return problem;
   }
-  const found = (pool || []).find((q) => q.text === item.text);
+  const pool = poolFor(item.subject, item.category, item.grade);
+  // reviewId で照合する（言語に依らない）。reviewId を持つ前に記録された項目は
+  // 問題文で照合する。この場合だけは表示言語を変えると一致しなくなるが、
+  // 見つからなくても削除はしないので、言語を戻せばまた復習できる。
+  const found = item.reviewId
+    ? pool.find((q) => reviewIdFor(q) === item.reviewId)
+    : pool.find((q) => q.text === item.text);
   return found ? { ...found } : null;
+}
+
+// 期日が来た復習を、上限のぶんだけ組み立てて返す。
+//
+// 組み立てに失敗した項目は飛ばす。上限で先に切らず成功した数だけを数えるので、
+// 出せない項目があっても生きている復習が締め出されることはない。
+//
+// ⚠️ 削除するのは「算数の生成器がビルドに存在しない」場合だけにする。
+// 関数が無いことは確実に判定できるが、国語・英語が見つからない理由は
+// （表示言語・学年・コンテンツの改訂など）確実には切り分けられない。
+// 実際、表示言語を切り替えただけで英語の復習が消える不具合を出した。
+// 出せないだけの項目は残し、保護者が「にがて分野」の×で消せるようにしてある。
+function collectDueReviewProblems(subject, category, grade, limit) {
+  const poolCache = new Map();
+  const poolFor = (subj, cat, g) => {
+    const key = `${subj}|${cat}|${g}`;
+    if (!poolCache.has(key)) {
+      poolCache.set(key, subj === "japanese" ? buildJapanesePool(g, cat) : buildEnglishPool(g, cat));
+    }
+    return poolCache.get(key);
+  };
+
+  const problems = [];
+  const dead = [];
+  // 上限で先に切らず、成功したものだけを数える。
+  // そうしないと、組み立てに失敗する項目が1つあるだけで枠が1つ無駄になる。
+  for (const item of getDueReviewItems(subject, category, grade)) {
+    if (problems.length >= limit) break;
+    const problem = materializeReviewProblem(item, poolFor);
+    if (problem) {
+      problem.isReview = true;
+      problems.push(problem);
+    } else if (item.subject === "math" && !mathGenByName(item.genName)) {
+      // 生成器がビルドに無い＝二度と出せないことが確実なものだけ捨てる
+      dead.push(item.key);
+    }
+  }
+
+  if (dead.length > 0) {
+    const queue = getReviewQueue();
+    dead.forEach((key) => delete queue[key]);
+    saveReviewQueue(queue);
+  }
+  return problems;
 }
 
 function buildSessionProblems(grade, subject, category, count) {
   // 期日が来た復習を先に確保してから、残りを通常どおり埋める
-  const dueItems = getDueReviewItems(subject, category, grade).slice(0, REVIEW_MAX_PER_SESSION);
   const tag = (problem) => {
     problem.subject = subject;
     problem.category = category;
     return problem;
   };
+  const dueProblems = collectDueReviewProblems(subject, category, grade, REVIEW_MAX_PER_SESSION);
 
   if (subject === "japanese" || subject === "english") {
     const pool = subject === "japanese" ? buildJapanesePool(grade, category) : buildEnglishPool(grade, category);
-    const reviews = [];
-    dueItems.forEach((item) => {
-      const problem = materializeReviewProblem(item, pool);
-      if (problem) {
-        problem.isReview = true;
-        reviews.push(tag(problem));
-      }
-    });
+    const reviews = dueProblems.map(tag);
     const reviewTexts = new Set(reviews.map((q) => q.text));
     const recentSet = new Set(getRecentTexts(subject, category));
     // 復習ぶんと重複しないよう多めに取ってから間引く
@@ -3366,13 +3436,10 @@ function buildSessionProblems(grade, subject, category, count) {
     result.push(tag(problem));
   };
   // 復習ぶんを先に確保する。accept を通すので、同じ単元が新規側で重ならないよう重みも下がる。
-  dueItems.forEach((item) => {
-    const problem = materializeReviewProblem(item, null);
-    if (problem && !seen.has(problem.text)) {
-      seen.add(problem.text);
-      problem.isReview = true;
-      accept(problem);
-    }
+  dueProblems.forEach((problem) => {
+    if (seen.has(problem.text)) return;
+    seen.add(problem.text);
+    accept(problem);
   });
   // 直近に出た問題は避けつつ生成する。生成器の出力の幅が狭い分野では
   // 除外条件で埋まりきらないことがあるため、まずは避けて集め、
@@ -3787,7 +3854,7 @@ function renderReviewSetting() {
   box.innerHTML = "";
 
   const queue = getReviewQueue();
-  const items = Object.values(queue);
+  const items = Object.entries(queue).map(([key, item]) => ({ ...item, key }));
   if (items.length === 0) {
     const empty = document.createElement("p");
     empty.className = "review-empty";
@@ -3812,25 +3879,50 @@ function renderReviewSetting() {
       const row = document.createElement("div");
       row.className = "review-row";
 
+      const body = document.createElement("div");
+      body.className = "review-row-body";
+
       const title = document.createElement("div");
       title.className = "review-row-title";
       // 算数は単元名、国語・英語は問題そのもの
-      title.textContent = item.subject === "math"
+      const label = item.subject === "math"
         ? (mathGenLabel(item.genName) || t(`cat.${item.category === "bunsho" ? "bunshoMath" : item.category}`))
         : item.text;
-      row.appendChild(title);
+      title.textContent = label;
+      body.appendChild(title);
 
       const meta = document.createElement("div");
       meta.className = "review-row-meta";
       const remaining = daysUntilDue(item.due);
+      const wrong = item.wrongCount || 1;
       const parts = [
         t(`subject.${item.subject}`),
-        remaining === 0 ? t("review.dueToday") : t("review.dueLater", { n: remaining }),
+        remaining === 0 ? t("review.dueToday")
+          : t(remaining === 1 ? "review.dueLaterOne" : "review.dueLater", { n: remaining }),
         t("review.stage", { current: (item.stage || 0) + 1, total: REVIEW_INTERVALS.length }),
-        t("review.wrongCount", { n: item.wrongCount || 1 }),
+        t(wrong === 1 ? "review.wrongCountOne" : "review.wrongCount", { n: wrong }),
       ];
       meta.textContent = parts.join(" ・ ");
-      row.appendChild(meta);
+      body.appendChild(meta);
+      row.appendChild(body);
+
+      // 保護者が手で外せるようにする。もう苦手ではない・そもそも出したくない、
+      // といった判断はアプリ側では分からないため。
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "review-row-remove";
+      removeBtn.textContent = "×";
+      removeBtn.setAttribute("aria-label", t("review.remove"));
+      removeBtn.title = t("review.remove");
+      removeBtn.addEventListener("click", () => {
+        playClickSound();
+        if (!window.confirm(t("review.removeConfirm", { name: label }))) return;
+        const latest = getReviewQueue();
+        delete latest[item.key];
+        saveReviewQueue(latest);
+        renderReviewSetting();
+      });
+      row.appendChild(removeBtn);
 
       box.appendChild(row);
     });

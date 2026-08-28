@@ -257,6 +257,31 @@
   background: linear-gradient(160deg, #ffffff, var(--card-bg-2));
   padding: 10px 12px;
   box-shadow: var(--shadow), var(--gloss-top);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.review-row-body {
+  /* min-width:0 がないと、長い問題文が削除ボタンを押し出す */
+  min-width: 0;
+  flex: 1;
+}
+.review-row-remove {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--border-soft);
+  border-radius: 50%;
+  background: #fffefc;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.review-row-remove:hover {
+  border-color: #e58aa2;
+  color: #c2415f;
 }
 .review-row-title {
   font-size: 0.9rem;
