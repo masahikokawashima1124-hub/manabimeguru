@@ -51,7 +51,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-img { max-width: 100%; display: block; }
+/* height:auto が無いと、CSSで幅を変えたときにHTMLのheight属性が残って画像が潰れる
+   （ヒーローのキャラが横に縮んでいた。2026-08-29 修正） */
+img { max-width: 100%; height: auto; display: block; }
 
 .visually-hidden {
   position: absolute;
@@ -111,6 +113,9 @@ h1, h2, h3 { font-family: var(--font-heading); font-weight: 800; margin: 0; text
   font-size: 13.5px;
   color: var(--text-muted);
 }
+/* 文の途中（「遊べま／す。」）で折り返さず、文の切れ目で改行させる。
+   広い画面では1行のままにしたいので <br> ではなく inline-block を使う */
+.cta-micro span { display: inline-block; }
 
 /* ===== ① ヒーロー ===== */
 .hero {
@@ -134,13 +139,51 @@ h1, h2, h3 { font-family: var(--font-heading); font-weight: 800; margin: 0; text
     radial-gradient(300px 300px at 50% 100%, rgba(144, 89, 216, 0.30), transparent 70%);
 }
 
+/* ヒーローではキャラの大きな絵を使わない（2026-08-29）。
+   このクラスは他の節で流用する可能性があるので定義だけ残す */
 .hero-figure {
-  width: min(56vw, 260px);
+  width: min(44vw, 210px);
   filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35));
 }
 
+/* ファーストビューの下部に置く、判断材料の3点。
+   装飾で埋めず、保護者が最初に気にすることを短く出す */
+.hero-proof {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.hero-proof li {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+.hero-proof li::before { content: "✓ "; color: var(--lantern-light); }
+
+/* 誰に向けたページかを、見出しより先に短く名乗る */
+.hero-target {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--lantern-light);
+  border: 1px solid rgba(255, 184, 119, 0.45);
+  border-radius: 999px;
+  padding: 5px 14px;
+}
+
 .hero h1 {
-  font-size: clamp(24px, 6.4vw, 32px);
+  /* ⚠️ 下限は 22px。24px にすると 320px 幅で「わり算でつまずいたまま、」が
+     入りきらず、<br> で切ったはずの句の途中でさらに折り返す */
+  font-size: clamp(22px, 6.6vw, 32px);
   line-height: 1.45;
   color: #fff;
 }
@@ -151,8 +194,27 @@ h1, h2, h3 { font-family: var(--font-heading); font-weight: 800; margin: 0; text
   font-size: 15.5px;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.86);
-  max-width: 34ch;
+  /* ⚠️ ch は「0」の幅が基準で、全角より かなり狭い。日本語に ch を使うと
+     思ったより早く折り返す（34ch でも実質18文字で折り返していた）。em を使う */
+  max-width: 22em;
 }
+/* 文の途中で折り返さず、文の切れ目で改行させる（広い画面では1行のまま） */
+.hero-sub span { display: inline-block; }
+
+/* ヒーローで唯一アプリ名を出す行。悩み（見出し）と解決の距離をここで縮める */
+.hero-mechanism {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.9;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  max-width: 24em;
+}
+/* nowrap が無いと「20／日後」のように日付の途中で折れる */
+.hero-mechanism b { color: var(--lantern-light); font-weight: 800; white-space: nowrap; }
 
 .hero .cta-btn { margin-top: 6px; }
 .hero .cta-micro { color: rgba(255, 255, 255, 0.7); }
@@ -187,6 +249,11 @@ h1, h2, h3 { font-family: var(--font-heading); font-weight: 800; margin: 0; text
   padding: 3px 10px;
   white-space: nowrap;
 }
+/* .k のバッジが無い箇条書き（作り手の節）用。
+   .fact-list li は display:flex なので、バッジ無しの li に使うと
+   地の文と <strong> がそれぞれ独立した列になって、文が縦に割れて読めなくなる */
+.fact-list--plain li { display: block; }
+
 .fact-note {
   margin: 16px 0 0;
   font-size: 13.5px;
@@ -352,7 +419,10 @@ h1, h2, h3 { font-family: var(--font-heading); font-weight: 800; margin: 0; text
   background: linear-gradient(160deg, #fff9f2, #fff2e0);
   border: 1px solid #f4dcb8;
 }
-.trust-lead {
+/* 節の頭に置く導入文。信頼ブロック以外（#review など）でも使うので、
+   .section-lead を正の名前にして .trust-lead は既存マークアップ用に残している */
+.trust-lead,
+.section-lead {
   margin: 0 0 20px;
   font-size: 14.5px;
   line-height: 1.8;

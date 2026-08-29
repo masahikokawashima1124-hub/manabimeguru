@@ -25,27 +25,71 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="lp.css?v=6">
+<link rel="stylesheet" href="lp.css?v=13">
 </head>
 <body>
 
-<!-- ① ヒーロー -->
+<!-- P（Problem）─ ヒーロー。2026-08-29 PASONA 再構成。
+     ここは製品説明ではなく、小3の保護者の「悩みそのもの」を親自身の言葉で置く場所。
+     ①見出し＝悩み ②サブヘッド＝なぜその悩みが今なのか ③その下＝どう解けるか、の順。
+
+     見出しとサブヘッドの事実の裏づけ（書き換えるときは script.js で取り直すこと）:
+       3年の keisan = genDiv3 / genDivRemainder3 / genDecimal3 / genFractionSame3
+         → 3年で わり算・小数・分数 をやる
+       4年の keisan = genDivLong4（わり算の筆算）/ genDecimalAddSub4（小数のたし算ひき算）
+         → 4年の内容が3年の上に積まれている
+     つまり「3年のつまずきが4年の土台になる」は、アプリの中身どおりの話であって
+     不安をあおるための言い回しではない（lp-plan.md §4 の禁止事項に触れない）。
+
+     ⚠️ キャラの大きな絵は意図的に置いていない（2026-08-29 ユーザー判断）。
+     はなびのこびとは各SNSのアイコンに使っており見覚えは既にあるので、
+     ファーストビューの面積を使ってまで見せる必要がない。絵はこの下の
+     カード一覧・作り手の節で出てくる。 -->
 <header class="hero">
   <div class="hero-glow" aria-hidden="true"></div>
   <div class="wrap">
-    <img class="hero-figure" src="assets/characters/hanabi-greet.webp" width="260" height="295"
-         alt="げんきに手をふる「はなびのこびと」">
-    <h1>べんきょうした ぶんだけ、<br><span class="accent">せいれい</span>に会える。</h1>
+    <p class="hero-target">小学3年生の保護者へ</p>
+    <h1>わり算でつまずいたまま、<br>4年生に<span class="accent">したくない</span>。</h1>
     <p class="hero-sub">
-      小学1〜6年生のための学習アプリ「まなびめぐる」。<br>
-      算数・国語・英語をといて、きせつのせいれいカードを集めよう。
+      <span>「小4の壁」は、4年生で急に来ません。</span>
+      <span>3年生でならう わり算・小数・分数が、</span>
+      <span>そのまま4年生の土台になります。</span>
+    </p>
+    <!-- 「どう解けるのか」の一行。間隔反復（REVIEW_INTERVALS = [1,3,7,20]）そのもの。
+         ここが唯一、ヒーローでアプリ名を出す場所でもある -->
+    <p class="hero-mechanism">
+      まなびめぐるは、間違えた問題を<br>
+      <b>翌日</b> → <b>3日後</b> → <b>1週間後</b> → <b>20日後</b><br>
+      に、もう一度出します。
     </p>
     <a class="cta-btn" href="index.html" data-cta="hero">さわってみる <span class="arrow">→</span></a>
-    <p class="cta-micro">登録なし・インストール不要。ブラウザですぐ遊べます。</p>
+    <p class="cta-micro"><span>登録なし・インストール不要。</span><span>ブラウザですぐ遊べます。</span></p>
+    <!-- 空いた面積は装飾ではなく、判断材料で埋める。詳しくは④信頼ブロック -->
+    <ul class="hero-proof">
+      <li>広告なし</li>
+      <li>子どもに課金を求めない</li>
+      <li>個人情報は集めない</li>
+    </ul>
   </div>
 </header>
 
 <main>
+  <!-- ▼ ここから下の並びは PASONA の型（新PASONA）にそろえてある。2026-08-29 再構成。
+       節を足す・動かすときは、この役割のどこに入るのかを決めてから置くこと。
+
+         P  Problem   … ヒーロー（<main> の上）。小3の親の「わり算でつまずいたまま
+                        4年生にしたくない」という悩みを、親自身の言葉で置く
+         A  Affinity  … #maker。専門家ではなく同じ小学生の親、という立ち位置で並ぶ
+                        （旧構成では最下部近くに埋もれていた）
+         S  Solution  … #review → #why → #pace。悩みに直接効く順（復習の仕組み →
+                        続く仕組み → 学年の中の調整）。#trust はその締めの反論処理
+         O  Offer     … #family → #pricing。何が手に入るか、いくらか
+         N  Narrowing … #pricing の末尾（早期登録の価格据え置き）。
+                        account-design.md「方式A：早期会員の価格を据え置く【採用】」が根拠で、
+                        作り話の希少性ではない。ここを煽りに変えないこと（lp-plan.md §4）
+         A  Action    … #faq で残りの不安を消し、#start で手順を見せ、最後の CTA へ
+
+       #what だけは型の外。P の直後に「で、これは何なのか」を3秒で返すために置いている。 -->
 
   <!-- ② これは何か -->
   <section id="what" aria-labelledby="what-h">
@@ -65,65 +109,66 @@
     </div>
   </section>
 
-  <!-- ②-2 はじめかた（登録の要否で迷わせないための手順図）
-       「登録してもしなくても始められる」ことが、かえって最初の一歩を迷わせていた。
-       分岐図にすると選択を迫ることになるので、①〜③を登録なしの一本道として見せ、
-       登録は「あとから・無料・データはそのまま」の続きとして最後に置いている。
-       lp-plan.md §2「転換のゴールを『登録』ではなく『さわる』に置く」に沿う。 -->
-  <section id="start" aria-labelledby="start-h">
-    <div class="wrap">
-      <span class="eyebrow">はじめかた</span>
-      <h2 id="start-h">登録するかどうかは、<br>さわってから決められます。</h2>
-
-      <ol class="start-flow">
-        <li class="start-step">
-          <span class="start-num" aria-hidden="true">1</span>
-          <div class="start-body">
-            <h3>さわってみる</h3>
-            <p>最初の画面で「とうろくせずに ためす」を選びます。メールアドレスはいりません。</p>
-          </div>
-        </li>
-        <li class="start-step">
-          <span class="start-num" aria-hidden="true">2</span>
-          <div class="start-body">
-            <h3>なまえを入れる</h3>
-            <p>お子さんのニックネームだけ。学年はあとから変えられます。</p>
-          </div>
-        </li>
-        <li class="start-step">
-          <span class="start-num" aria-hidden="true">3</span>
-          <div class="start-body">
-            <h3>といてみる</h3>
-            <p>1回10問。正解すると1問1ポイント、10ポイントたまるとカードを1枚引けます。</p>
-          </div>
-        </li>
-      </ol>
-
-      <p class="start-divider"><span>ここまで、登録なしでできます</span></p>
-
-      <div class="start-later">
-        <span class="start-later-tag">あとから</span>
-        <div class="start-body">
-          <h3>続きそうだと思ったら、アカウントを作る（無料）</h3>
-          <p>
-            進み具合が端末の外にも保存され、機種を変えても引き継げます。
-            <strong>それまでに集めたカードとポイントは、そのまま残ります。</strong>
-          </p>
-        </div>
+  <!-- A（Affinity・親近感）─ 作り手。
+       旧構成では最下部近くに置いていたが、PASONA では悩みの直後に「この人の話なら
+       聞いてもいい」と思ってもらう場所なので、上へ移した。
+       権威づけではなく、同じ小学生の親という立ち位置で並ぶことがここの役目。 -->
+  <section id="maker" aria-labelledby="maker-h">
+    <div class="wrap maker">
+      <img class="maker-figure" src="assets/characters/hanabi-think.webp" width="150" height="170"
+           loading="lazy" alt="首をかしげて考える「はなびのこびと」">
+      <div>
+        <span class="eyebrow">作っているひと</span>
+        <h2 id="maker-h">小学生の娘のために、<br>作りはじめました。</h2>
       </div>
-
-      <p class="fact-note">
-        登録しないままでも使えますが、記録はその端末のブラウザの中だけに残ります。
-        ブラウザのデータを消したときや、端末を変えたときには引き継げません。
+      <p>
+        わたしは教育の専門家ではありません。<strong>小学3年生と6年生の娘を持つ、ひとりの親です。</strong>
+        「どうやったら自分から机に向かうんだろう」と考えて作りはじめ、
+        毎日ふたりに使ってもらいながら直し続けています。
+        上の子を見ていると、3年生のうちに何を残しておくべきだったかが、あとからよく分かります。
       </p>
-
-      <div class="cta-row">
-        <a class="cta-btn" href="index.html" data-cta="start">1からはじめる <span class="arrow">→</span></a>
-      </div>
+      <p>大きな会社がつくる教材のような、専門家の監修はまだありません。そのかわりに、</p>
+      <ul class="fact-list fact-list--plain">
+        <li>漢字は、<strong>学年別漢字配当表</strong>にもとづいて出題しています</li>
+        <li>出題の正しさは毎日自動で点検し、見つかった誤りはその都度直しています</li>
+        <li>子どもが実際につまずいた場所から、問題文やヒントを書き直しています</li>
+      </ul>
+      <p>足りないところは、これから増やしていきます。</p>
     </div>
   </section>
 
-  <!-- ③ なぜ続くのか -->
+  <!-- S（Solution）① ─ 復習（間隔反復）と丸つけ。
+       ヒーローで出した「つまずいたまま4年生に上がってほしくない」に、
+       いちばん直接こたえる節なので S の先頭に置いている。
+       日数は script.js の REVIEW_INTERVALS = [1, 3, 7, 20] と一致させること。 -->
+  <section id="review" aria-labelledby="review-h">
+    <div class="wrap family-box">
+      <span class="eyebrow">まちがえた あとのこと</span>
+      <h2 id="review-h">まちがえた問題は、<br>忘れたころに もう一度出ます。</h2>
+      <p class="section-lead">
+        3年生のわり算や小数は、まちがえたまま通りすぎても、その日は困りません。
+        困るのは、それが土台になる4年生です。
+      </p>
+      <p>
+        まちがえた問題は、<strong>翌日 → 3日後 → 7日後 → 20日後</strong>と、
+        少しずつ間隔をあけて、もう一度出題されます。
+        「忘れかけたころに思い出す」が、記憶にいちばん残る復習のしかたです。
+        4回続けて正解できたら、その問題は卒業です。
+      </p>
+      <p>
+        復習は特別なモードではなく、ふだんの10問の中に、そっと混ざって出てきます。
+        お子さんが「今日は復習をやらされている」と感じることはありません。
+      </p>
+      <p class="family-note">
+        丸つけはその場でアプリがします。どの問題をいつ復習させるかも、アプリが覚えています。
+        <strong>保護者の方が丸つけや復習の管理をする必要はありません。</strong>
+        お子さんの「にがて分野」は、一覧でいつでも見られます。
+      </p>
+    </div>
+  </section>
+
+  <!-- S（Solution）② ─ なぜ続くのか。
+       ①で「やり直せる」ことを言ったあと、そもそも机に向かい続けられるのか、に答える節。 -->
   <section id="why" aria-labelledby="why-h">
     <div class="wrap">
       <span class="eyebrow">まなびめぐるの仕組み</span>
@@ -170,7 +215,8 @@
     </div>
   </section>
 
-  <!-- ③.5 学年の中の進み方 -->
+  <!-- S（Solution）③ ─ 学年の中の進み方。
+       ①②を受けて「うちの子の今に合うのか」に答える。設定の手間がないことまで含めて解決策。 -->
   <section id="pace" aria-labelledby="pace-h">
     <div class="wrap family-box">
       <span class="eyebrow">むずかしさの調整</span>
@@ -193,30 +239,8 @@
     </div>
   </section>
 
-  <!-- ③b 復習（間隔反復）と丸つけ -->
-  <section id="review" aria-labelledby="review-h">
-    <div class="wrap family-box">
-      <span class="eyebrow">まちがえた あとのこと</span>
-      <h2 id="review-h">まちがえた問題は、<br>忘れたころに もう一度出ます。</h2>
-      <p>
-        まちがえた問題は、<strong>翌日 → 3日後 → 7日後 → 20日後</strong>と、
-        少しずつ間隔をあけて、もう一度出題されます。
-        「忘れかけたころに思い出す」が、記憶にいちばん残る復習のしかたです。
-        4回続けて正解できたら、その問題は卒業です。
-      </p>
-      <p>
-        復習は特別なモードではなく、ふだんの10問の中に、そっと混ざって出てきます。
-        お子さんが「今日は復習をやらされている」と感じることはありません。
-      </p>
-      <p class="family-note">
-        丸つけはその場でアプリがします。どの問題をいつ復習させるかも、アプリが覚えています。
-        <strong>保護者の方が丸つけや復習の管理をする必要はありません。</strong>
-        お子さんの「にがて分野」は、一覧でいつでも見られます。
-      </p>
-    </div>
-  </section>
-
-  <!-- ④ 信頼ブロック -->
+  <!-- S の締め ─ 反論処理。
+       ここまで読んで残るいちばん大きな警戒（ガチャ＝課金）を先に潰してから O（提案）に入る。 -->
   <section id="trust" class="trust" aria-labelledby="trust-h">
     <div class="wrap">
       <span class="eyebrow">大切なお知らせ</span>
@@ -237,7 +261,7 @@
     </div>
   </section>
 
-  <!-- ⑤ 家族 -->
+  <!-- O（Offer）① ─ 家族。何が手に入るか。 -->
   <section id="family" aria-labelledby="family-h">
     <div class="wrap family-box">
       <span class="eyebrow">ご家族での利用</span>
@@ -254,31 +278,11 @@
     </div>
   </section>
 
-  <!-- ⑥ 作り手 -->
-  <section id="maker" aria-labelledby="maker-h">
-    <div class="wrap maker">
-      <img class="maker-figure" src="assets/characters/hanabi-think.webp" width="150" height="170"
-           loading="lazy" alt="首をかしげて考える「はなびのこびと」">
-      <div>
-        <span class="eyebrow">作っているひと</span>
-        <h2 id="maker-h">小学生の娘のために、<br>作りはじめました。</h2>
-      </div>
-      <p>
-        わたしは教育の専門家ではありません。小学生の子どもを持つ、ひとりの親です。
-        「どうやったら自分から机に向かうんだろう」と考えて作りはじめ、
-        毎日使ってもらいながら直し続けています。
-      </p>
-      <p>大きな会社がつくる教材のような、専門家の監修はまだありません。そのかわりに、</p>
-      <ul class="fact-list">
-        <li>漢字は、<strong>学年別漢字配当表</strong>にもとづいて出題しています</li>
-        <li>出題の正しさは毎日自動で点検し、見つかった誤りはその都度直しています</li>
-        <li>子どもが実際につまずいた場所から、問題文やヒントを書き直しています</li>
-      </ul>
-      <p>足りないところは、これから増やしていきます。</p>
-    </div>
-  </section>
-
-  <!-- ⑦ 料金 -->
+  <!-- O（Offer）② ＋ N（Narrowing down）─ 料金。
+       N にあたるのは末尾の .price-lock（早期登録の価格据え置き）。
+       これは account-design.md の「方式A：早期会員の価格を据え置く（グランドファザリング）
+       【採用・2026-08-02】」という実際の方針であって、作り話の希少性ではない。
+       期限や残り枠のような、裏づけのない急かしをここに足さないこと（lp-plan.md §4）。 -->
   <section id="pricing" aria-labelledby="pricing-h">
     <div class="wrap">
       <span class="eyebrow">料金</span>
@@ -323,7 +327,7 @@
     </div>
   </section>
 
-  <!-- ⑧ よくある質問 -->
+  <!-- A（Action）への地ならし ─ よくある質問。残る不安をここで消す。 -->
   <section id="faq" aria-labelledby="faq-h">
     <div class="wrap">
       <span class="eyebrow">よくある質問</span>
@@ -392,9 +396,68 @@
     </div>
   </section>
 
+  <!-- A（Action）─ はじめかた（登録の要否で迷わせないための手順図）。
+       PASONA 再構成で最後の CTA の直前へ移した（2026-08-29）。手順を見せてから押させる。
+       「登録してもしなくても始められる」ことが、かえって最初の一歩を迷わせていた。
+       分岐図にすると選択を迫ることになるので、①〜③を登録なしの一本道として見せ、
+       登録は「あとから・無料・データはそのまま」の続きとして最後に置いている。
+       lp-plan.md §2「転換のゴールを『登録』ではなく『さわる』に置く」に沿う。 -->
+  <section id="start" aria-labelledby="start-h">
+    <div class="wrap">
+      <span class="eyebrow">はじめかた</span>
+      <h2 id="start-h">登録するかどうかは、<br>さわってから決められます。</h2>
+
+      <ol class="start-flow">
+        <li class="start-step">
+          <span class="start-num" aria-hidden="true">1</span>
+          <div class="start-body">
+            <h3>さわってみる</h3>
+            <p>最初の画面で「とうろくせずに ためす」を選びます。メールアドレスはいりません。</p>
+          </div>
+        </li>
+        <li class="start-step">
+          <span class="start-num" aria-hidden="true">2</span>
+          <div class="start-body">
+            <h3>なまえを入れる</h3>
+            <p>お子さんのニックネームだけ。学年はあとから変えられます。</p>
+          </div>
+        </li>
+        <li class="start-step">
+          <span class="start-num" aria-hidden="true">3</span>
+          <div class="start-body">
+            <h3>といてみる</h3>
+            <p>1回10問。正解すると1問1ポイント、10ポイントたまるとカードを1枚引けます。</p>
+          </div>
+        </li>
+      </ol>
+
+      <p class="start-divider"><span>ここまで、登録なしでできます</span></p>
+
+      <div class="start-later">
+        <span class="start-later-tag">あとから</span>
+        <div class="start-body">
+          <h3>続きそうだと思ったら、アカウントを作る（無料）</h3>
+          <p>
+            進み具合が端末の外にも保存され、機種を変えても引き継げます。
+            <strong>それまでに集めたカードとポイントは、そのまま残ります。</strong>
+          </p>
+        </div>
+      </div>
+
+      <p class="fact-note">
+        登録しないままでも使えますが、記録はその端末のブラウザの中だけに残ります。
+        ブラウザのデータを消したときや、端末を変えたときには引き継げません。
+      </p>
+
+      <div class="cta-row">
+        <a class="cta-btn" href="index.html" data-cta="start">1からはじめる <span class="arrow">→</span></a>
+      </div>
+    </div>
+  </section>
+
 </main>
 
-<!-- ⑨ 最後のCTA -->
+<!-- A（Action）─ 最後のCTA -->
 <section class="closing" aria-labelledby="closing-h">
   <div class="wrap">
     <img class="closing-figure" src="assets/characters/hanabi-happy.webp" width="150" height="170"
