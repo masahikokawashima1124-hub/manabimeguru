@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="lp.css?v=5">
+<link rel="stylesheet" href="lp.css?v=6">
 </head>
 <body>
 
@@ -56,12 +56,70 @@
         <li><span class="k">教科</span> 算数・国語・英語</li>
         <li><span class="k">使い方</span> ブラウザで開くだけ。アプリのインストールは不要です</li>
         <li><span class="k">端末</span> iPad・スマートフォン・パソコン</li>
-        <li><span class="k">はじめかた</span> 登録なしで、まずそのまま試せます。続けたくなったら保護者の方がアカウントを作ると、進み具合が保存され、お子さんごとにプロフィールを分けられます</li>
+        <li><span class="k">はじめかた</span> 登録なしで、まずそのまま試せます（<a href="#start">くわしい手順</a>）</li>
       </ul>
       <p class="fact-note">
         学年を設定すると、その学年の内容を中心に、少し前の学年の復習もまぜて出題します。
         さらに、学校で習うころに合わせて、出る問題の種類が1年をかけて少しずつ増えていきます。
       </p>
+    </div>
+  </section>
+
+  <!-- ②-2 はじめかた（登録の要否で迷わせないための手順図）
+       「登録してもしなくても始められる」ことが、かえって最初の一歩を迷わせていた。
+       分岐図にすると選択を迫ることになるので、①〜③を登録なしの一本道として見せ、
+       登録は「あとから・無料・データはそのまま」の続きとして最後に置いている。
+       lp-plan.md §2「転換のゴールを『登録』ではなく『さわる』に置く」に沿う。 -->
+  <section id="start" aria-labelledby="start-h">
+    <div class="wrap">
+      <span class="eyebrow">はじめかた</span>
+      <h2 id="start-h">登録するかどうかは、<br>さわってから決められます。</h2>
+
+      <ol class="start-flow">
+        <li class="start-step">
+          <span class="start-num" aria-hidden="true">1</span>
+          <div class="start-body">
+            <h3>さわってみる</h3>
+            <p>最初の画面で「とうろくせずに ためす」を選びます。メールアドレスはいりません。</p>
+          </div>
+        </li>
+        <li class="start-step">
+          <span class="start-num" aria-hidden="true">2</span>
+          <div class="start-body">
+            <h3>なまえを入れる</h3>
+            <p>お子さんのニックネームだけ。学年はあとから変えられます。</p>
+          </div>
+        </li>
+        <li class="start-step">
+          <span class="start-num" aria-hidden="true">3</span>
+          <div class="start-body">
+            <h3>といてみる</h3>
+            <p>1回10問。正解すると1問1ポイント、10ポイントたまるとカードを1枚引けます。</p>
+          </div>
+        </li>
+      </ol>
+
+      <p class="start-divider"><span>ここまで、登録なしでできます</span></p>
+
+      <div class="start-later">
+        <span class="start-later-tag">あとから</span>
+        <div class="start-body">
+          <h3>続きそうだと思ったら、アカウントを作る（無料）</h3>
+          <p>
+            進み具合が端末の外にも保存され、機種を変えても引き継げます。
+            <strong>それまでに集めたカードとポイントは、そのまま残ります。</strong>
+          </p>
+        </div>
+      </div>
+
+      <p class="fact-note">
+        登録しないままでも使えますが、記録はその端末のブラウザの中だけに残ります。
+        ブラウザのデータを消したときや、端末を変えたときには引き継げません。
+      </p>
+
+      <div class="cta-row">
+        <a class="cta-btn" href="index.html" data-cta="start">1からはじめる <span class="arrow">→</span></a>
+      </div>
     </div>
   </section>
 
