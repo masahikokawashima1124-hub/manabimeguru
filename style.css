@@ -839,8 +839,59 @@ h2 {
   margin-bottom: 14px;
 }
 
-.week-chart-title { font-size: 0.86rem; font-weight: 800; color: var(--text); }
+.week-chart-title { font-size: 0.86rem; font-weight: 800; color: var(--text); margin-right: auto; }
 .week-chart-total { font-size: 1.05rem; font-weight: 900; color: var(--primary-dark); }
+
+/* ===== 縦が短い端末で週間グラフを畳む（2026-08-30） =====
+   .tab-bar は position:fixed で常に画面の下にいる。ホーム画面の中身が縦に長いと
+   主ボタン「べんきょうを はじめる」が初期表示でタブバーの下に入り、
+   見えている部分を押すとボタンではなくタブバー（や中央のFAB）が反応していた。
+   実測（初期表示・スクロールなし）:
+     360x640  ボタン下端679 / タブバー上端562  → 重なる
+     375x667  ボタン下端679 / タブバー上端589  → 重なる
+     412x732  ボタン下端679 / タブバー上端654  → 重なる
+     390x844  ボタン下端679 / タブバー上端766  → 重ならない
+   週間グラフの棒（118px）と見出しの余白（14px）で約132px 縮むので、
+   上の3つとも主ボタンがタブバーより上に出る。
+   合計ポイントは畳んだままでも見出しに残るため、毎日見る数字は消えない。
+   ⚠️ 畳むのは高さが足りないときだけ。高い画面では従来どおり開いたまま出す。 */
+.week-chart-toggle { display: none; }
+
+@media (max-height: 760px) {
+  .week-chart-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    margin: -4px -4px -4px 8px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: var(--secondary-soft);
+    color: var(--primary-dark);
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .week-chart-toggle span { transition: transform 0.2s ease; }
+  .week-chart-card.is-open .week-chart-toggle span { transform: rotate(180deg); }
+
+  .week-chart-card:not(.is-open) .week-chart { display: none; }
+  .week-chart-card:not(.is-open) .week-chart-head { margin-bottom: 0; }
+
+  /* スタート画面（10もん チャレンジ スタート！）も同じ重なりが起きるが、
+     こちらは週間グラフを持たないので開閉では解決できない。
+     いちばん高いキャラ枠（実測237px）を圧縮する。称号とラベルは
+     消さず縮めるだけに留め、「いまのレベル」が分かる情報は残す。
+     実測（412x732・初期表示）: 圧縮前は主ボタン下端703 / タブ上端654 で重なる。 */
+  #screen-start .character-box { padding: 8px 16px; margin-bottom: 2px; }
+  #screen-start .level-badge-large { width: 56px; height: 56px; font-size: 0.9rem; }
+  #screen-start .character-title { margin: 3px 0 5px; font-size: 0.85rem; }
+  #screen-start .character-progress { height: 7px; }
+  #screen-start .character-progress-label { margin-top: 3px; font-size: 0.65rem; }
+  #screen-start .stamp-card { padding: 8px; margin: 4px 0 3px; gap: 5px; }
+}
 
 .week-chart {
   display: flex;

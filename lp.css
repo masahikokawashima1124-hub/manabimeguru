@@ -228,6 +228,12 @@ h1, h2, h3 { font-family: var(--font-heading); font-weight: 800; margin: 0; text
   flex-direction: column;
   gap: 12px;
 }
+/* ⚠️ display:flex なので、li の直下に置いたものは全部それぞれ別の flex アイテムに
+   なる（地の文は匿名アイテム、<a> や <strong> は個別のアイテムとして blockify される）。
+   そうなると文が列に割れて、折り返した瞬間に読めなくなる。
+   バッジ以外の中身は必ず1つの <span> にまとめて入れること。
+   バッジ自体が無いリストは .fact-list--plain を併記する。
+   （2026-08-29：<strong> と <a> で2回同じ壊れ方をしたので明記） */
 .fact-list li {
   display: flex;
   gap: 10px;

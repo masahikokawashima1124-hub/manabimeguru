@@ -171,6 +171,7 @@ const LOCALES = {
     "home.heroSub": "きょうも 10もん チャレンジ！",
     "home.startStudy": "📖 べんきょうを はじめる",
     "home.weekTitle": "1しゅうかんの がんばり",
+    "home.weekToggle": "1しゅうかんの がんばりを ひらく／とじる",
     "home.drawGacha": "🎰 ガチャをひく",
 
     // --- 公式YouTube（アプリの外に出る） ---
@@ -570,8 +571,8 @@ const LOCALES = {
     "math.percent5.text": "{base} の {pct}％ は いくつ？",
     "math.percent5.hint": "◯％ は 100で わった わりあい。もとの数 × わりあい で もとまるよ",
     "math.percent5.explain": "{pct}％ ＝ {ratio}。{base} × {ratio} ＝ {answer}",
-    "math.triangleArea5.text": "そこへんが {base}cm、たかさが {height}cm の 三角形の 面積は なんcm²？",
-    "math.triangleArea5.hint": "三角形の 面積 ＝ そこへん × たかさ ÷ 2",
+    "math.triangleArea5.text": "ていへんが {base}cm、たかさが {height}cm の 三角形の 面積は なんcm²？",
+    "math.triangleArea5.hint": "三角形の 面積 ＝ ていへん × たかさ ÷ 2",
     "math.triangleArea5.explain": "{base} × {height} ÷ 2 ＝ {area}（cm²）",
     "math.wordPerUnit5.text": "{units}{unit}の {item}の{label}は {total}{per} です。1{unit}あたりの{label}は なん{per}？",
     "math.wordPerUnit5.hint": "1あたりの 大きさ ＝ ぜんたい ÷ いくつ分",
@@ -821,6 +822,7 @@ const LOCALES = {
     "home.heroSub": "¡El reto de hoy: 10 preguntas!",
     "home.startStudy": "📖 Empezar a estudiar",
     "home.weekTitle": "Tu semana",
+    "home.weekToggle": "Abrir o cerrar el resumen de la semana",
     "home.drawGacha": "🎰 Abrir un sobre",
 
     // --- YouTube oficial (sale de la app) ---

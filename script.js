@@ -3719,6 +3719,16 @@ function refreshSoundToggleLabel() {
   document.getElementById("btn-sound-toggle").textContent = isSoundEnabled() ? "🔊" : "🔇";
 }
 
+// 週間グラフの開閉。ボタンは縦の短い端末でだけ CSS で表示される（style.css の
+// @media (max-height: 760px) を参照）。高い画面では is-open に関係なく開いたままなので、
+// ここでクラスを付け外ししても表示は変わらない。
+document.getElementById("btn-week-chart-toggle").addEventListener("click", () => {
+  const card = document.querySelector(".week-chart-card");
+  const open = card.classList.toggle("is-open");
+  document.getElementById("btn-week-chart-toggle").setAttribute("aria-expanded", String(open));
+  playClickSound();
+});
+
 document.getElementById("btn-sound-toggle").addEventListener("click", () => {
   const enabled = !isSoundEnabled();
   setSoundEnabled(enabled);
