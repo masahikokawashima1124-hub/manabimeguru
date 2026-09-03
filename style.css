@@ -880,17 +880,64 @@ h2 {
   .week-chart-card:not(.is-open) .week-chart { display: none; }
   .week-chart-card:not(.is-open) .week-chart-head { margin-bottom: 0; }
 
+  /* ホーム画面のCTAより下（ガチャミニボタン・YouTubeリンク）も、週間グラフを
+     畳んだだけでは足りずタブバーに沈んでいた（2026-09-02 日次QAで発見）。
+     ここは毎回訪れる画面なので、クイズ・分野選択と違って
+     ensureBottomActionVisible() による強制スクロールは採らない
+     （開くたびにヒーローカードが視界から流れる体験になってしまう）。
+     hero-card・week-chart-card・home-status-card の余白を詰めて確保する。 */
+  #screen-home .hero-card { padding: 4px 16px; margin-bottom: 2px; }
+  #screen-home .week-chart-card { padding: 5px 10px 4px; }
+  #screen-home .home-status-card { padding: 5px 12px; margin: 3px 0 2px; }
+  #screen-home .btn-gacha-mini { margin-top: 2px; padding: 5px 10px; }
+  #screen-home .youtube-link { margin-top: 3px; padding: 5px 10px; }
+  #screen-home .youtube-link-icon { width: 26px; height: 20px; }
+
   /* スタート画面（10もん チャレンジ スタート！）も同じ重なりが起きるが、
      こちらは週間グラフを持たないので開閉では解決できない。
      いちばん高いキャラ枠（実測237px）を圧縮する。称号とラベルは
      消さず縮めるだけに留め、「いまのレベル」が分かる情報は残す。
      実測（412x732・初期表示）: 圧縮前は主ボタン下端703 / タブ上端654 で重なる。 */
-  #screen-start .character-box { padding: 8px 16px; margin-bottom: 2px; }
-  #screen-start .level-badge-large { width: 56px; height: 56px; font-size: 0.9rem; }
+  #screen-start .character-box { padding: 6px 16px; margin-bottom: 0; }
+  #screen-start .level-badge-large { width: 52px; height: 52px; font-size: 0.85rem; }
   #screen-start .character-title { margin: 3px 0 5px; font-size: 0.85rem; }
   #screen-start .character-progress { height: 7px; }
   #screen-start .character-progress-label { margin-top: 3px; font-size: 0.65rem; }
-  #screen-start .stamp-card { padding: 8px; margin: 4px 0 3px; gap: 5px; }
+  #screen-start h2 { margin: 0 0 4px; }
+  #screen-start .stamp-card { padding: 4px; margin: 2px 0; gap: 2px; }
+  #screen-start .badge-line { margin: 2px 0; font-size: 0.78rem; }
+  #screen-start .btn-primary,
+  #screen-start .btn-secondary { padding: 9px 16px; margin-top: 4px; font-size: 0.95rem; }
+
+  /* 結果画面（「もういちど」）も同じ理由で重なる。実測（360x640・10問全問正解で
+     ★が最長になるケース）: 圧縮前は主ボタン下端624 / タブ上端562 で重なる。 */
+  #screen-result h2 { margin: 2px 0 4px; }
+  #screen-result .result-box { padding: 12px 20px; }
+  #screen-result .stamp-anim { margin-top: 6px; }
+  #screen-result .points-earned-line { margin-top: 4px; }
+  #screen-result .btn-share,
+  #screen-result #btn-retry { padding: 12px 16px; margin-top: 6px; font-size: 0.95rem; }
+
+  /* せってい画面は「ことば」より下にも長く内容が続く、スクロール前提の画面
+     なので #screen-quiz や #screen-category と同じ強制スクロールはしない
+     （末尾の無関係なボタンまで飛んでしまう）。学年グリッドのすぐ下にある
+     「ことば」がタブバーに沈んで見えることが日次QAで見つかったので、
+     初期表示で少しでも早く出るよう学年グリッドの余白だけ詰める。 */
+  #screen-settings h2 { margin: 2px 0 2px; }
+  #screen-settings .sub { margin-bottom: 2px; }
+  #screen-settings .settings-box { gap: 6px; margin-top: 6px; }
+  #screen-settings .grade-option { padding: 8px 10px; font-size: 0.9rem; }
+  #screen-settings .grade-option-range { margin-top: 1px; }
+  #screen-settings .settings-section-title { margin: 10px 0 2px; }
+}
+
+/* 週間グラフが開いたまま表示される高さ（760px超）でも、まだ僅かに
+   YouTubeリンクがタブバーに沈む端末がある（実測390x844で27px）。
+   ここは畳む対象ではない高さ帯なので、上のブロックとは別に軽い圧縮だけ足す。 */
+@media (min-height: 761px) and (max-height: 900px) {
+  #screen-home .hero-card { padding: 10px 18px; margin-bottom: 6px; }
+  #screen-home .home-status-card { padding: 8px 14px; margin: 6px 0 4px; }
+  #screen-home .youtube-link { margin-top: 6px; padding: 8px 12px; }
 }
 
 .week-chart {

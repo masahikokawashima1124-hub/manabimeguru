@@ -2205,17 +2205,26 @@ function genFractionAddDiff5() {
   const d1 = randInt(2, 9);
   let d2 = randInt(2, 12);
   while (d2 === d1) d2 = randInt(2, 12);
-  const n1 = randInt(1, d1 - 1);
-  const n2 = randInt(1, d2 - 1);
-  const num = n1 * d2 + n2 * d1;
-  const den = d1 * d2;
+  // n1/d1・n2/d2 は既約な分数として出す（3/6 のような未約分の入力は
+  // 「なぜ最初から約分しないのか」という違和感になる）
+  let n1 = randInt(1, d1 - 1);
+  while (gcd(n1, d1) !== 1) n1 = randInt(1, d1 - 1);
+  let n2 = randInt(1, d2 - 1);
+  while (gcd(n2, d2) !== 1) n2 = randInt(1, d2 - 1);
+  // 通分は分母の積ではなく最小公倍数を使う（倍数・約数の単元で教える
+  // 考え方と揃える。積を使うと 4/6+1/9 が 36/54+6/54 のように無駄に
+  // 大きい数になっていた）
+  const den = (d1 * d2) / gcd(d1, d2);
+  const a = n1 * (den / d1);
+  const b = n2 * (den / d2);
+  const num = a + b;
   const result = reduceFraction(num, den);
   return {
     text: t("math.fractionAddDiff5.text", { n1, d1, n2, d2 }),
     answer: fractionToText(result),
     type: "fraction",
     hint: t("math.fractionAddDiff5.hint"),
-    explain: t("math.fractionAddDiff5.explain", { a: n1 * d2, b: n2 * d1, den, num })
+    explain: t("math.fractionAddDiff5.explain", { a, b, den, num })
       + reduceExplainSuffix(num, den, result),
   };
 }
@@ -3544,6 +3553,33 @@ function updateStatusBar() {
 // ステータスバー・ガイド・タブバーはまとめて隠す
 const PROFILE_SCREENS = ["screen-login", "screen-signup", "screen-profile-select", "screen-profile-create"];
 
+// 縦の短い端末では、画面の中身が入りきらず主ボタンが下タブバーの裏に
+// 隠れることがある（2026-08-29〜31 日次QAで複数画面から発見）。
+// #screen-start・#screen-result は CSS 側で圧縮して確保済みだが、
+// 中身の高さが可変な画面（分野の数で伸び縮みする #screen-category、
+// 解説の長さで伸び縮みする #screen-quiz の回答後）は固定の圧縮では
+// 追いつかないため、実測して足りない分だけスクロールする安全網を設ける。
+// 「タブに隠れたボタンを押したつもりが別の画面（ガチャ）に飛ぶ」という
+// 誤タップを防ぐのが目的で、賑わせるための演出ではない。
+function ensureBottomActionVisible(root) {
+  if (!root) return;
+  const tabBar = document.getElementById("tab-bar");
+  if (tabBar.classList.contains("hidden")) return;
+  const tabTop = tabBar.getBoundingClientRect().top;
+  const actionable = [...root.querySelectorAll("button, a")].filter(
+    (el) => !el.disabled && !el.classList.contains("hidden") && el.offsetParent !== null
+  );
+  if (!actionable.length) return;
+  const last = actionable[actionable.length - 1];
+  const overlap = last.getBoundingClientRect().bottom - tabTop;
+  if (overlap > 0) window.scrollBy(0, overlap + 12);
+}
+
+// 中身がおおむね1画面に収まる想定の画面だけを対象にする。せっていのような
+// 長いスクロール前提の画面まで対象にすると、末尾の無関係なボタンまで
+// 強制的にスクロールしてしまうため、あえて対象を絞っている。
+const FIT_TO_FOLD_SCREENS = ["screen-start", "screen-result", "screen-category"];
+
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -3559,6 +3595,10 @@ function showScreen(id) {
   updateActiveTab(id);
   if (!chromeHidden) updateStatusBar();
   updateBgmForScreen(id);
+
+  if (FIT_TO_FOLD_SCREENS.includes(id)) {
+    requestAnimationFrame(() => ensureBottomActionVisible(document.getElementById(id)));
+  }
 }
 
 // ===== ホーム画面 =====
@@ -4481,6 +4521,10 @@ function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
   const nextBtn = document.getElementById("btn-next");
   nextBtn.textContent = isLast ? t("quiz.seeResult") : t("quiz.next");
   nextBtn.classList.remove("hidden");
+
+  // 不正解で解説が伸びると「つぎへ」がタブバーの裏に隠れることがある
+  // （2026-08-31 日次QAで発見。縦の短い端末で毎セッション起こりうる）。
+  requestAnimationFrame(() => ensureBottomActionVisible(document.getElementById("screen-quiz")));
 }
 
 document.getElementById("answer-form").addEventListener("submit", (e) => {
