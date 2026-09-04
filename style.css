@@ -923,21 +923,42 @@ h2 {
      （末尾の無関係なボタンまで飛んでしまう）。学年グリッドのすぐ下にある
      「ことば」がタブバーに沈んで見えることが日次QAで見つかったので、
      初期表示で少しでも早く出るよう学年グリッドの余白だけ詰める。 */
-  #screen-settings h2 { margin: 2px 0 2px; }
-  #screen-settings .sub { margin-bottom: 2px; }
-  #screen-settings .settings-box { gap: 6px; margin-top: 6px; }
-  #screen-settings .grade-option { padding: 8px 10px; font-size: 0.9rem; }
-  #screen-settings .grade-option-range { margin-top: 1px; }
-  #screen-settings .settings-section-title { margin: 10px 0 2px; }
+  #screen-settings h2 { margin: 0; }
+  #screen-settings .sub { margin-bottom: 0; font-size: 0.78rem; line-height: 1.25; }
+  #screen-settings .settings-box { gap: 4px; margin-top: 2px; }
+  #screen-settings .grade-option { padding: 3px 10px; font-size: 0.82rem; }
+  #screen-settings .grade-option-range { margin-top: 0; font-size: 0.6rem; }
+  #screen-settings .settings-section-title { margin: 3px 0 1px; font-size: 0.92rem; }
 }
 
 /* 週間グラフが開いたまま表示される高さ（760px超）でも、まだ僅かに
-   YouTubeリンクがタブバーに沈む端末がある（実測390x844で27px）。
-   ここは畳む対象ではない高さ帯なので、上のブロックとは別に軽い圧縮だけ足す。 */
-@media (min-height: 761px) and (max-height: 900px) {
-  #screen-home .hero-card { padding: 10px 18px; margin-bottom: 6px; }
-  #screen-home .home-status-card { padding: 8px 14px; margin: 6px 0 4px; }
-  #screen-home .youtube-link { margin-top: 6px; padding: 8px 12px; }
+   YouTubeリンクがタブバーに沈む端末や（実測390x844で27px）、せっていの
+   「新学期がはじまる月」がタブバーに沈む端末がある（2026-09-03 日次QAで
+   発見。412x915のPixel 7でボタン中心がタブバー自体に当たっていた）。
+   ここは畳む対象ではない高さ帯なので、上のブロックとは別に軽い圧縮だけ
+   足す。上限を切らないのは、900px超の端末（Pixel 7など）でも起きて
+   いたため——軽い余白調整なので、対象外の高い端末に効いても崩れない。 */
+@media (min-height: 761px) {
+  /* .tab-bar-fab は margin:-22px でタブバーの上に突き出る（648〜661行目）。
+     761〜839px帯は、上の @media(max-height:760px) ほど攻めた圧縮を
+     していなかったため、FABの突き出し分がYouTubeリンクの文字に重なり、
+     タップするとガチャ画面へ誤遷移していた（2026-09-04 日次QAで発見。
+     実測 h=761〜800 で中心が tab-bar-fab / tab-bar-label に当たる）。
+     ≤760px向けの圧縮（889〜894行目）とほぼ同じ強さまで詰めて、
+     FABの可動域そのものから外す。 */
+  #screen-home .hero-card { padding: 4px 16px; margin-bottom: 2px; }
+  #screen-home .week-chart-card { padding: 5px 10px 4px; }
+  #screen-home .home-status-card { padding: 5px 12px; margin: 3px 0 2px; }
+  #screen-home .btn-gacha-mini { margin-top: 2px; padding: 5px 10px; }
+  #screen-home .youtube-link { margin-top: 3px; padding: 5px 10px; }
+  #screen-home .youtube-link-icon { width: 26px; height: 20px; }
+
+  #screen-settings h2 { margin: 2px 0 2px; }
+  #screen-settings .sub { margin-bottom: 2px; }
+  #screen-settings .settings-box { gap: 8px; margin-top: 8px; }
+  #screen-settings .grade-option { padding: 10px 10px; }
+  #screen-settings .grade-option-range { margin-top: 2px; }
+  #screen-settings .settings-section-title { margin: 12px 0 2px; }
 }
 
 .week-chart {
