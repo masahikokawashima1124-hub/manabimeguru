@@ -109,12 +109,33 @@ const SUPPORT_EMAIL = "manabimeguru@comagoto.com";
 //   date: "YYYY-MM-DD"（新しい順に自動で並ぶ）
 //   title / body: { ja, es } の両方を必ず書く（check_i18n_keys.js の対象外なので漏れても検出されない）
 //   cta:  任意。省略すると本文だけのカードになる
-//     { label: {ja, es}, url: "https://..." }        … 外部リンク（YouTube動画など）を新規タブで開く
+//     { label: {ja, es}, url: "https://..." }        … 外部リンク（特定の動画など）を新規タブで開く
 //     { label: {ja, es}, action: "plan" }             … せってい内の「プラン」節へスクロールする
+//     { label: {ja, es}, action: "youtube" }          … 公式YouTubeチャンネル（t("youtube.url")、
+//                                                        ja/esで別チャンネル）を新規タブで開く
 //   modalFrom / modalUntil: 任意。両方書くと、その期間だけメイン画面が出る前にポップアップでも見せる
 //     "YYYY-MM-DD"（当日を含む）。省略するとせってい画面の一覧だけに載る（今までの動作）。
 //     複数の項目が同時に該当する期間だと、配列の先頭にある項目を優先して1つだけ出す。
-const ANNOUNCEMENTS = [];
+const ANNOUNCEMENTS = [
+  {
+    id: "2026-09-05-autumn-spirits",
+    date: "2026-09-05",
+    title: {
+      ja: "新登場！秋の精霊たち",
+      es: "¡Nuevos espíritus de otoño!",
+    },
+    body: {
+      ja: "近日中に秋の精霊カードが追加されます。ひとあし先にYouTube動画に秋の精霊たちが登場しています。ぜひご覧ください。",
+      es: "Muy pronto se añadirán las cartas de los espíritus de otoño. Ya puedes verlos por adelantado en nuestro canal de YouTube. ¡No te lo pierdas!",
+    },
+    cta: {
+      label: { ja: "YouTubeを見る", es: "Ver YouTube" },
+      action: "youtube",
+    },
+    modalFrom: "2026-09-05",
+    modalUntil: "2026-09-14",
+  },
+];
 
 const ANNOUNCE_READ_KEY = "announce_read_ids";
 
@@ -174,6 +195,8 @@ function maybeShowAnnounceModal() {
       if (item.cta.action === "plan") {
         openSettingsScreen();
         document.getElementById("settings-plan").scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (item.cta.action === "youtube") {
+        window.open(t("youtube.url"), "_blank", "noopener,noreferrer");
       } else if (item.cta.url) {
         window.open(item.cta.url, "_blank", "noopener,noreferrer");
       }
@@ -4106,6 +4129,8 @@ function renderAnnouncements() {
       const label = item.cta.label[locale] || item.cta.label.ja;
       if (item.cta.action === "plan") {
         ctaHTML = `<button type="button" class="announce-cta" data-scroll-plan="1">${label}</button>`;
+      } else if (item.cta.action === "youtube") {
+        ctaHTML = `<a class="announce-cta" href="${t("youtube.url")}" target="_blank" rel="noopener noreferrer">${label}</a>`;
       } else if (item.cta.url) {
         ctaHTML = `<a class="announce-cta" href="${item.cta.url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
       }
