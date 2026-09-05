@@ -1291,8 +1291,17 @@ function playGachaRevealSequence(gachaResult, onComplete) {
       refundLine.textContent = "";
     }
     skipBtn.classList.add("hidden");
-    closeBtn.classList.remove("hidden");
-    if (onComplete) setTimeout(onComplete, 500);
+    // とじるボタンはonComplete（ランクアップ判定・表示）が終わってから出す。
+    // 先に出すと、判定が終わる前にとじられてランクアップ演出が画面外で表示される
+    // ことがあった（2026-09-05 日次QAで発見）
+    if (onComplete) {
+      setTimeout(() => {
+        onComplete();
+        closeBtn.classList.remove("hidden");
+      }, 500);
+    } else {
+      closeBtn.classList.remove("hidden");
+    }
   };
 
   timers.push(setTimeout(revealCard, GACHA_FLIP_MS[rarity] || 3300));
@@ -1476,9 +1485,15 @@ function genSub1() {
       explain = t("math.sub1.explainFromTen", { b, diff });
     } else if (b <= aOnes) {
       explain = t("math.sub1.explainSplit", { a, aOnes, b, part: aOnes - b, diff });
-    } else {
+    } else if (b < 10) {
       const borrow = 10 - b;
       explain = t("math.sub1.explainBorrow", { a, aOnes, b, borrow, diff });
+    } else {
+      // bも「じゅうと いくつ」（10以上）のとき、10－bをすると負の数になってしまう
+      // （2026-09-05 日次QAで発見）。両方とも10の位が同じなので、10どうしを消して
+      // 一の位どうしの引き算にする（aOnes > bOnes は b<a かつ両方teensなら必ず成り立つ）
+      const bOnes = b - 10;
+      explain = t("math.sub1.explainTeens", { a, aOnes, b, bOnes, diff });
     }
   }
   return { text: `${a} － ${b} = ?`, answer: String(diff), type: "number",
