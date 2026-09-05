@@ -46,6 +46,14 @@ const LOCALES = {
     "settings.yearStartDesc": "お住まいの地域に合わせて選んでください。学校で習うころに合わせて、出る問題の種類がすこしずつ増えていきます（日本は4月、アメリカ・ヨーロッパの多くは9月、韓国や南半球は3月です）。",
     "settings.yearStartMonth": "{n}月",
     "settings.yearStartOther": "そのほかの月",
+
+    // --- おしらせ（保護者向け）。新カード・新動画などの告知を静的に置く（ANNOUNCEMENTSを参照） ---
+    "announce.title": "📢 おしらせ",
+    "announce.desc": "新しいせいれいカードや動画の情報をお知らせします。",
+    "announce.empty": "いまのところ、おしらせはありません。",
+    "announce.new": "NEW",
+    "announce.ctaPlan": "プランを見る",
+
     "review.title": "💪 にがて分野",
     "review.desc": "まちがえた問題は、翌日・3日後・7日後・20日後にもう一度出ます。正解できたら次の間かくへ進み、4回とも正解したら卒業してこの一覧から消えます。毎日やらなくても間かくは崩れません。復習しなくてよいものは「×」で削除できます。",
     "review.empty": "いまのところ、復習が必要な問題はありません。",
@@ -140,6 +148,30 @@ const LOCALES = {
     "auth.guestSignup": "アカウントを登録する",
     "auth.guestLogin": "ログインする",
     "auth.backToGuest": "もどる",
+
+    // --- ご要望・お問い合わせ（保護者のアカウントがある場合のみ送信可） ---
+    "feedback.title": "💬 ご意見・ご要望",
+    "feedback.desc": "アプリへのご意見・ご要望をお送りください。個別のお返事はできませんが、すべて目を通しています。",
+    "feedback.placeholder": "こんな問題がほしい、こんな機能があるとうれしい、など",
+    "feedback.submit": "送信する",
+    "feedback.guestNotice": "アカウント登録すると送れます。",
+    "feedback.empty": "内容を入力してください",
+    "feedback.sending": "送信中…",
+    "feedback.sent": "送信しました。ありがとうございます！",
+    "feedback.failed": "送信に失敗しました。時間をおいてもう一度お試しください",
+
+    // --- 感想を送る（保護者のアカウントがある場合のみ送信可） ---
+    "testimonial.title": "⭐ 感想を送る",
+    "testimonial.desc": "まなびめぐるを使ってみたご感想をお聞かせください。",
+    "testimonial.ratingLabel": "評価",
+    "testimonial.placeholder": "よかったところ、気になったところなど（にんいです）",
+    "testimonial.consentLabel": "この感想を、宣伝（Webページなど）で紹介してもよい",
+    "testimonial.submit": "送信する",
+    "testimonial.guestNotice": "アカウント登録すると送れます。",
+    "testimonial.ratingRequired": "評価を選んでください",
+    "testimonial.sending": "送信中…",
+    "testimonial.sent": "送信しました。ありがとうございます！",
+    "testimonial.failed": "送信に失敗しました。時間をおいてもう一度お試しください",
 
     // --- プラン（無料→ファミリー） ---
     "plan.title": "🎫 プラン",
@@ -696,6 +728,13 @@ const LOCALES = {
     "settings.yearStartDesc": "Elige el mes según tu país. Los tipos de ejercicio van apareciendo poco a poco, siguiendo el ritmo del colegio (en España es septiembre, en México agosto, en Japón abril, y en el hemisferio sur marzo).",
     "settings.yearStartMonth": "{name}",
     "settings.yearStartOther": "Otro mes",
+
+    "announce.title": "📢 Novedades",
+    "announce.desc": "Aquí anunciamos nuevas cartas y vídeos.",
+    "announce.empty": "Por ahora no hay novedades.",
+    "announce.new": "NUEVO",
+    "announce.ctaPlan": "Ver el plan",
+
     "review.title": "💪 Lo que cuesta más",
     "review.desc": "Las preguntas falladas vuelven a salir al día siguiente y a los 3, 7 y 20 días. Cada acierto pasa al siguiente intervalo y, tras acertar las cuatro veces, la pregunta desaparece de esta lista. Los intervalos se respetan aunque no se juegue todos los días. Con la «×» puedes quitar lo que no haga falta repasar.",
     "review.empty": "Ahora mismo no hay nada pendiente de repasar.",
@@ -789,6 +828,28 @@ const LOCALES = {
     "auth.guestSignup": "Crear una cuenta",
     "auth.guestLogin": "Iniciar sesión",
     "auth.backToGuest": "Volver",
+
+    "feedback.title": "💬 Opiniones y sugerencias",
+    "feedback.desc": "Envíanos tu opinión o sugerencia sobre la app. No podemos responder de forma individual, pero las leemos todas.",
+    "feedback.placeholder": "Un tipo de ejercicio que te gustaría, una función que echas en falta, etc.",
+    "feedback.submit": "Enviar",
+    "feedback.guestNotice": "Puedes enviarlo si te registras.",
+    "feedback.empty": "Escribe algo antes de enviar",
+    "feedback.sending": "Enviando…",
+    "feedback.sent": "Enviado. ¡Gracias!",
+    "feedback.failed": "No se pudo enviar. Inténtalo de nuevo más tarde",
+
+    "testimonial.title": "⭐ Enviar una opinión",
+    "testimonial.desc": "Cuéntanos qué te ha parecido Manabimeguru.",
+    "testimonial.ratingLabel": "Valoración",
+    "testimonial.placeholder": "Qué te ha gustado, qué mejorarías (opcional)",
+    "testimonial.consentLabel": "Podéis usar esta opinión en material promocional (como la página web)",
+    "testimonial.submit": "Enviar",
+    "testimonial.guestNotice": "Puedes enviarlo si te registras.",
+    "testimonial.ratingRequired": "Elige una valoración",
+    "testimonial.sending": "Enviando…",
+    "testimonial.sent": "Enviado. ¡Gracias!",
+    "testimonial.failed": "No se pudo enviar. Inténtalo de nuevo más tarde",
 
     // --- プラン（無料→ファミリー） ---
     // ⚠️ 価格はまだ日本円のまま（Stripe の Payment Link が JPY 建てのため）。

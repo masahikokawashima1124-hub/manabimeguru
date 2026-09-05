@@ -99,6 +99,108 @@ const STRIPE_CUSTOMER_PORTAL_URL = "https://billing.stripe.com/p/login/fZudRaeqC
 // 解約や問い合わせの受け口。tokusho.html に載せているアドレスと必ず揃えること。
 const SUPPORT_EMAIL = "manabimeguru@comagoto.com";
 
+// ===== おしらせ（せってい画面・保護者向け） =====
+// 新カードの実装予告・実装報告、新しいYouTube動画のアップロード情報などを載せる。
+// Firestoreではなく、この静的配列を直接編集してpushする（CARD_POOLと同じ運用）。
+// 新しい項目を足すときは、事実だけを書くこと（lp-plan.md §4「作り話の希少性で煽らない」と同じ方針）。
+//
+// 各項目の形:
+//   id:   一意な文字列（日付+内容がわかる名前にする。例: "2026-09-10-new-card"）
+//   date: "YYYY-MM-DD"（新しい順に自動で並ぶ）
+//   title / body: { ja, es } の両方を必ず書く（check_i18n_keys.js の対象外なので漏れても検出されない）
+//   cta:  任意。省略すると本文だけのカードになる
+//     { label: {ja, es}, url: "https://..." }        … 外部リンク（YouTube動画など）を新規タブで開く
+//     { label: {ja, es}, action: "plan" }             … せってい内の「プラン」節へスクロールする
+//   modalFrom / modalUntil: 任意。両方書くと、その期間だけメイン画面が出る前にポップアップでも見せる
+//     "YYYY-MM-DD"（当日を含む）。省略するとせってい画面の一覧だけに載る（今までの動作）。
+//     複数の項目が同時に該当する期間だと、配列の先頭にある項目を優先して1つだけ出す。
+const ANNOUNCEMENTS = [];
+
+const ANNOUNCE_READ_KEY = "announce_read_ids";
+
+function getAnnounceReadIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(ANNOUNCE_READ_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
+function markAnnouncementsRead(ids) {
+  const read = getAnnounceReadIds();
+  ids.forEach((id) => read.add(id));
+  localStorage.setItem(ANNOUNCE_READ_KEY, JSON.stringify([...read]));
+}
+
+function hasUnreadAnnouncements() {
+  const read = getAnnounceReadIds();
+  return ANNOUNCEMENTS.some((a) => !read.has(a.id));
+}
+
+// せっていタブの未読バッジ。起動時と、せってい画面を開いて既読にしたあとの両方で呼ぶ
+function updateSettingsTabBadge() {
+  const badge = document.getElementById("tab-settings-badge");
+  if (!badge) return;
+  badge.classList.toggle("hidden", !hasUnreadAnnouncements());
+}
+
+// メイン画面が出る前にポップアップで見せる項目。期間内・未読のものを配列の先頭優先で1つ返す
+function getEligibleModalAnnouncement() {
+  const today = new Date().toISOString().slice(0, 10);
+  const read = getAnnounceReadIds();
+  return ANNOUNCEMENTS.find((a) => (
+    a.modalFrom && a.modalUntil && !read.has(a.id) && a.modalFrom <= today && today <= a.modalUntil
+  )) || null;
+}
+
+// enterAppWithActiveProfile() から呼ぶ。該当項目があればポップアップを出し、無ければ何もしない
+function maybeShowAnnounceModal() {
+  const item = getEligibleModalAnnouncement();
+  if (!item) return;
+
+  const locale = getLocale();
+  const overlay = document.getElementById("announce-modal-overlay");
+  overlay.dataset.itemId = item.id;
+  document.getElementById("announce-modal-title").textContent = item.title[locale] || item.title.ja;
+  document.getElementById("announce-modal-body").textContent = item.body[locale] || item.body.ja;
+
+  const ctaBtn = document.getElementById("announce-modal-cta");
+  if (item.cta) {
+    ctaBtn.textContent = item.cta.label[locale] || item.cta.label.ja;
+    ctaBtn.classList.remove("hidden");
+    ctaBtn.onclick = () => {
+      playClickSound();
+      dismissAnnounceModal(item.id);
+      if (item.cta.action === "plan") {
+        openSettingsScreen();
+        document.getElementById("settings-plan").scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (item.cta.url) {
+        window.open(item.cta.url, "_blank", "noopener,noreferrer");
+      }
+    };
+  } else {
+    ctaBtn.classList.add("hidden");
+    ctaBtn.onclick = null;
+  }
+
+  overlay.classList.remove("hidden");
+}
+
+function dismissAnnounceModal(id) {
+  markAnnouncementsRead([id]);
+  updateSettingsTabBadge();
+  document.getElementById("announce-modal-overlay").classList.add("hidden");
+}
+
+document.getElementById("btn-close-announce-modal").addEventListener("click", () => {
+  playClickSound();
+  dismissAnnounceModal(document.getElementById("announce-modal-overlay").dataset.itemId);
+});
+document.getElementById("announce-modal-overlay").addEventListener("click", (e) => {
+  if (e.target.id !== "announce-modal-overlay") return;
+  dismissAnnounceModal(document.getElementById("announce-modal-overlay").dataset.itemId);
+});
+
 // Payment Link に「どの世帯の支払いか」を伝えるURLを組み立てる。
 // client_reference_id が webhook（functions/index.js）で世帯の特定に使われる。
 function buildUpgradeUrl(link) {
@@ -3804,7 +3906,10 @@ function openSettingsScreen() {
 
   renderLanguageSetting();
   renderYearStartSetting();
+  renderAnnouncements();
   renderReviewSetting();
+  renderFeedbackSetting();
+  renderTestimonialSetting();
   renderPlanSetting();
 
   const profile = getActiveProfile();
@@ -3976,6 +4081,179 @@ function renderReviewSetting() {
 
       box.appendChild(row);
     });
+}
+
+// おしらせ一覧。表示するたびに、いま見せた項目を既読にする
+// （今回はNEWバッジが見え、次に開いたときは消えている、という素直な既読管理）。
+function renderAnnouncements() {
+  const box = document.getElementById("settings-announce-list");
+  if (!box) return;
+
+  const locale = getLocale();
+  const items = ANNOUNCEMENTS.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  if (items.length === 0) {
+    box.innerHTML = `<p class="announce-empty">${t("announce.empty")}</p>`;
+    updateSettingsTabBadge();
+    return;
+  }
+
+  const readIds = getAnnounceReadIds();
+  box.innerHTML = items.map((item) => {
+    const isNew = !readIds.has(item.id);
+    let ctaHTML = "";
+    if (item.cta) {
+      const label = item.cta.label[locale] || item.cta.label.ja;
+      if (item.cta.action === "plan") {
+        ctaHTML = `<button type="button" class="announce-cta" data-scroll-plan="1">${label}</button>`;
+      } else if (item.cta.url) {
+        ctaHTML = `<a class="announce-cta" href="${item.cta.url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+      }
+    }
+    return `
+      <div class="announce-card">
+        <span class="announce-date">${item.date}</span>
+        ${isNew ? `<span class="announce-new-badge">${t("announce.new")}</span>` : ""}
+        <h4 class="announce-title">${item.title[locale] || item.title.ja}</h4>
+        <p class="announce-body">${item.body[locale] || item.body.ja}</p>
+        ${ctaHTML}
+      </div>
+    `;
+  }).join("");
+
+  box.querySelectorAll("[data-scroll-plan]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClickSound();
+      document.getElementById("settings-plan").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  // 表示した分はここで既読にする（次回開いたときはNEWバッジが消えている）
+  markAnnouncementsRead(items.map((i) => i.id));
+  updateSettingsTabBadge();
+}
+
+// ご要望・お問い合わせ。Firestoreの feedback コレクションに書き込みのみ行う
+// （一方通行の目安箱。ユーザー自身も読み返せない）。おためし中は送信できない
+// ——保護者のアカウントに紐づけるため。この案内自体が登録への軽い後押しも兼ねる。
+function renderFeedbackSetting() {
+  const box = document.getElementById("settings-feedback");
+  if (!box) return;
+
+  if (!fbCurrentUser) {
+    box.innerHTML = `<p class="feedback-guest-notice">${t("feedback.guestNotice")}</p>`;
+    return;
+  }
+
+  box.innerHTML = `
+    <textarea class="feedback-textarea" id="feedback-text" placeholder="${t("feedback.placeholder")}"></textarea>
+    <div class="backup-actions">
+      <button type="button" class="btn-secondary" id="btn-feedback-submit">${t("feedback.submit")}</button>
+    </div>
+    <p class="backup-feedback" id="feedback-status"></p>
+  `;
+
+  document.getElementById("btn-feedback-submit").addEventListener("click", async () => {
+    const textEl = document.getElementById("feedback-text");
+    const statusEl = document.getElementById("feedback-status");
+    const text = textEl.value.trim();
+    if (!text) {
+      statusEl.textContent = t("feedback.empty");
+      statusEl.className = "backup-feedback error";
+      return;
+    }
+    playClickSound();
+    statusEl.textContent = t("feedback.sending");
+    statusEl.className = "backup-feedback";
+    try {
+      await fbDb.collection("feedback").add({
+        uid: fbCurrentUser.uid,
+        text,
+        locale: getLocale(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      textEl.value = "";
+      statusEl.textContent = t("feedback.sent");
+      statusEl.className = "backup-feedback success";
+    } catch (e) {
+      console.warn("[feedback] failed:", e.message);
+      statusEl.textContent = t("feedback.failed");
+      statusEl.className = "backup-feedback error";
+    }
+  });
+}
+
+// 感想を送る。星評価＋自由記述＋「宣伝への使用に同意するか」のチェック（既定OFF）。
+// Firestoreの reviews コレクションに書き込みのみ行う。同意ありのものだけ、
+// 開発者が手作業でLP等に転載する（自動掲載はしない＝内容の質を担保するため）。
+function renderTestimonialSetting() {
+  const box = document.getElementById("settings-testimonial");
+  if (!box) return;
+
+  if (!fbCurrentUser) {
+    box.innerHTML = `<p class="feedback-guest-notice">${t("testimonial.guestNotice")}</p>`;
+    return;
+  }
+
+  let rating = 0;
+  box.innerHTML = `
+    <p class="review-summary">${t("testimonial.ratingLabel")}</p>
+    <div class="feedback-rating" id="testimonial-stars">
+      ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="feedback-star" data-star="${n}">★</button>`).join("")}
+    </div>
+    <textarea class="feedback-textarea" id="testimonial-text" placeholder="${t("testimonial.placeholder")}"></textarea>
+    <label class="feedback-consent">
+      <input type="checkbox" id="testimonial-consent">
+      <span>${t("testimonial.consentLabel")}</span>
+    </label>
+    <div class="backup-actions">
+      <button type="button" class="btn-secondary" id="btn-testimonial-submit">${t("testimonial.submit")}</button>
+    </div>
+    <p class="backup-feedback" id="testimonial-status"></p>
+  `;
+
+  const starButtons = [...box.querySelectorAll(".feedback-star")];
+  starButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClickSound();
+      rating = parseInt(btn.dataset.star, 10);
+      starButtons.forEach((b) => b.classList.toggle("active", parseInt(b.dataset.star, 10) <= rating));
+    });
+  });
+
+  document.getElementById("btn-testimonial-submit").addEventListener("click", async () => {
+    const textEl = document.getElementById("testimonial-text");
+    const consentEl = document.getElementById("testimonial-consent");
+    const statusEl = document.getElementById("testimonial-status");
+    if (rating < 1) {
+      statusEl.textContent = t("testimonial.ratingRequired");
+      statusEl.className = "backup-feedback error";
+      return;
+    }
+    playClickSound();
+    statusEl.textContent = t("testimonial.sending");
+    statusEl.className = "backup-feedback";
+    try {
+      await fbDb.collection("reviews").add({
+        uid: fbCurrentUser.uid,
+        rating,
+        text: textEl.value.trim(),
+        consentToPublish: !!consentEl.checked,
+        locale: getLocale(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      rating = 0;
+      textEl.value = "";
+      consentEl.checked = false;
+      starButtons.forEach((b) => b.classList.remove("active"));
+      statusEl.textContent = t("testimonial.sent");
+      statusEl.className = "backup-feedback success";
+    } catch (e) {
+      console.warn("[testimonial] failed:", e.message);
+      statusEl.textContent = t("testimonial.failed");
+      statusEl.className = "backup-feedback error";
+    }
+  });
 }
 
 // プラン（無料→ファミリーの切り替え）。account-design.md §10-9。
@@ -4161,6 +4439,7 @@ function enterAppWithActiveProfile() {
   refreshHome();
   updateStatusBar();
   showScreen("screen-home");
+  maybeShowAnnounceModal();
   if (fbCurrentUser && getActiveProfileId()) {
     pullProfileFromFirestore(getActiveProfileId()).then(() => {
       refreshHome();
@@ -4715,6 +4994,7 @@ document.getElementById("status-bar-avatar").innerHTML = renderGuideFaceHTML("cr
 // 起動時にどの画面から始めるかを決める。
 // 0人 → 作成画面、1人 → そのまま入る（毎回選ばせない）、2人以上 → だれがあそぶ？
 function startInitialScreen() {
+  updateSettingsTabBadge();
   const profiles = getProfiles();
   if (profiles.length === 0) {
     openProfileCreateScreen();
