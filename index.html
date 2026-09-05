@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=43">
+<link rel="stylesheet" href="style.css?v=44">
 </head>
 <body>
 
@@ -446,12 +446,13 @@
 </div>
 
 <!-- おしらせポップアップ。期間限定のおしらせ（ANNOUNCEMENTS の modalFrom/modalUntil）を
-     メイン画面に入る直前（enterAppWithActiveProfile）に一度だけ見せる -->
+     メイン画面に入る直前（enterAppWithActiveProfile）に、期間中は毎回見せる。
+     初めて訪れた人がリンクを踏んで離脱するのを防ぐため、リンク（cta）は出さない
+     （リンクはせってい画面の一覧にだけ表示する） -->
 <div id="announce-modal-overlay" class="card-detail-overlay announce-modal-overlay hidden">
   <div class="card-detail-content announce-modal-content">
     <h3 class="announce-modal-title" id="announce-modal-title"></h3>
     <p class="announce-modal-body" id="announce-modal-body"></p>
-    <button type="button" class="announce-cta hidden" id="announce-modal-cta"></button>
   </div>
   <button id="btn-close-announce-modal" type="button" class="card-detail-close">✕</button>
 </div>
@@ -466,6 +467,6 @@
 <script src="i18n.js?v=47"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=7"></script>
-<script src="script.js?v=77"></script>
+<script src="script.js?v=78"></script>
 </body>
 </html>

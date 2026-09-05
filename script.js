@@ -108,13 +108,16 @@ const SUPPORT_EMAIL = "manabimeguru@comagoto.com";
 //   id:   一意な文字列（日付+内容がわかる名前にする。例: "2026-09-10-new-card"）
 //   date: "YYYY-MM-DD"（新しい順に自動で並ぶ）
 //   title / body: { ja, es } の両方を必ず書く（check_i18n_keys.js の対象外なので漏れても検出されない）
-//   cta:  任意。省略すると本文だけのカードになる
+//   cta:  任意。省略すると本文だけのカードになる。**せってい画面の一覧にだけ表示する**
+//     （初めて訪れた人がメイン画面前のポップアップでリンクを踏んで離脱するのを防ぐため、
+//     ポップアップ側にはctaがあっても出さない・2026-09-05方針変更）
 //     { label: {ja, es}, url: "https://..." }        … 外部リンク（特定の動画など）を新規タブで開く
 //     { label: {ja, es}, action: "plan" }             … せってい内の「プラン」節へスクロールする
 //     { label: {ja, es}, action: "youtube" }          … 公式YouTubeチャンネル（t("youtube.url")、
 //                                                        ja/esで別チャンネル）を新規タブで開く
-//   modalFrom / modalUntil: 任意。両方書くと、その期間だけメイン画面が出る前にポップアップでも見せる
+//   modalFrom / modalUntil: 任意。両方書くと、その期間はメイン画面が出る前にポップアップでも見せる
 //     "YYYY-MM-DD"（当日を含む）。省略するとせってい画面の一覧だけに載る（今までの動作）。
+//     **期間中は起動のたびに毎回出す**（一度見たら消える、ではない）。
 //     複数の項目が同時に該当する期間だと、配列の先頭にある項目を優先して1つだけ出す。
 const ANNOUNCEMENTS = [
   {
@@ -165,12 +168,12 @@ function updateSettingsTabBadge() {
   badge.classList.toggle("hidden", !hasUnreadAnnouncements());
 }
 
-// メイン画面が出る前にポップアップで見せる項目。期間内・未読のものを配列の先頭優先で1つ返す
+// メイン画面が出る前にポップアップで見せる項目。期間内のものを配列の先頭優先で1つ返す。
+// 既読管理はしない（期間中は毎回出す。既読で出し分けるのはせってい画面の一覧側だけ）
 function getEligibleModalAnnouncement() {
   const today = new Date().toISOString().slice(0, 10);
-  const read = getAnnounceReadIds();
   return ANNOUNCEMENTS.find((a) => (
-    a.modalFrom && a.modalUntil && !read.has(a.id) && a.modalFrom <= today && today <= a.modalUntil
+    a.modalFrom && a.modalUntil && a.modalFrom <= today && today <= a.modalUntil
   )) || null;
 }
 
@@ -184,27 +187,6 @@ function maybeShowAnnounceModal() {
   overlay.dataset.itemId = item.id;
   document.getElementById("announce-modal-title").textContent = item.title[locale] || item.title.ja;
   document.getElementById("announce-modal-body").textContent = item.body[locale] || item.body.ja;
-
-  const ctaBtn = document.getElementById("announce-modal-cta");
-  if (item.cta) {
-    ctaBtn.textContent = item.cta.label[locale] || item.cta.label.ja;
-    ctaBtn.classList.remove("hidden");
-    ctaBtn.onclick = () => {
-      playClickSound();
-      dismissAnnounceModal(item.id);
-      if (item.cta.action === "plan") {
-        openSettingsScreen();
-        document.getElementById("settings-plan").scrollIntoView({ behavior: "smooth", block: "start" });
-      } else if (item.cta.action === "youtube") {
-        window.open(t("youtube.url"), "_blank", "noopener,noreferrer");
-      } else if (item.cta.url) {
-        window.open(item.cta.url, "_blank", "noopener,noreferrer");
-      }
-    };
-  } else {
-    ctaBtn.classList.add("hidden");
-    ctaBtn.onclick = null;
-  }
 
   overlay.classList.remove("hidden");
 }
