@@ -61,14 +61,23 @@ function profileLimit() {
 //    出すと「Mensual: 1.480 JPY」という円建ての購入ボタンをスペイン語圏の保護者に
 //    見せることになる（es-handoff.md §6 が明確に避けるとしている状態）。
 //    価格が決まっていない言語は空のままにしておけば「準備中」が出る。
+// ⚠️ 決済用リンクは、作成後に Managed Payments の有効/無効を変更できない（account-design.md §10-11）。
+//    リンクを作り直すときは、作成画面の「Managed Payments を有効にする」の状態を必ず確認すること。
+//    アカウント設定では「デフォルトで有効化」がオンなので、放っておくと有効なリンクができる。
 const STRIPE_PAYMENT_LINKS_BY_LOCALE = {
+  // 日本は Managed Payments を使わない（=自分がマーチャントオブレコード）。
+  // 国内取引なのでVATの問題がなく、日本国内販売は Managed Payments の税務対応の対象外。
+  // 3.5%の手数料が乗るだけで利点がないため（account-design.md §9-3・§10-10）。
   ja: {
-    monthly: "https://buy.stripe.com/fZudRaeqC067gwq9tK7kc00", // 月払い ¥1,480
-    yearly: "https://buy.stripe.com/cNi9AU0zM4mn1BwaxO7kc01", // 年払い ¥14,800（2か月ぶん無料）
+    monthly: "https://buy.stripe.com/eVqfZi96i9GH7ZUdK07kc05", // 月払い ¥1,480 / MP無効
+    yearly: "https://buy.stripe.com/fZu14oeqCdWXbc66hy7kc06", // 年払い ¥14,800（2か月ぶん無料）/ MP無効
   },
-  // スペイン語圏の価格は未定（account-design.md §8-2 のPPP調整が前提）。
-  // 対象国・通貨・現地の表示義務が決まるまでは空のままにする。
-  es: { monthly: "", yearly: "" },
+  // 海外は Managed Payments を使う（=Stripeがマーチャントオブレコード）。
+  // VAT/IVA の登録・申告義務を負わずに済む（account-design.md §9-3）。
+  es: {
+    monthly: "https://buy.stripe.com/28E4gA5U67yzfsm7lC7kc02", // 月払い €7.99 / MP有効
+    yearly: "https://buy.stripe.com/3cI00k96i6uveoicFW7kc03", // 年払い €79.90（2か月ぶん無料）/ MP有効
+  },
 };
 
 function stripePaymentLinks() {
@@ -206,6 +215,18 @@ document.getElementById("announce-modal-overlay").addEventListener("click", (e) 
   dismissAnnounceModal(document.getElementById("announce-modal-overlay").dataset.itemId);
 });
 
+// Stripe の決済画面の言語。
+// ⚠️ 既定では「顧客のブラウザの言語」に合わせるため、スペイン語版アプリを使っていても
+//    ブラウザが日本語なら決済画面が日本語で出てしまう（2026-08-21 に実際に発生）。
+//    アプリの言語に合わせて locale を明示し、アプリと決済画面の言語を一致させる。
+// `ja` / `en` / `es` はいずれも Stripe のサポート対象ロケール。
+// スペイン語は `es`（スペイン）と `es-419`（ラテンアメリカ）に分かれるが、
+// 市場軸をスペイン中心に置いているため `es` を使う（es-market-research.md §8 論点①）。
+function stripeCheckoutLocale() {
+  const locale = getLocale();
+  return ["ja", "en", "es"].includes(locale) ? locale : "en";
+}
+
 // Payment Link に「どの世帯の支払いか」を伝えるURLを組み立てる。
 // client_reference_id が webhook（functions/index.js）で世帯の特定に使われる。
 function buildUpgradeUrl(link) {
@@ -213,6 +234,7 @@ function buildUpgradeUrl(link) {
   const sep = link.includes("?") ? "&" : "?";
   let url = `${link}${sep}client_reference_id=${encodeURIComponent(fbCurrentUser.uid)}`;
   if (fbCurrentUser.email) url += `&prefilled_email=${encodeURIComponent(fbCurrentUser.email)}`;
+  url += `&locale=${stripeCheckoutLocale()}`;
   return url;
 }
 
@@ -1500,24 +1522,56 @@ function genSub1() {
     hint: t("math.sub1.hint", { a, b }), explain };
 }
 
+// 数を位ごとに分けた配列を返す。0の位はとばす。287 → [200, 80, 7]
+function placeParts(n) {
+  const s = String(n);
+  const parts = [];
+  for (let i = 0; i < s.length; i++) {
+    const d = Number(s[i]);
+    if (d !== 0) parts.push(d * 10 ** (s.length - 1 - i));
+  }
+  return parts;
+}
+
+// 加減算の解説を「たす数／ひく数を位ごとに分け、大きいほうから順に足し引きする」形で作る。
+// くり上がり・くり下がりという人工的な規則を使わず、数の分解と合成だけで説明する。
+//
+// ⚠️ 2桁〜4桁で共通の関数にしてある。桁ごとに別実装にすると、また考え方がずれるため
+//    （hint-explain-audit.md の P8。実際に「1桁は分解・2桁は筆算」になっていた）。
+//    1桁の add1/sub1 は10の合成が主役で説明の形が違うので、そのまま。
+function stepwiseAddSubExplain(a, b, isAdd) {
+  const parts = placeParts(b);
+  const sep = t("common.sentenceSep");
+  const lines = [];
+  // ちょうど何十・何百のときは分解の説明が要らない（「300は 300」になってしまう）
+  if (parts.length > 1) {
+    // 並列の言い方は言語で違う。日本語は「AとBとC」、スペイン語は「A, B y C」（yは最後だけ）。
+    const listSep = t("math.stepwise.listSep");
+    const lastSep = t("math.stepwise.and");
+    const listed = parts.length === 2
+      ? parts.join(lastSep)
+      : parts.slice(0, -1).join(listSep) + lastSep + parts[parts.length - 1];
+    lines.push(t(isAdd ? "math.stepwise.introAdd" : "math.stepwise.introSub", { b, parts: listed }));
+  }
+  let cur = a;
+  for (const part of parts) {
+    const next = isAdd ? cur + part : cur - part;
+    lines.push(t(isAdd ? "math.stepwise.stepAdd" : "math.stepwise.stepSub", { cur, part, next }));
+    cur = next;
+  }
+  return lines.join(sep);
+}
+
 function genAdd2() {
   const a = randInt(10, 99), b = randInt(10, 99);
-  const aOnes = a % 10, bOnes = b % 10;
-  const aTens = Math.floor(a / 10), bTens = Math.floor(b / 10);
-  const onesSum = aOnes + bOnes;
-  const params = { aOnes, bOnes, onesSum, aTens, bTens, tensSum: aTens + bTens, tensSumCarry: aTens + bTens + 1, sum: a + b };
-  const explain = onesSum >= 10
-    ? t("math.add2.explainCarry", params)
-    : t("math.add2.explainPlain", params);
   return { text: `${a} ＋ ${b} = ?`, answer: String(a + b), type: "number",
-    hint: t("math.add2.hint"), explain };
+    hint: t("math.stepwise.hintAdd"), explain: stepwiseAddSubExplain(a, b, true) };
 }
 
 function genSub2() {
   const a = randInt(20, 99), b = randInt(10, a - 1);
   return { text: `${a} － ${b} = ?`, answer: String(a - b), type: "number",
-    hint: t("math.sub2.hint"),
-    explain: t("math.sub2.explain", { a, b, diff: a - b }) };
+    hint: t("math.stepwise.hintSub"), explain: stepwiseAddSubExplain(a, b, false) };
 }
 
 function genMul2() {
@@ -1531,14 +1585,6 @@ function genMul2() {
 // ===== 算数（小学3年生・新しく習う内容）=====
 // 参考: 3年生の新出単元は わり算／3〜4桁のたし算ひき算／2桁×1桁のかけ算／
 // 小数のたし算ひき算の導入／同分母の分数のたし算ひき算（通分は5年生）
-function decompose(n) {
-  const thousands = Math.floor(n / 1000) * 1000;
-  const hundreds = Math.floor((n % 1000) / 100) * 100;
-  const tens = Math.floor((n % 100) / 10) * 10;
-  const ones = n % 10;
-  return [thousands, hundreds, tens, ones].filter((x) => x > 0).join("＋") || "0";
-}
-
 function genAdd3() {
   const a = randInt(100, 9000);
   const b = randInt(100, 9000);
@@ -1546,48 +1592,11 @@ function genAdd3() {
     text: `${a} ＋ ${b} = ?`,
     answer: `${a + b}`,
     type: "number",
-    hint: t("math.add3.hint"),
-    explain: t("math.add3.explain", { a, b, aParts: decompose(a), bParts: decompose(b), sum: a + b }),
+    hint: t("math.stepwise.hintAdd"),
+    explain: stepwiseAddSubExplain(a, b, true),
   };
 }
 
-// 3〜4桁のひき算を、位ごとに くり下がりの有無を示しながら説明する。
-// genAdd2 の explainCarry（一の位→十の位の1回のくり上がり）を、
-// 桁数可変・複数回のくり下がりに対応させたもの。
-const SUB3_PLACE_KEYS = ["math.placeOnes", "math.placeTens", "math.placeHundreds", "math.placeThousands"];
-function subtractStepsExplain(a, b) {
-  const digitAt = (n, i) => Math.floor(n / 10 ** i) % 10;
-  const len = String(a).length;
-  let borrowIn = 0;
-  const lines = [];
-  for (let i = 0; i < len; i++) {
-    const place = t(SUB3_PLACE_KEYS[i]);
-    const bot = digitAt(b, i);
-    const hadBorrowIn = borrowIn > 0;
-    // 位の数字が0で、さらに下の位への貸し出し分も差し引く場合、そのままだと負の数になる。
-    // 「-1」のようなマイナスをそのまま見せると小学生には分からないので、10を足して
-    // 正しい1桁の数字（＝さらに上の位からも借りている状態）にそろえる。
-    let top = digitAt(a, i) - borrowIn;
-    let cascaded = false;
-    if (top < 0) {
-      top += 10;
-      cascaded = true;
-    }
-    if (top < bot) {
-      const borrowedTop = top + 10;
-      lines.push(t("math.sub3.stepBorrowOut", { place, top, bot, borrowedTop, digit: borrowedTop - bot }));
-      borrowIn = 1;
-    } else if (cascaded || hadBorrowIn) {
-      lines.push(t("math.sub3.stepBorrowIn", { place, top, bot, digit: top - bot }));
-      borrowIn = cascaded ? 1 : 0;
-    } else {
-      lines.push(t("math.sub3.step", { place, top, bot, digit: top - bot }));
-      borrowIn = 0;
-    }
-  }
-  const sep = t("common.sentenceSep");
-  return `${lines.join(sep)}${sep}${t("math.sub3.final", { a, b, diff: a - b })}`;
-}
 
 function genSub3() {
   let a = randInt(100, 9000);
@@ -1598,8 +1607,8 @@ function genSub3() {
     text: `${a} － ${b} = ?`,
     answer: `${a - b}`,
     type: "number",
-    hint: t("math.sub3.hint"),
-    explain: subtractStepsExplain(a, b),
+    hint: t("math.stepwise.hintSub"),
+    explain: stepwiseAddSubExplain(a, b, false),
   };
 }
 

@@ -455,27 +455,25 @@ const LOCALES = {
     "math.sub1.explainSplit": "{a}は 10と{aOnes}。{aOnes}－{b}＝{part}。10と{part}で {diff}",
     "math.sub1.explainBorrow": "{a}は 10と{aOnes}。10－{b}＝{borrow}。{borrow}に {aOnes}を たして {diff}",
     "math.sub1.explainTeens": "{a}は 10と{aOnes}、{b}は 10と{bOnes}。10どうしは 同じなので消えて、{aOnes}－{bOnes}＝{diff}",
-    "math.add2.hint": "十の位と 一の位に わけて たしてみよう",
-    "math.add2.explainCarry": "一の位: {aOnes}＋{bOnes}＝{onesSum}なので、十の位に1くり上げる。十の位: {aTens}＋{bTens}＋1＝{tensSumCarry}。あわせて {sum}",
-    "math.add2.explainPlain": "一の位: {aOnes}＋{bOnes}＝{onesSum}。十の位: {aTens}＋{bTens}＝{tensSum}。あわせて {sum}",
-    "math.sub2.hint": "くり下がりに 気をつけよう",
-    "math.sub2.explain": "{a} － {b} ＝ {diff}。たしかめ算: {diff} ＋ {b} ＝ {a}",
+    // 2桁〜4桁の加減算で共通（script.js の stepwiseAddSubExplain）。
+    // 桁ごとに文言を分けない。分けると考え方がずれる（hint-explain-audit.md の P8）。
+    "math.stepwise.hintAdd": "たす数を 位ごとに 分けて、大きいほうから たしてみよう",
+    "math.stepwise.hintSub": "ひく数を 位ごとに 分けて、大きいほうから ひいてみよう",
+    "math.stepwise.and": "と",
+    "math.stepwise.listSep": "と",
+    "math.stepwise.introAdd": "{b}は {parts}",
+    "math.stepwise.introSub": "{b}は {parts}",
+    "math.stepwise.stepAdd": "{cur}に {part}を たして {next}",
+    "math.stepwise.stepSub": "{cur}から {part}を ひいて {next}",
     "math.mul2.hint": "{a}のだんの 九九を おもいだそう",
     "math.mul2.explain": "{a} × {b} は {a}を {b}回 たすことだから、{terms}＝{product}",
-    "math.add3.hint": "位をそろえて、一の位からじゅんばんに たしざんしてみよう",
-    "math.add3.explain": "{a} は {aParts}、{b} は {bParts}。同じ位どうしを たすと {sum} になるよ",
     // ⚠️ ひき算はくり下がりがあるので「一の位から」が正しい。
     //    以前は「大きい位から順に」と書いてあり、解説（subtractStepsExplain は一の位から）
     //    ・math.add3.hint・スペイン語版のいずれとも矛盾していた（2026-08-13 修正）。
-    "math.sub3.hint": "位をそろえて、一の位からじゅんばんに ひき算してみよう。くり下がりに注意",
     "math.placeOnes": "一の位",
     "math.placeTens": "十の位",
     "math.placeHundreds": "百の位",
     "math.placeThousands": "千の位",
-    "math.sub3.step": "{place}：{top}－{bot}＝{digit}",
-    "math.sub3.stepBorrowIn": "{place}：上の位に かした分を ひいて {top}－{bot}＝{digit}",
-    "math.sub3.stepBorrowOut": "{place}：{top}－{bot} は たりないので、上の位から1くり下げて {borrowedTop}－{bot}＝{digit}",
-    "math.sub3.final": "位をそろえて 下の位から じゅんに計算すると、{a}－{b}＝{diff}",
     "math.mul3.hint": "{a}を 十の位と一の位に分けて、それぞれ {b}を かけてみよう",
     "math.mul3.explain": "{tens}×{b}＝{tensPart}、{ones}×{b}＝{onesPart}。あわせて {tensPart}＋{onesPart}＝{product}",
     "math.div3.hint": "{b}のだんの 九九で こたえが {a} になる数を さがそう",
@@ -534,10 +532,10 @@ const LOCALES = {
     "math.wordMulArray2.explain": "たて {rows}れつ、よこ {cols}れつ ならんでいるから {rows}×{cols}＝{total}まい だよ",
 
     // --- 算数の生成器（4年） ---
-    "math.divLong4.hint": "大きい位から じゅんばんに わっていく ひっ算で 計算しよう",
+    "math.divLong4.hint": "わられる数を 位ごとに 分けて、それぞれ わってみよう",
     "math.divLong4.explainExact": "{a}を {b}で わると、ちょうど {qTens}になる（{tensPart}÷{b}＝{qTens}）",
     "math.divLong4.explainSplit": "{a}を {tensPart}と{onesPart}に分けると、{tensPart}÷{b}＝{qTens}、{onesPart}÷{b}＝{qOnes}。あわせて {q}",
-    "math.decimalAddSub4.hint": "小数点の いちを そろえて、ひっ算で 計算しよう",
+    "math.decimalAddSub4.hint": "100ばいして 整数に してから 計算しよう。さいごに 小数点を もどすよ",
     "math.decimalAddSub4.explainAdd": "{a}を 100ばいすると {aRaw}、{b}を 100ばいすると {bRaw}。{aRaw}＋{bRaw}＝{raw}。100で わって もとに もどすと {answer}",
     "math.decimalAddSub4.explainSub": "{big}を 100ばいすると {bigRaw}、{small}を 100ばいすると {smallRaw}。{bigRaw}－{smallRaw}＝{raw}。100で わって もとに もどすと {answer}",
     "math.rectArea4.textSquare": "1辺が {side}cm の 正方形の 面積は なんcm²？",
@@ -853,8 +851,14 @@ const LOCALES = {
     "testimonial.failed": "No se pudo enviar. Inténtalo de nuevo más tarde",
 
     // --- プラン（無料→ファミリー） ---
-    // ⚠️ 価格はまだ日本円のまま（Stripe の Payment Link が JPY 建てのため）。
-    //    スペイン語圏向けの価格は未定（es-handoff.md §6・account-design.md §8-2）。
+    // 価格は Stripe の価格オブジェクトが正典（2026-09-06 に実物で確認）。
+    //   月: price_1UCJjbLlcTm4KyBw1FjtDHmz = €7.99 / 月・EUR・外税
+    //   年: price_1UCJnoLlcTm4KyBwA8I5CPPM = €79.90 / 年・EUR・外税
+    // ⚠️ **外税**なので、顧客の支払額は表示額＋現地の税（スペインならIVA 21%で €9.67）。
+    //    金額を「+ impuestos」抜きで書くと、購入直前の画面で実際の請求額と食い違う。
+    // ⚠️ 表記はスペイン語圏の慣習（カンマ小数・記号後置・数字と記号の間に空白）。
+    // ⚠️ 価格を変えたら Stripe 側の価格オブジェクトも作り直しになる（account-design.md §10-11）。
+    //    ここだけ書き換えても請求額は変わらない。
     "plan.title": "🎫 Plan",
     "plan.freeLine": "Ahora tiene el plan gratuito",
     "plan.paidLine": "Tiene el plan Familia activo 🎉",
@@ -863,8 +867,8 @@ const LOCALES = {
     "plan.benefit2": "Las {n} cartas de espíritus al completo (también SR y UR)",
     "plan.benefit3": "Álbum familiar (todas las cartas reunidas en familia)",
     "plan.gachaPromise": "Los sobres de cartas no se pueden comprar con dinero. Solo se consiguen estudiando.",
-    "plan.monthly": "Mensual: 1.480 JPY",
-    "plan.yearly": "Anual: 14.800 JPY (2 meses gratis)",
+    "plan.monthly": "Mensual: 7,99 € + impuestos",
+    "plan.yearly": "Anual: 79,90 € + impuestos (2 meses gratis)",
     "plan.comingSoon": "El plan Familia estará disponible próximamente.",
     "plan.guestNote": "Para comprar es necesario que una persona adulta cree antes una cuenta.",
     "plan.afterBuyNote": "El pago debe realizarlo una persona adulta. Una vez completado, se aplicará en la aplicación.",
@@ -1142,24 +1146,20 @@ const LOCALES = {
     "math.sub1.explainSplit": "{a} es 10 y {aOnes}. {aOnes} − {b} = {part}. Y 10 más {part} son {diff}.",
     "math.sub1.explainBorrow": "{a} es 10 y {aOnes}. 10 − {b} = {borrow}. Y {borrow} más {aOnes} son {diff}.",
     "math.sub1.explainTeens": "{a} es 10 y {aOnes}, y {b} es 10 y {bOnes}. Las decenas son iguales y se cancelan: {aOnes} − {bOnes} = {diff}.",
-    "math.add2.hint": "Separa las decenas y las unidades y súmalas por separado.",
-    "math.add2.explainCarry": "Unidades: {aOnes} + {bOnes} = {onesSum}, así que te llevas 1 a las decenas. Decenas: {aTens} + {bTens} + 1 = {tensSumCarry}. En total, {sum}.",
-    "math.add2.explainPlain": "Unidades: {aOnes} + {bOnes} = {onesSum}. Decenas: {aTens} + {bTens} = {tensSum}. En total, {sum}.",
-    "math.sub2.hint": "Ojo con lo que te llevas al restar.",
-    "math.sub2.explain": "{a} − {b} = {diff}. Para comprobarlo: {diff} + {b} = {a}.",
+    "math.stepwise.hintAdd": "Separa el número que sumas por su valor posicional y empieza por la parte mayor.",
+    "math.stepwise.hintSub": "Separa el número que restas por su valor posicional y empieza por la parte mayor.",
+    "math.stepwise.and": " y ",
+    "math.stepwise.listSep": ", ",
+    "math.stepwise.introAdd": "{b} es {parts}",
+    "math.stepwise.introSub": "{b} es {parts}",
+    "math.stepwise.stepAdd": "A {cur} le sumas {part}: {next}",
+    "math.stepwise.stepSub": "A {cur} le quitas {part}: {next}",
     "math.mul2.hint": "Acuérdate de la tabla del {a}.",
     "math.mul2.explain": "{a} × {b} es sumar {a} un total de {b} veces: {terms} = {product}.",
-    "math.add3.hint": "Coloca las cifras en columna y suma empezando por las unidades.",
-    "math.add3.explain": "{a} es {aParts} y {b} es {bParts}. Sumando cada columna sale {sum}.",
-    "math.sub3.hint": "Resta empezando por las unidades y ojo con lo que te llevas.",
     "math.placeOnes": "las unidades",
     "math.placeTens": "las decenas",
     "math.placeHundreds": "las centenas",
     "math.placeThousands": "los millares",
-    "math.sub3.step": "{place}: {top} − {bot} = {digit}",
-    "math.sub3.stepBorrowIn": "{place}: restando lo que le prestaste a la columna anterior, {top} − {bot} = {digit}",
-    "math.sub3.stepBorrowOut": "{place}: como {top} − {bot} no alcanza, te llevas 1 prestado de la columna siguiente: {borrowedTop} − {bot} = {digit}",
-    "math.sub3.final": "Alineando las cifras y calculando desde las unidades: {a} − {b} = {diff}",
     "math.mul3.hint": "Separa {a} en decenas y unidades y multiplica cada parte por {b}.",
     "math.mul3.explain": "{tens}×{b}={tensPart} y {ones}×{b}={onesPart}. Juntando: {tensPart}+{onesPart}={product}.",
     "math.div3.hint": "Busca en la tabla del {b} el número que da {a}.",
@@ -1218,13 +1218,13 @@ const LOCALES = {
     "math.wordMulArray2.explain": "{rows} filas por {cols} columnas: {rows}×{cols}={total} pegatinas.",
 
     // --- 算数の生成器（4年） ---
-    "math.divLong4.hint": "Divide con la cuenta larga, empezando por la cifra de mayor valor.",
+    "math.divLong4.hint": "Separa el número que divides por su valor posicional y divide cada parte.",
     // ⚠️ 末尾にピリオドを付けないこと。この2つは decimalDiv5.explain の {inner} として
     //    差し込まれ、呼び出し側が「. Dividiendo...」と続けるため、二重ピリオドになる。
     //    日本語版も同じ理由で句点を付けていない。
     "math.divLong4.explainExact": "{a} entre {b} da justo {qTens} ({tensPart}÷{b}={qTens})",
     "math.divLong4.explainSplit": "Separa {a} en {tensPart} y {onesPart}: {tensPart}÷{b}={qTens} y {onesPart}÷{b}={qOnes}. En total, {q}",
-    "math.decimalAddSub4.hint": "Alinea las comas decimales y calcula en columna.",
+    "math.decimalAddSub4.hint": "Multiplica por 100 para trabajar con números enteros y, al final, vuelve a poner la coma.",
     "math.decimalAddSub4.explainAdd": "{a} por 100 es {aRaw}, y {b} por 100 es {bRaw}. {aRaw}+{bRaw}={raw}. Dividiendo entre 100 vuelves a {answer}.",
     "math.decimalAddSub4.explainSub": "{big} por 100 es {bigRaw}, y {small} por 100 es {smallRaw}. {bigRaw}−{smallRaw}={raw}. Dividiendo entre 100 vuelves a {answer}.",
     "math.rectArea4.textSquare": "Un cuadrado tiene {side} cm de lado. ¿Cuál es su área en cm²?",
