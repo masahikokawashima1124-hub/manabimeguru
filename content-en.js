@@ -257,7 +257,7 @@ const EN_PHRASES = [
   { grade: 3, text: "___ you later!", answer: "See",
     options: ["See", "Sit", "Say", "Set"], ja: "またあとでね",
     es: "¡Hasta luego!" },
-  { grade: 3, text: "How ___ you? — I'm eight.", answer: "old",
+  { grade: 3, text: "How ___ are you? — I'm eight.", answer: "old",
     options: ["old", "many", "long", "far"], ja: "何さいですか",
     es: "¿Cuántos años tienes?" },
   { grade: 3, text: "___ is this? — It's a pen.", answer: "What",

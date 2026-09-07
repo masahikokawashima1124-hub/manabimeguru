@@ -4453,6 +4453,19 @@ document.getElementById("btn-profile-create-cancel").addEventListener("click", (
   openProfileSelectScreen("select");
 });
 
+// ログイン・新規登録・プロフィール作成は<form>を使っていないため、Enterキーでは
+// 何も起きなかった（2026-09-06 日次QAで発見）。入力欄でEnterを押したら送信ボタンの
+// クリックを発火するだけにする（<form>化はしない。ブラウザのバリデーションUIや
+// autocompleteの挙動が変わるのを避けるため）
+function submitOnEnter(inputIds, btnId) {
+  inputIds.forEach((id) => {
+    document.getElementById(id).addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById(btnId).click();
+    });
+  });
+}
+submitOnEnter(["profile-name-input"], "btn-profile-create-ok");
+
 document.getElementById("btn-profile-switch").addEventListener("click", () => {
   playClickSound();
   openProfileSelectScreen("select");
@@ -5358,6 +5371,8 @@ document.getElementById("btn-login-submit").addEventListener("click", async () =
   }
 });
 
+submitOnEnter(["login-email-input", "login-password-input"], "btn-login-submit");
+
 document.getElementById("btn-login-to-signup").addEventListener("click", () => {
   playClickSound();
   openSignupScreen();
@@ -5396,6 +5411,8 @@ document.getElementById("btn-signup-submit").addEventListener("click", async () 
     document.getElementById("btn-signup-submit").disabled = false;
   }
 });
+
+submitOnEnter(["signup-email-input", "signup-password-input"], "btn-signup-submit");
 
 document.getElementById("btn-signup-to-login").addEventListener("click", () => {
   playClickSound();
