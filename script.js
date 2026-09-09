@@ -2454,18 +2454,25 @@ function genWordMultiple5() {
 
 // 約数・公約数の文章題。「あまりなく分ける」場面で考える。
 function genWordDivisor5() {
-  const gcdVal = randInt(3, 12);
-  const m = randInt(2, 8);
-  let n = randInt(2, 8);
-  if (n === m) n = m === 8 ? 2 : n + 1;
-  const a = gcdVal * m;
-  const b = gcdVal * n;
+  const base = randInt(3, 12);
+  const mRaw = randInt(2, 8);
+  let nRaw = randInt(2, 8);
+  if (nRaw === mRaw) nRaw = mRaw === 8 ? 2 : nRaw + 1;
+  const a = base * mRaw;
+  const b = base * nRaw;
+  const gcd = (x, y) => (y === 0 ? x : gcd(y, x % y));
+  // mRaw・nRawが互いに素とは限らないため、baseをそのまま答えにすると
+  // 実際の最大公約数より小さくなることがあった（2026-09-08 日次QAで発見。
+  // 例: mRaw=4, nRaw=6 → 実際のgcdはbaseの2倍）。a・bからgcdを計算し直す
+  const g = gcd(a, b);
+  const m = a / g;
+  const n = b / g;
   return {
     text: t("math.wordDivisor5.text", { a, b }),
-    answer: String(gcdVal),
+    answer: String(g),
     type: "number",
     hint: t("math.wordDivisor5.hint", { a, b }),
-    explain: t("math.wordDivisor5.explain", { a, b, m, n, g: gcdVal }),
+    explain: t("math.wordDivisor5.explain", { a, b, m, n, g }),
   };
 }
 
