@@ -154,6 +154,13 @@
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--text-muted);
+  /* ⚠️ 称号はここに98pxしか幅がないので、320px幅の端末ではほぼ必ず2〜3行に折り返す。
+     既定の line-break: auto だと小さい「ゃ」「ゅ」で行が始まってしまい
+     （「きせつのけんき／ゅういん」＝12枚で到達する称号、「…だいけんきゅうし／ゃ」）、
+     日本語の禁則に反する。strict にすると小書きのかなが行頭に来なくなる。
+     2026-09-15 の日次QAで発見。折り返しそのものを無くすには、称号を
+     ステータスカードの横並びから外して1行使わせる必要があり、それは保留中。 */
+  line-break: strict;
 }
 
 .home-status-points {
@@ -372,6 +379,48 @@
   background: linear-gradient(160deg, #ffffff, var(--card-bg-2));
   padding: 16px;
   box-shadow: var(--shadow), var(--gloss-top);
+}
+/* おためし中は入力欄の代わりに案内文だけが入るため、影付きの入力カードに
+   見えると「無効化されたテキストボックス」に見えてしまう（2026-09-11 日次QAで指摘）。
+   平らな案内バナーの見た目にして、入力欄ではないことを示す */
+.feedback-box.feedback-box--guest {
+  background: var(--card-bg-2);
+  box-shadow: none;
+}
+
+/* きょうの1問（せってい内・保護者向け）。親が口頭で出し直すための1問 */
+.today-q-when {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+.today-q-meta {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.today-q-text {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.today-q-toggle {
+  width: auto;
+  padding: 7px 16px;
+  font-size: 0.82rem;
+}
+.today-q-answer {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--secondary-soft);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--secondary-dark);
 }
 .feedback-textarea {
   width: 100%;
@@ -1785,6 +1834,29 @@ h2 {
   line-height: 1.5;
 }
 
+/* 英語の読み上げボタン。答え合わせのあとにだけ現れるので、
+   「つぎへ」より目立たない見た目にして、押し間違いを減らす。 */
+.btn-speak {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--secondary);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--secondary-dark);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  /* 最小タップ領域。低学年の指でも外しにくいように */
+  min-height: 44px;
+}
+
+.btn-speak:active {
+  background: var(--secondary-soft);
+}
+
 .explain-box {
   background: var(--secondary-soft);
   border: 1.5px solid #bfe3f0;
@@ -2827,6 +2899,116 @@ body.gacha-open .tab-bar { display: none; }
   color: var(--primary-dark);
   font-size: 0.95rem;
   text-align: center;
+}
+
+/* ===== フラッシュあんざん ===== */
+.flash-best {
+  margin: 10px 0 2px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  text-align: center;
+}
+.flash-rule {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.flash-speeds {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.flash-speed-btn {
+  flex: 1;
+  padding: 10px 4px;
+  border: 2px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: #fffefc;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.flash-speed-btn.active {
+  border-color: var(--primary);
+  background: var(--secondary-soft);
+  color: var(--primary-dark);
+}
+.flash-progress {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-align: center;
+}
+/* 数字が出る場所。出ていない間も高さを保たないと、画面がガタつく */
+.flash-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, #ffffff, var(--card-bg-2));
+  box-shadow: var(--shadow), var(--gloss-top);
+}
+#flash-number {
+  font-size: 4.2rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--primary-dark);
+}
+#flash-number.is-blink { animation: flashPop 0.18s ease-out; }
+@keyframes flashPop {
+  from { transform: scale(0.72); }
+  to { transform: scale(1); }
+}
+#flash-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+#flash-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-align: center;
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: #fffefc;
+}
+#flash-input:focus { outline: none; border-color: var(--primary-dark); }
+#flash-form .btn-primary { width: auto; padding: 12px 20px; margin: 0; }
+.flash-feedback {
+  min-height: 1.6em;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: center;
+}
+.flash-feedback.ok { color: var(--correct); }
+.flash-feedback.ng { color: var(--wrong); }
+.flash-result-score {
+  margin: 18px 0 6px;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--primary-dark);
+  text-align: center;
+}
+.flash-result-note {
+  margin: 0 0 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.7;
 }
 
 /* ===== カード拡大表示モーダル ===== */

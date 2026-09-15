@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=44">
+<link rel="stylesheet" href="style.css?v=49">
 </head>
 <body>
 
@@ -187,6 +187,12 @@
     <p class="sub" data-i18n="announce.desc"></p>
     <div class="announce-list" id="settings-announce-list"></div>
 
+    <!-- きょうの1問（保護者向け）。復習キューから今日ぶんを1問だけ出す。
+         解放条件は script.js の FEATURE_GATES（いまはアカウント登録が必要） -->
+    <h3 class="settings-section-title" data-i18n="todayQ.title"></h3>
+    <p class="sub" data-i18n="todayQ.desc"></p>
+    <div class="feedback-box" id="settings-today-question"></div>
+
     <!-- にがて分野（保護者向け）。間違えた問題の復習キューをそのまま可視化している -->
     <h3 class="settings-section-title" data-i18n="review.title"></h3>
     <p class="sub" data-i18n="review.desc"></p>
@@ -290,6 +296,41 @@
     <button id="btn-back-category" class="btn-secondary" data-i18n="common.back"></button>
   </section>
 
+  <!-- たしざんダッシュ（さんすうの3つ目の分野）。10問セッションとは別のゲームループなので
+       専用画面にしている。数字が1つずつ流れて、合計を答える。中身は script.js の flash* 関数 -->
+  <section id="screen-flash" class="screen">
+    <h2 data-i18n="flash.title"></h2>
+
+    <!-- 準備中：はやさを選んでスタート -->
+    <div id="flash-setup">
+      <p class="sub" data-i18n="flash.desc"></p>
+      <p class="flash-best" id="flash-best"></p>
+      <p class="flash-rule" id="flash-rule"></p>
+      <div class="flash-speeds" id="flash-speeds"></div>
+      <button id="btn-flash-start" class="btn-primary" data-i18n="flash.start"></button>
+      <button id="btn-back-flash" class="btn-secondary" data-i18n="common.back"></button>
+    </div>
+
+    <!-- 出題中：数字が1つずつ出る -->
+    <div id="flash-play" class="hidden">
+      <p class="flash-progress" id="flash-progress"></p>
+      <div class="flash-stage" id="flash-stage"><span id="flash-number"></span></div>
+      <form id="flash-form" class="hidden">
+        <input type="text" id="flash-input" inputmode="numeric" autocomplete="off" data-i18n-placeholder="flash.answerPlaceholder">
+        <button type="submit" class="btn-primary" data-i18n="flash.submit"></button>
+      </form>
+      <p class="flash-feedback" id="flash-feedback"></p>
+    </div>
+
+    <!-- 結果 -->
+    <div id="flash-result" class="hidden">
+      <p class="flash-result-score" id="flash-result-score"></p>
+      <p class="flash-result-note" id="flash-result-note"></p>
+      <button id="btn-flash-again" class="btn-primary" data-i18n="flash.again"></button>
+      <button id="btn-flash-back" class="btn-secondary" data-i18n="common.back"></button>
+    </div>
+  </section>
+
   <!-- スタート画面 -->
   <section id="screen-start" class="screen">
     <h2 id="start-title"></h2>
@@ -330,6 +371,9 @@
       <div id="choice-buttons" class="choice-buttons hidden"></div>
 
       <div id="feedback" class="feedback"></div>
+      <!-- 英語の読み上げ。答え合わせのあとだけ出す（答えを聞かせてしまわないため）。
+           端末に英語の音声が1つも無いときは出さない（script.js の speakEnAvailable） -->
+      <button type="button" id="btn-speak-en" class="btn-speak hidden"></button>
       <div id="explain-box" class="explain-box hidden"></div>
       <button id="btn-next" class="btn-primary hidden" data-i18n="quiz.next"></button>
     </div>
@@ -464,9 +508,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=51"></script>
+<script src="i18n.js?v=54"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=8"></script>
-<script src="script.js?v=84"></script>
+<script src="script.js?v=93"></script>
 </body>
 </html>

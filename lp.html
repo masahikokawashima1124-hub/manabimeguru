@@ -181,31 +181,34 @@
       </div>
 
       <div class="card-strip" role="list" aria-label="せいれいカードの一部">
+        <!-- 夏・秋・冬・春から20枚。帯の長さを変えずに四季ぜんぶを見せるため、
+             夏だけ20枚だったのを8枚に減らして秋・冬・春を4枚ずつ入れてある。
+             alt はカード名そのまま（script.js の CARD_POOL が正典。tools/check_card_refs.js が照合する） -->
         <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/n1.webp" alt="はなびのこびと">
-        <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/n2.webp" alt="なみのこプクプク">
         <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/n3.webp" alt="やたいすずめ">
-        <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/n4.webp" alt="くわがたぼうや">
-        <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/n5.webp" alt="かちわりくん">
-        <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/n6.webp" alt="せんこうびのつぶ">
-        <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/n7.webp" alt="うきわらっこ">
         <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/n8.webp" alt="きんぎょのすくいっこ">
         <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/r1.webp" alt="おおだまのぬし">
-        <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/r2.webp" alt="しおさいのせいれい">
-        <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/r3.webp" alt="たいこまつりぼうず">
-        <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/r4.webp" alt="かぶとむしたいしょう">
-        <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/r5.webp" alt="アイスキャンディーせいれい">
         <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/r6.webp" alt="ほたるのひかりんぼ">
         <img role="listitem" class="r-SR" loading="lazy" width="220" height="294" src="assets/cards/sr1.webp" alt="にじいろはなびのきみ">
-        <img role="listitem" class="r-SR" loading="lazy" width="220" height="294" src="assets/cards/sr2.webp" alt="しんかいのぬし">
         <img role="listitem" class="r-SR" loading="lazy" width="220" height="294" src="assets/cards/sr3.webp" alt="なつまつりのおどりこ">
-        <img role="listitem" class="r-SR" loading="lazy" width="220" height="294" src="assets/cards/sr4.webp" alt="かんろのこおりひめ">
-        <img role="listitem" class="r-UR" loading="lazy" width="220" height="294" src="assets/cards/ur1.webp" alt="だいもんじのりゅうじん">
         <img role="listitem" class="r-UR" loading="lazy" width="220" height="294" src="assets/cards/ur2.webp" alt="なつぞらのせいれいおう">
+        <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/aki-n1.webp" alt="もみじのちいさなて">
+        <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/aki-r1.webp" alt="おちばのやま">
+        <img role="listitem" class="r-SR" loading="lazy" width="220" height="294" src="assets/cards/aki-sr1.webp" alt="にしきのおりひめ">
+        <img role="listitem" class="r-UR" loading="lazy" width="220" height="294" src="assets/cards/aki-ur1.webp" alt="あきのよのせいれいおうひ">
+        <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/fuyu-n1.webp" alt="ゆきのひとひら">
+        <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/fuyu-r3.webp" alt="かまくらのなかっこ">
+        <img role="listitem" class="r-SR" loading="lazy" width="220" height="294" src="assets/cards/fuyu-sr3.webp" alt="はつひのでのいちばんぼし">
+        <img role="listitem" class="r-UR" loading="lazy" width="220" height="294" src="assets/cards/fuyu-ur2.webp" alt="オーロラのゆらめきひめ">
+        <img role="listitem" class="r-N" loading="lazy" width="220" height="294" src="assets/cards/haru-n1.webp" alt="さくらのはつひとえ">
+        <img role="listitem" class="r-R" loading="lazy" width="220" height="294" src="assets/cards/haru-r2.webp" alt="よざくらのぼんぼり">
+        <img role="listitem" class="r-SR" loading="lazy" width="220" height="294" src="assets/cards/haru-sr2.webp" alt="めばえのめざましや">
+        <img role="listitem" class="r-UR" loading="lazy" width="220" height="294" src="assets/cards/haru-ur1.webp" alt="さくらふぶきのまいひめ">
       </div>
 
       <p style="text-align:center; font-size:13.5px; color:var(--text-muted); margin:-10px 0 24px;">
-        カードは全40種。夏のせいれいたちから始まり、これから季節ごとに増えていきます。<br>
-        無料プランでも28種は集められ、続けていれば必ず出会えるようにしてあります（レアな12種はファミリープラン）。
+        カードは全160種。夏のせいれいたちに、秋・冬・春が加わって四季ぜんぶそろいました。<br>
+        無料プランでも112種は集められ、続けていれば必ず出会えるようにしてあります（レアな48種はファミリープラン）。
       </p>
 
       <p class="statement">
@@ -308,7 +311,7 @@
             <tr><th scope="row">算数・国語・英語（全学年）</th><td class="yes">○</td><td class="yes">○</td></tr>
             <tr><th scope="row">データのクラウド保存<br><span class="price-sub">（アカウント作成が必要）</span></th><td class="yes">○</td><td class="yes">○</td></tr>
             <tr><th scope="row">お子さんの登録</th><td>1人</td><td class="yes">6人まで</td></tr>
-            <tr><th scope="row">せいれいカード</th><td>28種</td><td class="yes">全40種＋今後の新カード</td></tr>
+            <tr><th scope="row">せいれいカード</th><td>112種</td><td class="yes">全160種（SR・URもすべて）</td></tr>
             <tr><th scope="row">かぞくのずかん</th><td>—</td><td class="yes">○</td></tr>
             <tr><th scope="row">料金</th><td class="plan-price">0円</td><td class="plan-price">月額 1,480円</td></tr>
           </tbody>
