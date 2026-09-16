@@ -1591,6 +1591,129 @@ const CARD_NAMES = {
     sr7: "Globo de los Deseos",               // No.038
     sr8: "Sabio de Estrellas",                // No.039
     ur4: "Reina de la Luna",                  // No.040
+    // ---- 秋（No.041〜080）。released: false のあいだは画面に出ない。正典は card-es-names.md ----
+    "aki-n1": "Manita de Arce",                  // No.041
+    "aki-n2": "Ginkgo Dorado",                   // No.042
+    "aki-r1": "Montaña de Hojas",                // No.043
+    "aki-r2": "Hojita al Viento",                // No.044
+    "aki-sr1": "Tejedora de Brocado",            // No.045
+    "aki-sr2": "Maestro del Pincel",             // No.046
+    "aki-n3": "Bellotín",                        // No.047
+    "aki-n4": "Piña Paraguas",                   // No.048
+    "aki-n5": "Castañita Pincha",                // No.049
+    "aki-r3": "Caqui Rojizo",                    // No.050
+    "aki-r4": "Nuez Durita",                     // No.051
+    "aki-sr3": "Cesta de la Cosecha",            // No.052
+    "aki-n6": "Apilador de Dango",               // No.053
+    "aki-n7": "Espiga Plateada",                 // No.054
+    "aki-r5": "Conejo de la Luna",               // No.055
+    "aki-r6": "Nube Traviesa",                   // No.056
+    "aki-sr4": "Gran Ojo de Luna Llena",         // No.057
+    "aki-ur1": "Reina de la Noche de Otoño",     // No.058
+    "aki-n8": "Setita Sombrero",                 // No.059
+    "aki-n9": "Pandilla de Setas",               // No.060
+    "aki-n10": "Seta Bailona",                   // No.061
+    "aki-r7": "Seta Presumida",                  // No.062
+    "aki-sr5": "Sabio de las Setas",             // No.063
+    "aki-n11": "Grillo Cantarín",                // No.064
+    "aki-n12": "Grillo Cascabel",                // No.065
+    "aki-n13": "Saltamontes Chirrión",           // No.066
+    "aki-r8": "Director de los Grillos",         // No.067
+    "aki-r9": "Cantante del Otoño",              // No.068
+    "aki-n14": "Boniato Calentito",              // No.069
+    "aki-n15": "Boniato Desenterrado",           // No.070
+    "aki-n16": "Ginkgo Apestoso",                // No.071
+    "aki-r10": "Luna en la Copa",                // No.072
+    "aki-r11": "Pez Humeante",                   // No.073
+    "aki-sr6": "Señor del Banquete",             // No.074
+    "aki-r12": "Espantapájaros Vigía",           // No.075
+    "aki-sr7": "Espiga Humilde",                 // No.076
+    "aki-sr8": "Ave Viajera",                    // No.077
+    "aki-ur2": "Gran Horno de la Cosecha",       // No.078
+    "aki-ur3": "Corredor del Viento Seco",       // No.079
+    "aki-ur4": "Rey de los Espíritus del Otoño", // No.080
+    // ---- 冬（No.081〜120）。released: false のあいだは画面に出ない。正典は card-es-names.md ----
+    "fuyu-n1": "Copito de Nieve",                // No.081
+    "fuyu-n2": "Nieve en Polvo",                 // No.082
+    "fuyu-r1": "Copo Gordo",                     // No.083
+    "fuyu-r2": "Carámbano del Revés",            // No.084
+    "fuyu-sr1": "Escarcha Crujiente",            // No.085
+    "fuyu-ur1": "Pintor de la Nieve",            // No.086
+    "fuyu-n3": "Muñequito de Nieve",             // No.087
+    "fuyu-n4": "Lanzabolas",                     // No.088
+    "fuyu-n5": "Trineo Veloz",                   // No.089
+    "fuyu-r3": "Peque del Iglú",                 // No.090
+    "fuyu-r4": "Huella Seguidora",               // No.091
+    "fuyu-sr2": "Cumbre Nevada",                 // No.092
+    "fuyu-n6": "Mochi Apilado",                  // No.093
+    "fuyu-n7": "Peonza Girona",                  // No.094
+    "fuyu-n8": "Cometa Soñadora",                // No.095
+    "fuyu-r5": "Sobre Sorpresa",                 // No.096
+    "fuyu-r6": "Último de la Fila",              // No.097
+    "fuyu-sr3": "Primera Luz del Año",           // No.098
+    "fuyu-n9": "Peque del Kotatsu",              // No.099
+    "fuyu-n10": "Mandarina Presumida",           // No.100
+    "fuyu-n11": "Olla Burbujeante",              // No.101
+    "fuyu-r7": "Bolsa de Agua Caliente",         // No.102
+    "fuyu-r8": "Guiso Calentito",                // No.103
+    "fuyu-sr4": "Guardián de la Chimenea",       // No.104
+    "fuyu-n12": "Llamita de Vela",               // No.105
+    "fuyu-n13": "Luces de la Ciudad",            // No.106
+    "fuyu-r9": "Vaho en la Ventana",             // No.107
+    "fuyu-r10": "Gran Perro Estelar",            // No.108
+    "fuyu-sr5": "Silencio de Nieve",             // No.109
+    "fuyu-n14": "Oso Dormilón",                  // No.110
+    "fuyu-n15": "Ardilla Despistada",            // No.111
+    "fuyu-n16": "Rana Bajo Tierra",              // No.112
+    "fuyu-r11": "Semillita Paciente",            // No.113
+    "fuyu-sr6": "Nana del Invierno",             // No.114
+    "fuyu-sr7": "Viento del Norte",              // No.115
+    "fuyu-r12": "Aliento Blanco",                // No.116
+    "fuyu-ur2": "Princesa Aurora",               // No.117
+    "fuyu-sr8": "Triángulo de Invierno",         // No.118
+    "fuyu-ur3": "Gran Fortaleza de Hielo",       // No.119
+    "fuyu-ur4": "Rey de los Espíritus del Invierno", // No.120
+    // ---- 春（No.121〜160）。released: false のあいだは画面に出ない。正典は card-es-names.md ----
+    "haru-n1": "Primer Pétalo",                  // No.121
+    "haru-n2": "Pétalo Bailarín",                // No.122
+    "haru-r1": "Hojita del Cerezo",              // No.123
+    "haru-r2": "Farolillo del Cerezo",           // No.124
+    "haru-ur1": "Bailarina del Cerezo",          // No.125
+    "haru-sr1": "Flor Tardía",                   // No.126
+    "haru-n3": "Brotes Estirados",               // No.127
+    "haru-n4": "Pelusa Voladora",                // No.128
+    "haru-n5": "Brote Amargo",                   // No.129
+    "haru-n6": "Yemita",                         // No.130
+    "haru-r3": "Raíz Trabajadora",               // No.131
+    "haru-sr2": "Despertador de Brotes",         // No.132
+    "haru-n7": "Mariposa Blanca",                // No.133
+    "haru-r4": "Golondrina Viajera",             // No.134
+    "haru-n8": "Renacuajo Sorprendido",          // No.135
+    "haru-r5": "Abejita Cartera",                // No.136
+    "haru-r6": "Ruiseñor Aprendiz",              // No.137
+    "haru-sr3": "Guía de las Mariposas",         // No.138
+    "haru-n9": "Campo Amarillo",                 // No.139
+    "haru-n10": "Tulipanes en Fila",             // No.140
+    "haru-n11": "Violeta del Rincón",            // No.141
+    "haru-r7": "Cesta de Flores",                // No.142
+    "haru-sr4": "Reina del Jardín",              // No.143
+    "haru-n12": "Lluvia Suave",                  // No.144
+    "haru-n13": "Neblina Soñolienta",            // No.145
+    "haru-r8": "Brisa Traviesa",                 // No.146
+    "haru-sr5": "Puente de Arcoíris",            // No.147
+    "haru-sr6": "Nube de Primavera",             // No.148
+    "haru-n14": "Muñecas de la Fiesta",          // No.149
+    "haru-n15": "Carpa Voladora",                // No.150
+    "haru-n16": "Pastelito de Cerezo",           // No.151
+    "haru-r9": "Fresita",                        // No.152
+    "haru-r10": "Pastelito de Hierba",           // No.153
+    "haru-sr7": "Nuevo Alumno",                  // No.154
+    "haru-r11": "Alondra Altísima",              // No.155
+    "haru-r12": "Espejismo Tembloroso",          // No.156
+    "haru-ur2": "Luna de Bruma",                 // No.157
+    "haru-sr8": "Primer Vendaval",               // No.158
+    "haru-ur3": "Gran Fortaleza del Despertar",  // No.159
+    "haru-ur4": "Rey de los Espíritus de la Primavera", // No.160
   },
 };
 
