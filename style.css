@@ -1464,6 +1464,16 @@ h2 {
   word-break: break-word;
 }
 .profile-card--new .profile-card-name { color: var(--text-muted); font-size: 0.9rem; }
+/* なまえの変更。けす（赤）と並ぶので、取り違えないように色を分ける */
+.profile-card-rename {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--secondary);
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+
 .profile-card-delete {
   font-size: 0.78rem;
   font-weight: 800;
@@ -2523,6 +2533,68 @@ h2 {
   margin: 0 0 8px;
   font-size: 0.72rem;
   color: var(--text-muted);
+}
+
+/* ホームの「つづきから」。ふだんは出ないので、出たときに気づける色にしておく。 */
+.resume-box {
+  background: var(--secondary-soft);
+  border: 1.5px solid #bfe3f0;
+  border-radius: var(--radius-sm);
+  padding: 12px 13px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.resume-text {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--secondary-dark);
+}
+
+.resume-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.resume-actions button {
+  flex: 1;
+  /* 細い画面でも2つ並べる。文字は小さくしてよいが、押せる高さは確保する */
+  min-width: 0;
+  min-height: 44px;
+  font-size: 0.86rem;
+}
+
+/* にがて分野の教科ごとのまとまり。details/summary をそのまま使う（開閉のJSを持たない）。 */
+.review-group {
+  border-top: 1px solid #ece4f6;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.review-group:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+
+.review-group-title {
+  cursor: pointer;
+  padding: 6px 2px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--secondary-dark);
+  /* 低学年の指ではなく保護者が触る場所だが、それでも押せる高さは確保する */
+  min-height: 32px;
+  list-style-position: inside;
+}
+
+.review-group-title::marker { color: var(--secondary); }
+
+/* たしざんダッシュのプレイ中の「やめる」。押し間違いで数字を見逃さないよう、
+   こたえる欄からじゅうぶん離し、目立たない見た目にしておく。 */
+.btn-flash-quit {
+  margin-top: 18px;
+  opacity: 0.75;
 }
 
 /* ガチャの季節えらび。ずかんのタブと同じ形にして、同じものだと分かるようにする。

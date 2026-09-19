@@ -14,9 +14,29 @@ function isGuestMode() {
   return localStorage.getItem(GUEST_KEY) === "1";
 }
 
+// ⚠️ **localStorage への書き込みは失敗することがある。**学校配布のChromebookのように
+//    サイトのデータ保存が禁止されている端末や、端末のストレージが本当に一杯のとき、
+//    setItem は例外を投げる。投げたまま外へ出すと、呼び出し元がそこで止まって
+//    「押しても何も起きないボタン」になる（2026-09-19 日次QAで発見。
+//    ゲスト開始がログイン画面から一歩も動かず、エラーも出なかった）。
+//    **書けたかどうかを返し、呼び出し元が案内を出せるようにする。**
+function tryLocalSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function setGuestMode(on) {
-  if (on) localStorage.setItem(GUEST_KEY, "1");
-  else localStorage.removeItem(GUEST_KEY);
+  if (on) return tryLocalSet(GUEST_KEY, "1");
+  try {
+    localStorage.removeItem(GUEST_KEY);
+  } catch {
+    /* 消せなくても実害はない */
+  }
+  return true;
 }
 
 // ===== プラン（無料／プレミアム） =====
@@ -332,8 +352,9 @@ function getProfiles() {
   }
 }
 
+// プロフィールの保存も、書けなければ以降ぜんぶ空振りになる入口のひとつ。
 function saveProfiles(list) {
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(list));
+  return tryLocalSet(PROFILES_KEY, JSON.stringify(list));
 }
 
 function getActiveProfileId() {
@@ -383,6 +404,26 @@ function createProfile(name) {
   if (inherited) localStorage.setItem(`${profile.id}:${SCHOOL_YEAR_START_KEY}`, inherited);
 
   list.push(profile);
+  // 端末に保存できないときは、作れたふりをしない（次の画面で全部消えるため）
+  if (!saveProfiles(list)) return "storage-blocked";
+  return profile;
+}
+
+// せってい画面の「いま あそんでいるのは」の行。なまえを変えたあとにも呼ぶ。
+function refreshProfileSettingLine() {
+  const line = document.getElementById("profile-current-line");
+  if (!line) return;
+  const profile = getActiveProfile();
+  line.textContent = profile ? t("profile.currentLine", { name: profile.name }) : "";
+}
+
+// なまえの変更。⚠️ **学習データは `<プロフィールID>:` を鍵にしているので、
+// id は変えない。**名前だけを差し替えれば、ポイントもカードもそのまま残る。
+function renameProfile(id, name) {
+  const list = getProfiles();
+  const profile = list.find((p) => p.id === id);
+  if (!profile) return null;
+  profile.name = String(name || "").slice(0, PROFILE_NAME_MAX) || t("profile.defaultName");
   saveProfiles(list);
   return profile;
 }
@@ -580,7 +621,8 @@ function fractionToText(f) {
 }
 
 function parseFractionInput(str) {
-  str = str.trim().replace(/／/g, "/"); // 全角スラッシュも受理する
+  // 全角スラッシュ・全角数字も受理する（タブレットのかな入力だと全角で入るため）
+  str = toHalfWidth(str).trim().replace(/／/g, "/");
   if (str.includes("/")) {
     const [n, d] = str.split("/").map((s) => parseInt(s.trim(), 10));
     if (Number.isFinite(n) && Number.isFinite(d) && d !== 0) return reduceFraction(n, d);
@@ -3890,8 +3932,22 @@ function buildSessionProblems(grade, subject, category, count) {
 // ===== 採点 =====
 // スペイン語などカンマを小数点として使う入力に対応（ピリオドが無い場合のみカンマを小数点として扱う）。
 // 数値として読めなければ NaN を返す。
+// 全角の数字・記号を半角に直す。⚠️ **これを通さないと全角の答えが不正解になる。**
+// JSの \d は半角の [0-9] しか拾わないので、`０.３` のような入力は数字が全部消えて
+// NaN になり、正しく解けているのに「ざんねん…」になっていた（2026-09-19 日次QAで発見）。
+// タブレットの日本語キーボードは、かな入力のままだと数字が全角で入る。
+function toHalfWidth(str) {
+  return (str ?? "")
+    .toString()
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[．。]/g, ".")
+    .replace(/[，、]/g, ",")
+    .replace(/[－ー−‐―]/g, "-")
+    .replace(/\u3000/g, " ");
+}
+
 function parseLocaleNumber(str) {
-  let numStr = str.replace(/[^\d.,\-]/g, "");
+  let numStr = toHalfWidth(str).replace(/[^\d.,\-]/g, "");
   numStr = numStr.includes(".") ? numStr.replace(/,/g, "") : numStr.replace(",", ".");
   return parseFloat(numStr);
 }
@@ -3969,7 +4025,10 @@ const PROFILE_SCREENS = ["screen-login", "screen-signup", "screen-profile-select
 // 追いつかないため、実測して足りない分だけスクロールする安全網を設ける。
 // 「タブに隠れたボタンを押したつもりが別の画面（ガチャ）に飛ぶ」という
 // 誤タップを防ぐのが目的で、賑わせるための演出ではない。
-function ensureBottomActionVisible(root) {
+// maxScroll: これ以上スクロールしないと収まらないなら、**何もしない**。
+// 長文の読解のように中身が画面よりずっと長い画面で無理にスクロールすると、
+// 本文の頭が画面の外へ出てしまう。「あと少しで収まる」ときだけ手を貸す。
+function ensureBottomActionVisible(root, maxScroll) {
   if (!root) return;
   const tabBar = document.getElementById("tab-bar");
   if (tabBar.classList.contains("hidden")) return;
@@ -3985,7 +4044,10 @@ function ensureBottomActionVisible(root) {
   if (!actionable.length) return;
   const last = actionable[actionable.length - 1];
   const overlap = last.getBoundingClientRect().bottom - tabTop;
-  if (overlap > 0) window.scrollBy(0, overlap + 12);
+  if (overlap <= 0) return;
+  const need = overlap + 12;
+  if (maxScroll != null && need > maxScroll) return;
+  window.scrollBy(0, need);
 }
 
 // 中身がおおむね1画面に収まる想定の画面だけを対象にする。せっていのような
@@ -3996,7 +4058,7 @@ function ensureBottomActionVisible(root) {
 //    「ガチャをひく！」がタブバーの裏に45px隠れ、初期表示では見えなくなっていた
 //    （2026-09-17 日次QAで発見）。showScreen() が毎回 scrollTo(0,0) するので、
 //    スクロールで避けても画面に入り直すたびに再発していた。
-const FIT_TO_FOLD_SCREENS = ["screen-start", "screen-result", "screen-category", "screen-gacha"];
+const FIT_TO_FOLD_SCREENS = ["screen-start", "screen-result", "screen-category", "screen-gacha", "screen-flash"];
 
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
@@ -4064,6 +4126,7 @@ function refreshHome() {
   document.getElementById("home-status-rank").textContent = info.title;
   refreshHeroDate();
   refreshWeekChart();
+  refreshResumeBox();
   setGuide("home");
 }
 
@@ -4273,10 +4336,7 @@ function openSettingsScreen() {
   renderTestimonialSetting();
   renderPlanSetting();
 
-  const profile = getActiveProfile();
-  document.getElementById("profile-current-line").textContent = profile
-    ? t("profile.currentLine", { name: profile.name })
-    : "";
+  refreshProfileSettingLine();
 
   setGuide("settings");
   showScreen("screen-settings");
@@ -4496,11 +4556,46 @@ function renderReviewSetting() {
   summary.textContent = t("review.summary", { n: items.length, due: dueCount });
   box.appendChild(summary);
 
-  // 出る順（期日の古い順）に並べる。間違えた回数が多いものが上に来やすい
-  items
-    .slice()
-    .sort((a, b) => dayKeyToNumber(a.due) - dayKeyToNumber(b.due))
-    .forEach((item) => {
+  // 教科ごとにまとめる。混ざったまま縦一列に流すと、たまったときに延々と
+  // 長くなって保護者が見られない（2026-09-18 日次QAで判明）。
+  // ⚠️ **少ないうちは今までどおり全部開いておく。**たたんだせいで
+  //    「1件もないように見える」ほうが困る。多いときだけ1教科だけ開く
+  //    （きょう出るぶんがある教科を優先）。「開いている教科がいくつもある」だと
+  //    結局そのまま長いので、必ず1つに絞る。
+  const SUBJECT_ORDER = ["math", "japanese", "english"];
+  const OPEN_ALL_MAX = 8;
+  const groups = SUBJECT_ORDER
+    .map((subject) => ({
+      subject,
+      // 出る順（期日の古い順）に並べる。間違えた回数が多いものが上に来やすい
+      rows: items
+        .filter((it) => it.subject === subject)
+        .sort((a, b) => dayKeyToNumber(a.due) - dayKeyToNumber(b.due)),
+    }))
+    .filter((g) => g.rows.length > 0);
+
+  const openAll = items.length <= OPEN_ALL_MAX;
+  const dueGroup = groups.find((g) => g.rows.some((it) => dayKeyToNumber(it.due) <= today));
+  const openOne = dueGroup || groups[0];
+
+  groups.forEach((group) => {
+    const groupDue = group.rows.filter((it) => dayKeyToNumber(it.due) <= today).length;
+
+    const details = document.createElement("details");
+    details.className = "review-group";
+    details.open = openAll || group === openOne;
+
+    const summaryEl = document.createElement("summary");
+    summaryEl.className = "review-group-title";
+    summaryEl.textContent = t("review.group", {
+      subject: t(`subject.${group.subject}`),
+      n: group.rows.length,
+      due: groupDue,
+    });
+    details.appendChild(summaryEl);
+    box.appendChild(details);
+
+    group.rows.forEach((item) => {
       const row = document.createElement("div");
       row.className = "review-row";
 
@@ -4520,8 +4615,8 @@ function renderReviewSetting() {
       meta.className = "review-row-meta";
       const remaining = daysUntilDue(item.due);
       const wrong = item.wrongCount || 1;
+      // 教科名はグループの見出しに出るので、ここには入れない
       const parts = [
-        t(`subject.${item.subject}`),
         remaining === 0 ? t("review.dueToday")
           : t(remaining === 1 ? "review.dueLaterOne" : "review.dueLater", { n: remaining }),
         t("review.stage", { current: (item.stage || 0) + 1, total: REVIEW_INTERVALS.length }),
@@ -4549,8 +4644,9 @@ function renderReviewSetting() {
       });
       row.appendChild(removeBtn);
 
-      box.appendChild(row);
+      details.appendChild(row);
     });
+  });
 }
 
 // おしらせ一覧。表示するたびに、いま見せた項目を既読にする
@@ -4803,7 +4899,7 @@ function renderPlanSetting() {
 // ===== プロフィール画面 =====
 // state.profileMode が "manage" のときは、選ぶかわりに消す操作になる
 function openProfileSelectScreen(mode) {
-  state.profileMode = mode === "manage" ? "manage" : "select";
+  state.profileMode = ["manage", "rename"].includes(mode) ? mode : "select";
   const list = document.getElementById("profile-list");
   const profiles = getProfiles();
 
@@ -4811,6 +4907,7 @@ function openProfileSelectScreen(mode) {
     <button type="button" class="profile-card" data-profile-id="${p.id}">
       <span class="profile-card-name"></span>
       ${state.profileMode === "manage" ? `<span class="profile-card-delete">${t("profile.deleteBtn")}</span>` : ""}
+      ${state.profileMode === "rename" ? `<span class="profile-card-rename">${t("profile.renameBtn")}</span>` : ""}
     </button>
   `).join("") + (state.profileMode === "select" && profiles.length < profileLimit() ? `
     <button type="button" class="profile-card profile-card--new" id="btn-profile-new">
@@ -4833,6 +4930,8 @@ function openProfileSelectScreen(mode) {
       playClickSound();
       if (state.profileMode === "manage") {
         requestProfileDelete(profile);
+      } else if (state.profileMode === "rename") {
+        openProfileRenameScreen(profile);
       } else {
         setActiveProfileId(profile.id);
         enterAppWithActiveProfile();
@@ -4865,12 +4964,34 @@ function requestProfileDelete(profile) {
 }
 
 function openProfileCreateScreen() {
+  state.profileRenameId = null;
   document.getElementById("profile-name-input").value = "";
   document.getElementById("profile-create-feedback").textContent = "";
+  applyProfileFormLabels();
 
   // プロフィールが1つも無いとき（初回起動）は戻る先がないので隠す
   document.getElementById("btn-profile-create-cancel").classList.toggle("hidden", getProfiles().length === 0);
   showScreen("screen-profile-create");
+}
+
+// なまえの変更は、作成画面をそのまま使い回す（入力欄・エラー表示・決定/やめるが同じもの）。
+// 見出しとボタンの文言だけを差し替える。
+function openProfileRenameScreen(profile) {
+  state.profileRenameId = profile.id;
+  document.getElementById("profile-name-input").value = profile.name;
+  document.getElementById("profile-create-feedback").textContent = "";
+  applyProfileFormLabels();
+  document.getElementById("btn-profile-create-cancel").classList.remove("hidden");
+  showScreen("screen-profile-create");
+  document.getElementById("profile-name-input").focus();
+}
+
+function applyProfileFormLabels() {
+  const renaming = !!state.profileRenameId;
+  const screen = document.getElementById("screen-profile-create");
+  screen.querySelector("h2").textContent = t(renaming ? "profile.renameTitle" : "profile.createTitle");
+  screen.querySelector(".sub").textContent = t(renaming ? "profile.renameSub" : "profile.createSub");
+  document.getElementById("btn-profile-create-ok").textContent = t(renaming ? "profile.renameOk" : "profile.createOk");
 }
 
 document.getElementById("btn-profile-create-ok").addEventListener("click", () => {
@@ -4881,7 +5002,22 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
     document.getElementById("profile-create-feedback").className = "backup-feedback error";
     return;
   }
+  // なまえの変更のとき。id は変えないので、学習データはそのまま残る
+  if (state.profileRenameId) {
+    renameProfile(state.profileRenameId, name);
+    state.profileRenameId = null;
+    applyProfileFormLabels();
+    refreshProfileSettingLine();
+    openProfileSelectScreen("rename");
+    return;
+  }
+
   const profile = createProfile(name);
+  if (profile === "storage-blocked") {
+    document.getElementById("profile-create-feedback").textContent = t("auth.storageBlocked");
+    document.getElementById("profile-create-feedback").className = "backup-feedback error";
+    return;
+  }
   if (!profile) {
     document.getElementById("profile-create-feedback").textContent = isPaidPlan()
       ? t("profile.full", { n: PROFILE_MAX })
@@ -4914,6 +5050,25 @@ submitOnEnter(["profile-name-input"], "btn-profile-create-ok");
 document.getElementById("btn-profile-switch").addEventListener("click", () => {
   playClickSound();
   openProfileSelectScreen("select");
+});
+
+document.getElementById("btn-resume-session").addEventListener("click", () => {
+  playClickSound();
+  if (!resumeActiveSession()) {
+    // 学年を変えたあとなどで復元できないときは、案内を消すだけにする
+    refreshResumeBox();
+  }
+});
+
+document.getElementById("btn-discard-session").addEventListener("click", () => {
+  playClickSound();
+  clearActiveSession();
+  refreshResumeBox();
+});
+
+document.getElementById("btn-profile-rename").addEventListener("click", () => {
+  playClickSound();
+  openProfileSelectScreen("rename");
 });
 
 document.getElementById("btn-profile-manage").addEventListener("click", () => {
@@ -5266,6 +5421,9 @@ function startFlashSet() {
   document.getElementById("flash-setup").classList.add("hidden");
   document.getElementById("flash-result").classList.add("hidden");
   document.getElementById("flash-play").classList.remove("hidden");
+  // 出題中の画面は showScreen を通らないので、ここでも位置を直す
+  // （「やめる」がタブバーの裏に入っていた。320x568 で実測）
+  requestAnimationFrame(() => ensureBottomActionVisible(document.getElementById("screen-flash")));
   runFlashRound();
 }
 
@@ -5379,7 +5537,9 @@ document.getElementById("btn-flash-again").addEventListener("click", () => {
   startFlashSet();
 });
 
-[["btn-back-flash", "screen-category"], ["btn-flash-back", "screen-category"]].forEach(([id]) => {
+// プレイ中の「やめる」もふくめて、抜け道はぜんぶ同じ後始末を通す。
+// clearFlashTimers() を忘れると、画面を出たあとに数字が流れ続ける。
+[["btn-back-flash", "screen-category"], ["btn-flash-back", "screen-category"], ["btn-flash-quit", "screen-category"]].forEach(([id]) => {
   document.getElementById(id).addEventListener("click", () => {
     playClickSound();
     clearFlashTimers();
@@ -5438,6 +5598,91 @@ document.getElementById("btn-back-home-1").addEventListener("click", () => {
 });
 
 // ===== クイズ画面 =====
+// とちゅうのセッションを保存しておき、リロードしても続きから解けるようにする。
+// ⚠️ **保存するのは「その問題を解く前」の状態だけ**（renderProblem のときに書く）。
+//    答え合わせのあとに書くと、答えた結果を持ったまま同じ問題をもう一度出すことになり、
+//    ポイントや正解数の数え方が二重になる。いまの作りだと、リロードすると
+//    「いま解いていた問題の最初」に戻る。
+// ⚠️ ポイントはセッションの最後にまとめて足すので、とちゅうで閉じたぶんは入らない。
+//    ここで復元しているのは、その「まだ足していないぶん」も含めた途中経過。
+const ACTIVE_SESSION_KEY = "active_session";
+
+function saveActiveSession() {
+  if (!state.problems.length) return;
+  const snapshot = {
+    grade: getGrade(),
+    subject: state.subject,
+    category: state.category,
+    index: state.index,
+    correctCount: state.correctCount,
+    sessionStamps: state.sessionStamps,
+    sessionStampsExact: state.sessionStampsExact,
+    stampsBeforeSession: state.stampsBeforeSession,
+    problems: state.problems,
+    savedAt: Date.now(),
+  };
+  try {
+    localStorage.setItem(pk(ACTIVE_SESSION_KEY), JSON.stringify(snapshot));
+  } catch {
+    // 保存できない端末でも、いま解いている問題は続けられるほうが大事なので黙って諦める
+  }
+}
+
+function getActiveSession() {
+  try {
+    const raw = localStorage.getItem(pk(ACTIVE_SESSION_KEY));
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    // 学年を変えたあとの古い途中経過は、いまの学年と食い違うので出さない
+    if (!saved || !Array.isArray(saved.problems) || !saved.problems.length) return null;
+    if (saved.grade !== getGrade()) return null;
+    if (saved.index >= saved.problems.length) return null;
+    return saved;
+  } catch {
+    return null;
+  }
+}
+
+function clearActiveSession() {
+  try {
+    localStorage.removeItem(pk(ACTIVE_SESSION_KEY));
+  } catch {
+    /* 消せなくても実害はない（学年や問題数が合わなければ復元しない） */
+  }
+}
+
+// ホームの「つづきから」。⚠️ **勝手に再開しない。**リロードして抜けたつもりの子を
+// いきなりクイズに戻すと、逃げ道がなくなったように見える。出すのは案内だけにする。
+function refreshResumeBox() {
+  const box = document.getElementById("home-resume-box");
+  if (!box) return;
+  const saved = getActiveSession();
+  box.classList.toggle("hidden", !saved);
+  if (!saved) return;
+  const subjectLabel = t(`subject.${saved.subject}`);
+  document.getElementById("home-resume-text").textContent = t("resume.text", {
+    subject: subjectLabel,
+    current: saved.index + 1,
+    total: saved.problems.length,
+  });
+}
+
+function resumeActiveSession() {
+  const saved = getActiveSession();
+  if (!saved) return false;
+  state.subject = saved.subject;
+  state.category = saved.category;
+  state.problems = saved.problems;
+  state.index = saved.index;
+  state.correctCount = saved.correctCount || 0;
+  state.sessionStamps = saved.sessionStamps || 0;
+  state.sessionStampsExact = saved.sessionStampsExact || 0;
+  state.stampsBeforeSession = getTotalStamps();
+  renderProblem();
+  showScreen("screen-quiz");
+  return true;
+}
+
 function startSession() {
   state.problems = buildSessionProblems(getGrade(), state.subject, state.category, SESSION_SIZE);
   state.index = 0;
@@ -5471,6 +5716,7 @@ function renderProblem() {
   document.getElementById("feedback").textContent = "";
   document.getElementById("feedback").className = "feedback";
   document.getElementById("btn-next").classList.add("hidden");
+  document.getElementById("btn-next").disabled = false;
 
   document.getElementById("hint-box").classList.add("hidden");
   document.getElementById("hint-box").textContent = "";
@@ -5508,6 +5754,17 @@ function renderProblem() {
     form.querySelector("button").disabled = false;
     input.focus();
   }
+
+  // この問題を解く前の状態を残す。リロードするとここから再開する
+  saveActiveSession();
+
+  // 横向き（例: 844x390）だと、出題した直後は問題文・ヒント・こたえ欄が
+  // タブバーの裏に入ってしまう（2026-09-19 日次QAで発見）。答え合わせのあとは
+  // applyAnswerResult が同じことをしていたが、**最初に問題が出た瞬間は素通り**だった。
+  // ⚠️ 読解のように中身が長い問題で本文の頭が流れないよう、上限を付けて呼ぶ。
+  // 上限220px：横向き（844x390）で「こたえる」までを出すのに169px必要だったので、
+  //   そこは助ける。読解の長文は376px以上必要になるので、上限で弾かれて何もしない。
+  requestAnimationFrame(() => ensureBottomActionVisible(document.getElementById("screen-quiz"), 220));
 }
 
 function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
@@ -5552,6 +5809,7 @@ function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
   const isLast = state.index === state.problems.length - 1;
   const nextBtn = document.getElementById("btn-next");
   nextBtn.textContent = isLast ? t("quiz.seeResult") : t("quiz.next");
+  nextBtn.disabled = false;
   nextBtn.classList.remove("hidden");
 
   // 不正解で解説が伸びると「つぎへ」がタブバーの裏に隠れることがある
@@ -5610,6 +5868,18 @@ document.getElementById("btn-hint").addEventListener("click", () => {
 });
 
 document.getElementById("btn-next").addEventListener("click", () => {
+  // ⚠️ **押したらすぐ disabled にする。**`.hidden` だけでは二重発火を防げない。
+  //    クリックのあともボタンにフォーカスが残るので、勢いでEnterを2回押すと
+  //    2回目が同じボタンに届く（座標の当たり判定を通らないため .hidden が効かない）。
+  //    10問目なら finishSession() が2回走ってポイントが倍に入り、途中の問題なら
+  //    2回目のEnterが次の問題の入力欄（renderProblem が focus する）に届いて、
+  //    こたえ欄が空のまま自動で送信され「不正解」になっていた。見てもいない問題が
+  //    復習キューに積まれる（2026-09-19 日次QAで発見。Enterでの再現率100%）。
+  //    選択肢ボタンと回答フォームは元から disabled で塞いである。ここだけ抜けていた。
+  const btn = document.getElementById("btn-next");
+  if (btn.disabled) return;
+  btn.disabled = true;
+
   state.index++;
   if (state.index >= state.problems.length) {
     finishSession();
@@ -5620,6 +5890,7 @@ document.getElementById("btn-next").addEventListener("click", () => {
 
 // ===== 結果画面 =====
 function finishSession() {
+  clearActiveSession();
   const totalAfter = addStamps(state.sessionStamps);
   recordDailyPoints(state.sessionStamps);
 
@@ -6231,7 +6502,13 @@ function setAuthBackToGuestVisible(visible) {
 
 document.getElementById("btn-login-guest").addEventListener("click", () => {
   playClickSound();
-  setGuestMode(true);
+  if (!setGuestMode(true)) {
+    // 端末にデータを保存できない。黙って止まるより、理由を出して気づけるようにする
+    const box = document.getElementById("login-feedback");
+    box.textContent = t("auth.storageBlocked");
+    box.className = "backup-feedback error";
+    return;
+  }
   setAuthBackToGuestVisible(false);
   refreshAuthAccountLine();
   startInitialScreen();
