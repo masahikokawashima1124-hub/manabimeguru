@@ -2483,6 +2483,106 @@ h2 {
   max-width: 100%;
 }
 
+/* 季節タブ。一度に1季節（40体）だけ出すための切り替え。
+   横に4つ並べるので、320px幅でも収まるように文字を小さくしてある。 */
+.collection-seasons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 12px 0 8px;
+}
+
+.collection-season-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 2px;
+  border: 1.5px solid #e6dcf5;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  /* 低学年の指でも外しにくい高さを確保する */
+  min-height: 52px;
+}
+
+.collection-season-btn.active {
+  border-color: var(--secondary);
+  background: var(--secondary-soft);
+  color: var(--secondary-dark);
+}
+
+.collection-season-icon { font-size: 0.95rem; line-height: 1; }
+.collection-season-name { font-size: 0.72rem; }
+.collection-season-count { font-size: 0.66rem; font-weight: 800; }
+
+.collection-season-range {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ガチャの季節えらび。ずかんのタブと同じ形にして、同じものだと分かるようにする。
+   選択肢は最大5つ（ぜんぶ＋四季）なので、横に並べず折り返す。 */
+.gacha-season-label {
+  margin: 14px 0 6px;
+  font-weight: 700;
+}
+
+.gacha-seasons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.gacha-season-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 1px;
+  border: 1.5px solid #e6dcf5;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 52px;
+}
+
+.gacha-season-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+.gacha-season-icon { font-size: 0.95rem; line-height: 1; }
+.gacha-season-name { font-size: 0.68rem; }
+.gacha-season-count { font-size: 0.62rem; font-weight: 800; }
+
+/* 図鑑番号。シルエットだけが並ぶ画面で「何番が空いているか」を分かるようにする。
+   ⚠️ カードの上に重ねない。カードの絵には名前が焼き込まれていて、隅に置くと
+   その名前にかぶる（実機で確認）。カードの下にキャプションとして置く。 */
+.collection-card-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+
+.collection-dex-no {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
 .collection-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

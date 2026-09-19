@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=49">
+<link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
 
@@ -412,6 +412,11 @@
       </div>
     </div>
 
+    <!-- 引きたい季節をえらぶ。引ける季節が1つだけのとき（無料プラン・スペイン語版）は
+         script.js 側で hidden のままにする -->
+    <p class="sub gacha-season-label hidden" id="gacha-season-label" data-i18n="gacha.seasonPick"></p>
+    <div class="gacha-seasons hidden" id="gacha-seasons"></div>
+
     <button id="btn-pull-gacha" class="btn-primary btn-gacha-pull" data-i18n="gacha.pull"></button>
     <p id="gacha-insufficient-msg" class="gacha-insufficient hidden" data-i18n="gacha.insufficient"></p>
 
@@ -436,6 +441,12 @@
     </div>
     <p class="sub" id="collection-count-line"></p>
     <p class="sub collection-premium-note hidden" id="collection-premium-note"></p>
+
+    <!-- 季節タブ。160体を1枚のグリッドに流すとスマホで10画面ぶんスクロールすることに
+         なるため、一度に1季節だけ出す。公開が夏だけのロケールでは hidden のまま -->
+    <div class="collection-seasons hidden" id="collection-seasons"></div>
+    <p class="sub collection-season-range hidden" id="collection-season-range"></p>
+
     <div class="collection-grid" id="collection-grid"></div>
 
     <!-- 公式YouTube。図鑑の続きとして動画を見てもらう導線 -->
@@ -508,9 +519,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=54"></script>
+<script src="i18n.js?v=56"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=8"></script>
-<script src="script.js?v=93"></script>
+<script src="script.js?v=99"></script>
 </body>
 </html>
