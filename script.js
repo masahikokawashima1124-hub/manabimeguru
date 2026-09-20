@@ -14,9 +14,29 @@ function isGuestMode() {
   return localStorage.getItem(GUEST_KEY) === "1";
 }
 
+// ⚠️ **localStorage への書き込みは失敗することがある。**学校配布のChromebookのように
+//    サイトのデータ保存が禁止されている端末や、端末のストレージが本当に一杯のとき、
+//    setItem は例外を投げる。投げたまま外へ出すと、呼び出し元がそこで止まって
+//    「押しても何も起きないボタン」になる（2026-09-19 日次QAで発見。
+//    ゲスト開始がログイン画面から一歩も動かず、エラーも出なかった）。
+//    **書けたかどうかを返し、呼び出し元が案内を出せるようにする。**
+function tryLocalSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function setGuestMode(on) {
-  if (on) localStorage.setItem(GUEST_KEY, "1");
-  else localStorage.removeItem(GUEST_KEY);
+  if (on) return tryLocalSet(GUEST_KEY, "1");
+  try {
+    localStorage.removeItem(GUEST_KEY);
+  } catch {
+    /* 消せなくても実害はない */
+  }
+  return true;
 }
 
 // ===== プラン（無料／プレミアム） =====
@@ -54,17 +74,34 @@ function isFeatureUnlocked(name) {
   }
 }
 
-// 無料プランで引けるレアリティ。SR・URはプレミアム限定。
+// 無料プランで引けるのは**夏のN・Rの28種だけ**（2026-09-16 ユーザー決定）。
+// ⚠️ 以前は「N・Rならぜんぶ無料」だった。2026-09-13に四季160体を公開したとき、
+//    無料で引ける枚数が28種から112種へ勝手に4倍になっていた。無料の範囲は
+//    **28種のまま固定する**という判断なので、季節も条件に入れている。
+//    無料の範囲を変えたくなったら FREE_RARITIES と FREE_SEASONS だけを触ること。
 const FREE_RARITIES = ["N", "R"];
+const FREE_SEASONS = ["natsu"];
 
-function isPremiumRarity(rarity) {
-  return !FREE_RARITIES.includes(rarity);
+// カードの季節はIDの接頭辞で決まる（夏だけ接頭辞なし。n1 / aki-n1 / fuyu-n1 / haru-n1）。
+const SEASON_PREFIX = { aki: "aki-", fuyu: "fuyu-", haru: "haru-" };
+
+function cardSeason(card) {
+  for (const season of Object.keys(SEASON_PREFIX)) {
+    if (card.id.startsWith(SEASON_PREFIX[season])) return season;
+  }
+  return "natsu";
 }
 
-// いま引けるカードの母集団。無料プランではSR・URが出ない（出てから鍵をかけると萎えるので、
-// そもそも抽選に混ぜない）。ずかんにはシルエットで並べて、集める目標としては見せ続ける。
+function isPremiumCard(card) {
+  return !FREE_RARITIES.includes(card.rarity) || !FREE_SEASONS.includes(cardSeason(card));
+}
+
+
+// いま引けるカードの母集団。無料プランでは夏のN・R以外が出ない（出てから鍵をかけると
+// 萎えるので、そもそも抽選に混ぜない）。ずかんにはシルエットで並べて、集める目標としては
+// 見せ続ける。**すでに持っているカードは、あとから無料に戻っても取り上げない。**
 function drawableCardPool() {
-  return isPaidPlan() ? RELEASED_CARD_POOL : RELEASED_CARD_POOL.filter((c) => !isPremiumRarity(c.rarity));
+  return isPaidPlan() ? RELEASED_CARD_POOL : RELEASED_CARD_POOL.filter((c) => !isPremiumCard(c));
 }
 
 // 無料プランのプロフィール上限。プレミアムで PROFILE_MAX 人まで増える。
@@ -315,8 +352,9 @@ function getProfiles() {
   }
 }
 
+// プロフィールの保存も、書けなければ以降ぜんぶ空振りになる入口のひとつ。
 function saveProfiles(list) {
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(list));
+  return tryLocalSet(PROFILES_KEY, JSON.stringify(list));
 }
 
 function getActiveProfileId() {
@@ -366,6 +404,26 @@ function createProfile(name) {
   if (inherited) localStorage.setItem(`${profile.id}:${SCHOOL_YEAR_START_KEY}`, inherited);
 
   list.push(profile);
+  // 端末に保存できないときは、作れたふりをしない（次の画面で全部消えるため）
+  if (!saveProfiles(list)) return "storage-blocked";
+  return profile;
+}
+
+// せってい画面の「いま あそんでいるのは」の行。なまえを変えたあとにも呼ぶ。
+function refreshProfileSettingLine() {
+  const line = document.getElementById("profile-current-line");
+  if (!line) return;
+  const profile = getActiveProfile();
+  line.textContent = profile ? t("profile.currentLine", { name: profile.name }) : "";
+}
+
+// なまえの変更。⚠️ **学習データは `<プロフィールID>:` を鍵にしているので、
+// id は変えない。**名前だけを差し替えれば、ポイントもカードもそのまま残る。
+function renameProfile(id, name) {
+  const list = getProfiles();
+  const profile = list.find((p) => p.id === id);
+  if (!profile) return null;
+  profile.name = String(name || "").slice(0, PROFILE_NAME_MAX) || t("profile.defaultName");
   saveProfiles(list);
   return profile;
 }
@@ -563,7 +621,8 @@ function fractionToText(f) {
 }
 
 function parseFractionInput(str) {
-  str = str.trim().replace(/／/g, "/"); // 全角スラッシュも受理する
+  // 全角スラッシュ・全角数字も受理する（タブレットのかな入力だと全角で入るため）
+  str = toHalfWidth(str).trim().replace(/／/g, "/");
   if (str.includes("/")) {
     const [n, d] = str.split("/").map((s) => parseInt(s.trim(), 10));
     if (Number.isFinite(n) && Number.isFinite(d) && d !== 0) return reduceFraction(n, d);
@@ -1041,46 +1100,46 @@ const CARD_POOL = [
   // ─── 秋冬春120体（2026-08-12・No.041〜160／2026-09-13に日本語版で公開） ───
   // releasedIn: ["ja"] の意味は RELEASED_CARD_POOL の手前のコメントを読むこと。
   // スペイン語版の画像がまだ無いので、"es" を足すのは画像と名前が揃ってから。
-  { id: "aki-n1", name: "もみじのちいさなて", rarity: "N", theme: "momiji", shape: "round", color: "#e53935", accessory: "none", eye: "dot", flavor: "ちいさな てのひらの かたちで、かぜに ひらひら てを ふっている", image: "aki-n1.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n2", name: "いちょうのきんいろ", rarity: "N", theme: "momiji", shape: "round", color: "#fdd835", accessory: "ear-tufts", eye: "dot", flavor: "きんいろに ひかる はっぱ。あしもとを まっきんきんに してしまう", image: "aki-n2.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r1", name: "おちばのやま", rarity: "R", theme: "momiji", shape: "round", color: "#8d6e63", accessory: "none", eye: "sleepy", flavor: "みんなが とびこんでくる、ふかふかの おちばの やま", image: "aki-r1.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r2", name: "かぜまかせのひとひら", rarity: "R", theme: "momiji", shape: "egg", color: "#ff7043", accessory: "tuft", eye: "dot", flavor: "かぜが ふくほうへ、どこまでも とんでいく", image: "aki-r2.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-sr1", name: "にしきのおりひめ", rarity: "SR", theme: "momiji", shape: "oval", color: "#ad1457", accessory: "none", eye: "star", sparkle: true, flavor: "やまぜんたいを あかや きいろに そめあげる、あきの ぬのおり", image: "aki-sr1.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-sr2", name: "やまぞめのふであるじ", rarity: "SR", theme: "momiji", shape: "oval", color: "#5d4037", accessory: "none", eye: "star", sparkle: true, flavor: "ふでを ひとふりすると、きの てっぺんから いろが おりてくる", image: "aki-sr2.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n3", name: "どんぐりぼうや", rarity: "N", theme: "nuts", shape: "egg", color: "#a1887f", accessory: "none", eye: "dot", flavor: "ぼうしが ぬげないか いつも きにしている、ちいさな どんぐり", image: "aki-n3.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n4", name: "まつぼっくりのかさや", rarity: "N", theme: "nuts", shape: "oval", color: "#795548", accessory: "none", eye: "dot", flavor: "あめの ひは かさを とじ、はれた ひは ぱっと ひらく", image: "aki-n4.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n5", name: "くりのいがぼうず", rarity: "N", theme: "nuts", shape: "round", color: "#689f38", accessory: "none", eye: "dot", flavor: "とげとげの いがの なかに、あまい なかみを かくしている", image: "aki-n5.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r3", name: "かきのみあかね", rarity: "R", theme: "nuts", shape: "round", color: "#fb8c00", accessory: "none", eye: "dot", flavor: "えだの さきで、ひとつだけ のこって あかく なっている", image: "aki-r3.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r4", name: "くるみのかたいこ", rarity: "R", theme: "nuts", shape: "round", color: "#4e342e", accessory: "none", eye: "dot", flavor: "だれにも わってもらえない、いちばん かたい からの もちぬし", image: "aki-r4.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-sr3", name: "みのりのかごもち", rarity: "SR", theme: "nuts", shape: "oval", color: "#d7ccc8", accessory: "none", eye: "star", sparkle: true, flavor: "あきの みのりを ぜんぶ かごに いれて はこんでくる", image: "aki-sr3.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n6", name: "おだんごつみっこ", rarity: "N", theme: "moonviewing", shape: "round", color: "#fff8e1", accessory: "none", eye: "dot", flavor: "だんごを たかく つみあげるのが しごと。ときどき くずれる", image: "aki-n6.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n7", name: "すすきのほさき", rarity: "N", theme: "moonviewing", shape: "egg", color: "#bcaaa4", accessory: "none", eye: "sleepy", flavor: "かぜが ふくと いっせいに おなじ ほうへ おじぎする", image: "aki-n7.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r5", name: "つきみうさぎのつきたて", rarity: "R", theme: "moonviewing", shape: "round", color: "#fafafa", accessory: "ear-tufts", eye: "dot", flavor: "つきの うえで、いちねんじゅう もちを ついている", image: "aki-r5.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r6", name: "くもがくれのいたずら", rarity: "R", theme: "moonviewing", shape: "round", color: "#b0bec5", accessory: "none", eye: "dot", flavor: "いちばん いい ところで つきを かくしてしまう", image: "aki-r6.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-sr4", name: "まんげつのおおきなめ", rarity: "SR", theme: "moonviewing", shape: "round", color: "#ffd54f", accessory: "none", eye: "star", sparkle: true, flavor: "よぞらの まんなかで、まちを ぜんぶ みおろしている", image: "aki-sr4.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-ur1", name: "あきのよのせいれいおうひ", rarity: "UR", theme: "moonviewing", shape: "round", color: "#9575cd", accessory: "crown", eye: "star", sparkle: true, flavor: "あきの よぞらを おさめる、しずかな おうひ", image: "aki-ur1.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n8", name: "きのこのかさっこ", rarity: "N", theme: "mushroom", shape: "round", color: "#d84315", accessory: "none", eye: "dot", flavor: "あめあがりに ぽこっと あらわれる、ちいさな きのこ", image: "aki-n8.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n9", name: "しめじのむれっこ", rarity: "N", theme: "mushroom", shape: "round", color: "#bf8f6f", accessory: "none", eye: "dot", flavor: "いつも なかまと かたまって いる。ひとりだと おちつかない", image: "aki-n9.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n10", name: "まいたけのおどりや", rarity: "N", theme: "mushroom", shape: "oval", color: "#6f4e37", accessory: "none", eye: "dot", flavor: "みつけると おもわず まいたく なるほど うれしい きのこ", image: "aki-n10.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r7", name: "どくきのこのはでこ", rarity: "R", theme: "mushroom", shape: "round", color: "#e91e63", accessory: "none", eye: "star", flavor: "だれよりも きれいな いろ。でも さわっては いけない", image: "aki-r7.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-sr5", name: "もりのきのこはかせ", rarity: "SR", theme: "mushroom", shape: "oval", color: "#455a64", accessory: "glasses", eye: "star", sparkle: true, flavor: "どの きのこが たべられるか、ぜんぶ しっている", image: "aki-sr5.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n11", name: "こおろぎのねいろ", rarity: "N", theme: "insects", shape: "oval", color: "#2e7d32", accessory: "tuft", eye: "dot", flavor: "くさむらの したから、りりりと すきとおる おとを ならす", image: "aki-n11.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n12", name: "すずむしのりんりん", rarity: "N", theme: "insects", shape: "oval", color: "#558b2f", accessory: "none", eye: "dot", flavor: "ちいさな すずを ふるような おとで、あきを しらせる", image: "aki-n12.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n13", name: "きりぎりすのぎいこ", rarity: "N", theme: "insects", shape: "oval", color: "#9e9d24", accessory: "none", eye: "dot", flavor: "ぎーっちょん、と かたい おとで きざむ", image: "aki-n13.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r8", name: "むしのねのしきしゃ", rarity: "R", theme: "insects", shape: "egg", color: "#37474f", accessory: "none", eye: "dot", flavor: "くさむら ぜんたいの ねいろを そろえる、よるの しきしゃ", image: "aki-r8.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r9", name: "あきのねのうたひめ", rarity: "R", theme: "insects", shape: "oval", color: "#880e4f", accessory: "book", eye: "star", flavor: "いちばん とおくまで とどく こえで、あきの おわりを うたう", image: "aki-r9.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n14", name: "やきいもホカホカ", rarity: "N", theme: "autumnfood", shape: "oval", color: "#8e24aa", accessory: "none", eye: "dot", flavor: "おちばの したで じっくり やかれた、あつあつの やきいも", image: "aki-n14.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n15", name: "さつまのほりだしっこ", rarity: "N", theme: "autumnfood", shape: "egg", color: "#ce93d8", accessory: "none", eye: "closed", flavor: "つちの なかから、ずぼっと ひきぬかれるのが すき", image: "aki-n15.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-n16", name: "ぎんなんのにおいや", rarity: "N", theme: "autumnfood", shape: "egg", color: "#f9a825", accessory: "tuft", eye: "dot", flavor: "きんいろで きれいなのに、においで おぼえられている", image: "aki-n16.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r10", name: "あきざけのつきあかり", rarity: "R", theme: "autumnfood", shape: "round", color: "#ffcc80", accessory: "none", eye: "sleepy", flavor: "つきを うつした さかずきの なかに すんでいる", image: "aki-r10.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r11", name: "さんまのけむりもく", rarity: "R", theme: "autumnfood", shape: "egg", color: "#78909c", accessory: "none", eye: "dot", flavor: "やくと けむりで あたりが まっしろに なる", image: "aki-r11.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-sr6", name: "みのりのしょくたくぬし", rarity: "SR", theme: "autumnfood", shape: "oval", color: "#bf360c", accessory: "none", eye: "star", sparkle: true, flavor: "あきの たべものを ぜんぶ ならべた しょくたくの ぬし", image: "aki-sr6.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-r12", name: "かかしのみはりばん", rarity: "R", theme: "harvest", shape: "egg", color: "#d4a373", accessory: "book", eye: "dot", flavor: "いちねんじゅう おなじ ばしょで、たんぼを みまもっている", image: "aki-r12.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-sr7", name: "いねほのこうべたれ", rarity: "SR", theme: "harvest", shape: "egg", color: "#f0d264", accessory: "none", eye: "closed", sparkle: true, flavor: "みのるほど あたまを さげる、たんぼの おてほん", image: "aki-sr7.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-sr8", name: "とりでのわたりどり", rarity: "SR", theme: "harvest", shape: "oval", color: "#607d8b", accessory: "none", eye: "star", sparkle: true, flavor: "さむく なるまえに、みんなを つれて とおくへ とんでいく", image: "aki-sr8.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-ur2", name: "みのりのおおかまど", rarity: "UR", theme: "harvest", shape: "round", color: "#e64a19", accessory: "none", eye: "star", sparkle: true, flavor: "いちねんの みのりを ぜんぶ たきあげる、でんせつの かまど", image: "aki-ur2.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-ur3", name: "からっかぜのはしりや", rarity: "UR", theme: "harvest", shape: "egg", color: "#90a4ae", accessory: "none", eye: "dot", sparkle: true, flavor: "やまから いっきに ふきおろして、ふゆを つれてくる", image: "aki-ur3.webp", releasedIn: ["ja", "es"] },
-  { id: "aki-ur4", name: "あきぞらのせいれいおう", rarity: "UR", theme: "harvest", shape: "round", color: "#ef6c00", accessory: "crown", eye: "star", sparkle: true, flavor: "あきの すべての せいれいたちを まとめる、みのりの おうさま", image: "aki-ur4.webp", releasedIn: ["ja", "es"] },
+  { id: "aki-n1", name: "もみじのちいさなて", rarity: "N", theme: "momiji", shape: "round", color: "#e53935", accessory: "none", eye: "dot", flavor: "ちいさな てのひらの かたちで、かぜに ひらひら てを ふっている", image: "aki-n1.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n2", name: "いちょうのきんいろ", rarity: "N", theme: "momiji", shape: "round", color: "#fdd835", accessory: "ear-tufts", eye: "dot", flavor: "きんいろに ひかる はっぱ。あしもとを まっきんきんに してしまう", image: "aki-n2.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r1", name: "おちばのやま", rarity: "R", theme: "momiji", shape: "round", color: "#8d6e63", accessory: "none", eye: "sleepy", flavor: "みんなが とびこんでくる、ふかふかの おちばの やま", image: "aki-r1.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r2", name: "かぜまかせのひとひら", rarity: "R", theme: "momiji", shape: "egg", color: "#ff7043", accessory: "tuft", eye: "dot", flavor: "かぜが ふくほうへ、どこまでも とんでいく", image: "aki-r2.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-sr1", name: "にしきのおりひめ", rarity: "SR", theme: "momiji", shape: "oval", color: "#ad1457", accessory: "none", eye: "star", sparkle: true, flavor: "やまぜんたいを あかや きいろに そめあげる、あきの ぬのおり", image: "aki-sr1.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-sr2", name: "やまぞめのふであるじ", rarity: "SR", theme: "momiji", shape: "oval", color: "#5d4037", accessory: "none", eye: "star", sparkle: true, flavor: "ふでを ひとふりすると、きの てっぺんから いろが おりてくる", image: "aki-sr2.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n3", name: "どんぐりぼうや", rarity: "N", theme: "nuts", shape: "egg", color: "#a1887f", accessory: "none", eye: "dot", flavor: "ぼうしが ぬげないか いつも きにしている、ちいさな どんぐり", image: "aki-n3.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n4", name: "まつぼっくりのかさや", rarity: "N", theme: "nuts", shape: "oval", color: "#795548", accessory: "none", eye: "dot", flavor: "あめの ひは かさを とじ、はれた ひは ぱっと ひらく", image: "aki-n4.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n5", name: "くりのいがぼうず", rarity: "N", theme: "nuts", shape: "round", color: "#689f38", accessory: "none", eye: "dot", flavor: "とげとげの いがの なかに、あまい なかみを かくしている", image: "aki-n5.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r3", name: "かきのみあかね", rarity: "R", theme: "nuts", shape: "round", color: "#fb8c00", accessory: "none", eye: "dot", flavor: "えだの さきで、ひとつだけ のこって あかく なっている", image: "aki-r3.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r4", name: "くるみのかたいこ", rarity: "R", theme: "nuts", shape: "round", color: "#4e342e", accessory: "none", eye: "dot", flavor: "だれにも わってもらえない、いちばん かたい からの もちぬし", image: "aki-r4.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-sr3", name: "みのりのかごもち", rarity: "SR", theme: "nuts", shape: "oval", color: "#d7ccc8", accessory: "none", eye: "star", sparkle: true, flavor: "あきの みのりを ぜんぶ かごに いれて はこんでくる", image: "aki-sr3.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n6", name: "おだんごつみっこ", rarity: "N", theme: "moonviewing", shape: "round", color: "#fff8e1", accessory: "none", eye: "dot", flavor: "だんごを たかく つみあげるのが しごと。ときどき くずれる", image: "aki-n6.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n7", name: "すすきのほさき", rarity: "N", theme: "moonviewing", shape: "egg", color: "#bcaaa4", accessory: "none", eye: "sleepy", flavor: "かぜが ふくと いっせいに おなじ ほうへ おじぎする", image: "aki-n7.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r5", name: "つきみうさぎのつきたて", rarity: "R", theme: "moonviewing", shape: "round", color: "#fafafa", accessory: "ear-tufts", eye: "dot", flavor: "つきの うえで、いちねんじゅう もちを ついている", image: "aki-r5.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r6", name: "くもがくれのいたずら", rarity: "R", theme: "moonviewing", shape: "round", color: "#b0bec5", accessory: "none", eye: "dot", flavor: "いちばん いい ところで つきを かくしてしまう", image: "aki-r6.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-sr4", name: "まんげつのおおきなめ", rarity: "SR", theme: "moonviewing", shape: "round", color: "#ffd54f", accessory: "none", eye: "star", sparkle: true, flavor: "よぞらの まんなかで、まちを ぜんぶ みおろしている", image: "aki-sr4.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-ur1", name: "あきのよのせいれいおうひ", rarity: "UR", theme: "moonviewing", shape: "round", color: "#9575cd", accessory: "crown", eye: "star", sparkle: true, flavor: "あきの よぞらを おさめる、しずかな おうひ", image: "aki-ur1.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n8", name: "きのこのかさっこ", rarity: "N", theme: "mushroom", shape: "round", color: "#d84315", accessory: "none", eye: "dot", flavor: "あめあがりに ぽこっと あらわれる、ちいさな きのこ", image: "aki-n8.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n9", name: "しめじのむれっこ", rarity: "N", theme: "mushroom", shape: "round", color: "#bf8f6f", accessory: "none", eye: "dot", flavor: "いつも なかまと かたまって いる。ひとりだと おちつかない", image: "aki-n9.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n10", name: "まいたけのおどりや", rarity: "N", theme: "mushroom", shape: "oval", color: "#6f4e37", accessory: "none", eye: "dot", flavor: "みつけると おもわず まいたく なるほど うれしい きのこ", image: "aki-n10.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r7", name: "どくきのこのはでこ", rarity: "R", theme: "mushroom", shape: "round", color: "#e91e63", accessory: "none", eye: "star", flavor: "だれよりも きれいな いろ。でも さわっては いけない", image: "aki-r7.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-sr5", name: "もりのきのこはかせ", rarity: "SR", theme: "mushroom", shape: "oval", color: "#455a64", accessory: "glasses", eye: "star", sparkle: true, flavor: "どの きのこが たべられるか、ぜんぶ しっている", image: "aki-sr5.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n11", name: "こおろぎのねいろ", rarity: "N", theme: "insects", shape: "oval", color: "#2e7d32", accessory: "tuft", eye: "dot", flavor: "くさむらの したから、りりりと すきとおる おとを ならす", image: "aki-n11.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n12", name: "すずむしのりんりん", rarity: "N", theme: "insects", shape: "oval", color: "#558b2f", accessory: "none", eye: "dot", flavor: "ちいさな すずを ふるような おとで、あきを しらせる", image: "aki-n12.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n13", name: "きりぎりすのぎいこ", rarity: "N", theme: "insects", shape: "oval", color: "#9e9d24", accessory: "none", eye: "dot", flavor: "ぎーっちょん、と かたい おとで きざむ", image: "aki-n13.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r8", name: "むしのねのしきしゃ", rarity: "R", theme: "insects", shape: "egg", color: "#37474f", accessory: "none", eye: "dot", flavor: "くさむら ぜんたいの ねいろを そろえる、よるの しきしゃ", image: "aki-r8.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r9", name: "あきのねのうたひめ", rarity: "R", theme: "insects", shape: "oval", color: "#880e4f", accessory: "book", eye: "star", flavor: "いちばん とおくまで とどく こえで、あきの おわりを うたう", image: "aki-r9.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n14", name: "やきいもホカホカ", rarity: "N", theme: "autumnfood", shape: "oval", color: "#8e24aa", accessory: "none", eye: "dot", flavor: "おちばの したで じっくり やかれた、あつあつの やきいも", image: "aki-n14.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n15", name: "さつまのほりだしっこ", rarity: "N", theme: "autumnfood", shape: "egg", color: "#ce93d8", accessory: "none", eye: "closed", flavor: "つちの なかから、ずぼっと ひきぬかれるのが すき", image: "aki-n15.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-n16", name: "ぎんなんのにおいや", rarity: "N", theme: "autumnfood", shape: "egg", color: "#f9a825", accessory: "tuft", eye: "dot", flavor: "きんいろで きれいなのに、においで おぼえられている", image: "aki-n16.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r10", name: "あきざけのつきあかり", rarity: "R", theme: "autumnfood", shape: "round", color: "#ffcc80", accessory: "none", eye: "sleepy", flavor: "つきを うつした さかずきの なかに すんでいる", image: "aki-r10.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r11", name: "さんまのけむりもく", rarity: "R", theme: "autumnfood", shape: "egg", color: "#78909c", accessory: "none", eye: "dot", flavor: "やくと けむりで あたりが まっしろに なる", image: "aki-r11.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-sr6", name: "みのりのしょくたくぬし", rarity: "SR", theme: "autumnfood", shape: "oval", color: "#bf360c", accessory: "none", eye: "star", sparkle: true, flavor: "あきの たべものを ぜんぶ ならべた しょくたくの ぬし", image: "aki-sr6.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-r12", name: "かかしのみはりばん", rarity: "R", theme: "harvest", shape: "egg", color: "#d4a373", accessory: "book", eye: "dot", flavor: "いちねんじゅう おなじ ばしょで、たんぼを みまもっている", image: "aki-r12.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-sr7", name: "いねほのこうべたれ", rarity: "SR", theme: "harvest", shape: "egg", color: "#f0d264", accessory: "none", eye: "closed", sparkle: true, flavor: "みのるほど あたまを さげる、たんぼの おてほん", image: "aki-sr7.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-sr8", name: "とりでのわたりどり", rarity: "SR", theme: "harvest", shape: "oval", color: "#607d8b", accessory: "none", eye: "star", sparkle: true, flavor: "さむく なるまえに、みんなを つれて とおくへ とんでいく", image: "aki-sr8.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-ur2", name: "みのりのおおかまど", rarity: "UR", theme: "harvest", shape: "round", color: "#e64a19", accessory: "none", eye: "star", sparkle: true, flavor: "いちねんの みのりを ぜんぶ たきあげる、でんせつの かまど", image: "aki-ur2.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-ur3", name: "からっかぜのはしりや", rarity: "UR", theme: "harvest", shape: "egg", color: "#90a4ae", accessory: "none", eye: "dot", sparkle: true, flavor: "やまから いっきに ふきおろして、ふゆを つれてくる", image: "aki-ur3.webp", releasedIn: ["ja", "es", "de"] },
+  { id: "aki-ur4", name: "あきぞらのせいれいおう", rarity: "UR", theme: "harvest", shape: "round", color: "#ef6c00", accessory: "crown", eye: "star", sparkle: true, flavor: "あきの すべての せいれいたちを まとめる、みのりの おうさま", image: "aki-ur4.webp", releasedIn: ["ja", "es", "de"] },
   { id: "fuyu-n1", name: "ゆきのひとひら", rarity: "N", theme: "snow", shape: "round", color: "#e1f5fe", accessory: "tuft", eye: "dot", flavor: "おなじ かたちが ふたつと ない、ちいさな ゆきの けっしょう", image: "fuyu-n1.webp", releasedIn: ["ja", "es"] },
   { id: "fuyu-n2", name: "こなゆきのさらさら", rarity: "N", theme: "snow", shape: "round", color: "#f5f5f5", accessory: "none", eye: "sleepy", flavor: "さわると さらさら くずれて、かたちに ならない", image: "fuyu-n2.webp", releasedIn: ["ja", "es"] },
   { id: "fuyu-r1", name: "ぼたゆきのおおつぶ", rarity: "R", theme: "snow", shape: "round", color: "#eceff1", accessory: "none", eye: "dot", flavor: "おおきくて ゆっくり、まうように おちてくる", image: "fuyu-r1.webp", releasedIn: ["ja", "es"] },
@@ -1183,6 +1242,32 @@ function isCardReleasedHere(card) {
 }
 
 const RELEASED_CARD_POOL = CARD_POOL.filter(isCardReleasedHere);
+// ずかんの並び順＝図鑑番号（No.001〜160）。character-bible.md・SNS・動画の台本が
+// この番号で書かれているので、**カードは末尾に足すこと**（途中に挿すと全部ずれる）。
+// tools/check_card_refs.js が資料側の番号と突き合わせている。
+const CARD_DEX_NO = new Map(CARD_POOL.map((card, i) => [card.id, i + 1]));
+
+function dexNo(card) {
+  return CARD_DEX_NO.get(card.id);
+}
+
+function dexNoLabel(card) {
+  return `No.${String(dexNo(card)).padStart(3, "0")}`;
+}
+
+// ずかんを季節ごとに区切るための並び。CARD_POOL は季節順に並んでいる
+// （夏 No.001〜040／秋 041〜080／冬 081〜120／春 121〜160）。
+const SEASON_ORDER = ["natsu", "aki", "fuyu", "haru"];
+const SEASON_ICON = { natsu: "☀️", aki: "🍁", fuyu: "❄️", haru: "🌸" };
+
+// 公開しているカードを季節ごとにまとめる。⚠️ 公開はロケール別なので、
+// スペイン語版のように夏しか公開していない場合は夏の1組だけが返る。
+function releasedSeasonGroups() {
+  return SEASON_ORDER.map((season) => ({
+    season,
+    cards: RELEASED_CARD_POOL.filter((c) => cardSeason(c) === season),
+  })).filter((g) => g.cards.length > 0);
+}
 
 const GACHA_KEY = "gacha_owned";
 
@@ -1230,6 +1315,37 @@ function getPity() {
   return parseInt(localStorage.getItem(pk(PITY_KEY)) || "0", 10);
 }
 
+// 引きたい季節を選べるようにする（2026-09-16 ユーザー決定）。
+// "all" か季節ID。⚠️ **引ける季節が1つしかないときは選択肢を出さない。**
+// 無料プランは夏しか引けないので、ガチャ画面に🔒付きの季節ボタンが並ぶことになり、
+// それは account-design.md §10-4「子どもがプレイ中に課金を迫られる導線は作らない」に反する。
+const GACHA_SEASON_KEY = "gacha_season";
+
+function gachaSeasonChoices() {
+  const pool = drawableCardPool();
+  const seasons = SEASON_ORDER.filter((season) => pool.some((c) => cardSeason(c) === season));
+  return seasons.length > 1 ? ["all", ...seasons] : seasons;
+}
+
+function getGachaSeason() {
+  const saved = localStorage.getItem(pk(GACHA_SEASON_KEY));
+  const choices = gachaSeasonChoices();
+  // プランが変わって選べる季節が減ることがあるので、毎回いまの選択肢で検算する
+  return choices.includes(saved) ? saved : choices[0];
+}
+
+function setGachaSeason(season) {
+  localStorage.setItem(pk(GACHA_SEASON_KEY), season);
+  markSyncDirty();
+}
+
+// いま引く母集団。プランで引けるカード（drawableCardPool）を、選んだ季節でさらに絞る。
+function gachaPool() {
+  const pool = drawableCardPool();
+  const season = getGachaSeason();
+  return season === "all" || !season ? pool : pool.filter((c) => cardSeason(c) === season);
+}
+
 function setPity(n) {
   localStorage.setItem(pk(PITY_KEY), String(n));
   markSyncDirty();
@@ -1252,7 +1368,8 @@ function rollRarity() {
 
 function drawGachaCard() {
   const owned = getOwnedCards();
-  const pool = drawableCardPool();
+  // 選んだ季節のカードだけを引く。天井（未所持確定）も同じ母集団の中で効かせる
+  const pool = gachaPool();
   const unowned = pool.filter((c) => !owned[c.id]);
   const pityHit = getPity() >= PITY_LIMIT && unowned.length > 0;
 
@@ -1524,19 +1641,60 @@ function openCollectionScreen(returnScreen, scope) {
   // プレミアム限定のうち、まだ持っていない枚数だけを案内する
   const premiumLockedCount = isPaidPlan()
     ? 0
-    : RELEASED_CARD_POOL.filter((c) => isPremiumRarity(c.rarity) && !owned[c.id]).length;
+    : RELEASED_CARD_POOL.filter((c) => isPremiumCard(c) && !owned[c.id]).length;
   const premiumNote = document.getElementById("collection-premium-note");
   if (premiumNote) {
     premiumNote.textContent = premiumLockedCount ? t("collection.premiumNote", { n: premiumLockedCount }) : "";
     premiumNote.classList.toggle("hidden", premiumLockedCount === 0);
   }
 
+  // 季節タブ。160体を1枚のグリッドに流すと、スマホで10画面ぶんスクロールすることになり
+  // 「何を集めているのか」が分からなくなる（2026-09-16 日次QAで発見）。
+  // **一度に1季節だけ出す。**公開が夏だけのロケール（スペイン語版）ではタブを出さない。
+  const groups = releasedSeasonGroups();
+  if (!groups.some((g) => g.season === state.collectionSeason)) {
+    state.collectionSeason = groups[0].season;
+  }
+  const seasonBar = document.getElementById("collection-seasons");
+  seasonBar.classList.toggle("hidden", groups.length < 2);
+  seasonBar.innerHTML = groups
+    .map(({ season, cards }) => {
+      const ownedInSeason = cards.filter((c) => owned[c.id]).length;
+      const active = season === state.collectionSeason ? " active" : "";
+      return `<button type="button" class="collection-season-btn${active}" data-season="${season}">
+        <span class="collection-season-icon" aria-hidden="true">${SEASON_ICON[season]}</span>
+        <span class="collection-season-name">${t(`season.${season}`)}</span>
+        <span class="collection-season-count">${t("collection.seasonProgress", { owned: ownedInSeason, total: cards.length })}</span>
+      </button>`;
+    })
+    .join("");
+  seasonBar.querySelectorAll(".collection-season-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClickSound();
+      state.collectionSeason = btn.dataset.season;
+      openCollectionScreen();
+    });
+  });
+
+  const shown = groups.find((g) => g.season === state.collectionSeason).cards;
+  const rangeEl = document.getElementById("collection-season-range");
+  rangeEl.textContent = t("collection.seasonRange", {
+    from: dexNoLabel(shown[0]),
+    to: dexNoLabel(shown[shown.length - 1]),
+  });
+  rangeEl.classList.toggle("hidden", groups.length < 2);
+
   const grid = document.getElementById("collection-grid");
-  grid.innerHTML = RELEASED_CARD_POOL.map((card) => {
+  grid.innerHTML = shown.map((card) => {
     const count = owned[card.id] || 0;
     // すでに持っているカードは、あとから無料プランになっても取り上げない
-    const premium = count === 0 && !isPaidPlan() && isPremiumRarity(card.rarity);
-    return `<div class="collection-card-slot" data-card-id="${card.id}">${renderCardHTML(card, { locked: count === 0, premium, count })}</div>`;
+    const premium = count === 0 && !isPaidPlan() && isPremiumCard(card);
+    // 図鑑番号はカードの「外」に出す。カードの絵には名前が焼き込まれていて、
+    // 上に重ねるとその名前にかぶるため（実機で確認）。
+    return `<div class="collection-card-slot" data-card-id="${card.id}">
+      ${renderCardHTML(card, { locked: count === 0, premium, count })}
+      <span class="collection-dex-no">${dexNoLabel(card)}</span>
+    </div>`;
   }).join("");
 
   grid.querySelectorAll(".collection-card-slot").forEach((slot) => {
@@ -3774,8 +3932,22 @@ function buildSessionProblems(grade, subject, category, count) {
 // ===== 採点 =====
 // スペイン語などカンマを小数点として使う入力に対応（ピリオドが無い場合のみカンマを小数点として扱う）。
 // 数値として読めなければ NaN を返す。
+// 全角の数字・記号を半角に直す。⚠️ **これを通さないと全角の答えが不正解になる。**
+// JSの \d は半角の [0-9] しか拾わないので、`０.３` のような入力は数字が全部消えて
+// NaN になり、正しく解けているのに「ざんねん…」になっていた（2026-09-19 日次QAで発見）。
+// タブレットの日本語キーボードは、かな入力のままだと数字が全角で入る。
+function toHalfWidth(str) {
+  return (str ?? "")
+    .toString()
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[．。]/g, ".")
+    .replace(/[，、]/g, ",")
+    .replace(/[－ー−‐―]/g, "-")
+    .replace(/\u3000/g, " ");
+}
+
 function parseLocaleNumber(str) {
-  let numStr = str.replace(/[^\d.,\-]/g, "");
+  let numStr = toHalfWidth(str).replace(/[^\d.,\-]/g, "");
   numStr = numStr.includes(".") ? numStr.replace(/,/g, "") : numStr.replace(",", ".");
   return parseFloat(numStr);
 }
@@ -3853,24 +4025,40 @@ const PROFILE_SCREENS = ["screen-login", "screen-signup", "screen-profile-select
 // 追いつかないため、実測して足りない分だけスクロールする安全網を設ける。
 // 「タブに隠れたボタンを押したつもりが別の画面（ガチャ）に飛ぶ」という
 // 誤タップを防ぐのが目的で、賑わせるための演出ではない。
-function ensureBottomActionVisible(root) {
+// maxScroll: これ以上スクロールしないと収まらないなら、**何もしない**。
+// 長文の読解のように中身が画面よりずっと長い画面で無理にスクロールすると、
+// 本文の頭が画面の外へ出てしまう。「あと少しで収まる」ときだけ手を貸す。
+function ensureBottomActionVisible(root, maxScroll) {
   if (!root) return;
   const tabBar = document.getElementById("tab-bar");
   if (tabBar.classList.contains("hidden")) return;
   const tabTop = tabBar.getBoundingClientRect().top;
+  // ⚠️ **押せない（disabled）ボタンも対象にする。**「ポイントが足りなくて
+  //    引けない」ときのガチャのボタンがまさにこれで、除いていたせいで
+  //    ボタンと「ポイントがたりないよ」の案内がタブバーの裏に隠れたままだった
+  //    （2026-09-17 日次QAで発見）。押せるかどうかではなく、
+  //    **見えている必要があるか**で選ぶ。
   const actionable = [...root.querySelectorAll("button, a")].filter(
-    (el) => !el.disabled && !el.classList.contains("hidden") && el.offsetParent !== null
+    (el) => !el.classList.contains("hidden") && el.offsetParent !== null
   );
   if (!actionable.length) return;
   const last = actionable[actionable.length - 1];
   const overlap = last.getBoundingClientRect().bottom - tabTop;
-  if (overlap > 0) window.scrollBy(0, overlap + 12);
+  if (overlap <= 0) return;
+  const need = overlap + 12;
+  if (maxScroll != null && need > maxScroll) return;
+  window.scrollBy(0, need);
 }
 
 // 中身がおおむね1画面に収まる想定の画面だけを対象にする。せっていのような
 // 長いスクロール前提の画面まで対象にすると、末尾の無関係なボタンまで
 // 強制的にスクロールしてしまうため、あえて対象を絞っている。
-const FIT_TO_FOLD_SCREENS = ["screen-start", "screen-result", "screen-category"];
+// ⚠️ **画面に行を足したら、その画面をここに入れ忘れていないか確かめること。**
+//    ガチャ画面に季節えらびの行を足したとき（2026-09-16）、320x568で
+//    「ガチャをひく！」がタブバーの裏に45px隠れ、初期表示では見えなくなっていた
+//    （2026-09-17 日次QAで発見）。showScreen() が毎回 scrollTo(0,0) するので、
+//    スクロールで避けても画面に入り直すたびに再発していた。
+const FIT_TO_FOLD_SCREENS = ["screen-start", "screen-result", "screen-category", "screen-gacha", "screen-flash"];
 
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
@@ -3938,6 +4126,7 @@ function refreshHome() {
   document.getElementById("home-status-rank").textContent = info.title;
   refreshHeroDate();
   refreshWeekChart();
+  refreshResumeBox();
   setGuide("home");
 }
 
@@ -3980,10 +4169,50 @@ function openGachaScreen() {
   skipGachaReveal = null;
   document.getElementById("gacha-levelup-box").classList.add("hidden");
   document.getElementById("gacha-insufficient-msg").classList.add("hidden");
+  renderGachaSeasons();
   refreshGachaPointsDisplay();
   // クイズの start と共用にしていたので「10もん がんばろう！」がガチャ画面に出ていた
   setGuide("gacha");
   showScreen("screen-gacha");
+}
+
+function renderGachaSeasons() {
+  const choices = gachaSeasonChoices();
+  const box = document.getElementById("gacha-seasons");
+  const label = document.getElementById("gacha-season-label");
+  // 引ける季節が1つだけなら、選ばせる意味がないので出さない（無料プラン・スペイン語版）
+  const show = choices.length > 1;
+  box.classList.toggle("hidden", !show);
+  label.classList.toggle("hidden", !show);
+  if (!show) {
+    box.innerHTML = ""; // プランが変わって出さなくなったときに、古いボタンを残さない
+    return;
+  }
+
+  const current = getGachaSeason();
+  const owned = getOwnedCards();
+  const pool = drawableCardPool();
+  box.innerHTML = choices
+    .map((season) => {
+      const cards = season === "all" ? pool : pool.filter((c) => cardSeason(c) === season);
+      const got = cards.filter((c) => owned[c.id]).length;
+      const active = season === current ? " active" : "";
+      const icon = season === "all" ? "🎁" : SEASON_ICON[season];
+      return `<button type="button" class="gacha-season-btn${active}" data-season="${season}">
+        <span class="gacha-season-icon" aria-hidden="true">${icon}</span>
+        <span class="gacha-season-name">${t(`season.${season}`)}</span>
+        <span class="gacha-season-count">${t("collection.seasonProgress", { owned: got, total: cards.length })}</span>
+      </button>`;
+    })
+    .join("");
+  box.querySelectorAll(".gacha-season-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClickSound();
+      setGachaSeason(btn.dataset.season);
+      renderGachaSeasons();
+      refreshGachaPointsDisplay();
+    });
+  });
 }
 
 function refreshGachaPointsDisplay() {
@@ -3993,8 +4222,9 @@ function refreshGachaPointsDisplay() {
 
   // 「ぜんぶ あつめた」の判定は、いま引ける母集団を基準にする。
   // 無料プランでSR・URが残っていても、引けない以上は集めきったと言ってよい。
+  // 季節を選んでいるときは、その季節を集めきったかで見る（天井もその中で効くため）。
   const owned = getOwnedCards();
-  const allDrawableOwned = drawableCardPool().every((c) => owned[c.id]);
+  const allDrawableOwned = gachaPool().every((c) => owned[c.id]);
   const remaining = allDrawableOwned ? null : Math.max(0, PITY_LIMIT - getPity());
   const hint = document.getElementById("gacha-pity-hint");
   if (remaining === null) hint.textContent = t("gacha.pityDone");
@@ -4106,10 +4336,7 @@ function openSettingsScreen() {
   renderTestimonialSetting();
   renderPlanSetting();
 
-  const profile = getActiveProfile();
-  document.getElementById("profile-current-line").textContent = profile
-    ? t("profile.currentLine", { name: profile.name })
-    : "";
+  refreshProfileSettingLine();
 
   setGuide("settings");
   showScreen("screen-settings");
@@ -4329,11 +4556,46 @@ function renderReviewSetting() {
   summary.textContent = t("review.summary", { n: items.length, due: dueCount });
   box.appendChild(summary);
 
-  // 出る順（期日の古い順）に並べる。間違えた回数が多いものが上に来やすい
-  items
-    .slice()
-    .sort((a, b) => dayKeyToNumber(a.due) - dayKeyToNumber(b.due))
-    .forEach((item) => {
+  // 教科ごとにまとめる。混ざったまま縦一列に流すと、たまったときに延々と
+  // 長くなって保護者が見られない（2026-09-18 日次QAで判明）。
+  // ⚠️ **少ないうちは今までどおり全部開いておく。**たたんだせいで
+  //    「1件もないように見える」ほうが困る。多いときだけ1教科だけ開く
+  //    （きょう出るぶんがある教科を優先）。「開いている教科がいくつもある」だと
+  //    結局そのまま長いので、必ず1つに絞る。
+  const SUBJECT_ORDER = ["math", "japanese", "english"];
+  const OPEN_ALL_MAX = 8;
+  const groups = SUBJECT_ORDER
+    .map((subject) => ({
+      subject,
+      // 出る順（期日の古い順）に並べる。間違えた回数が多いものが上に来やすい
+      rows: items
+        .filter((it) => it.subject === subject)
+        .sort((a, b) => dayKeyToNumber(a.due) - dayKeyToNumber(b.due)),
+    }))
+    .filter((g) => g.rows.length > 0);
+
+  const openAll = items.length <= OPEN_ALL_MAX;
+  const dueGroup = groups.find((g) => g.rows.some((it) => dayKeyToNumber(it.due) <= today));
+  const openOne = dueGroup || groups[0];
+
+  groups.forEach((group) => {
+    const groupDue = group.rows.filter((it) => dayKeyToNumber(it.due) <= today).length;
+
+    const details = document.createElement("details");
+    details.className = "review-group";
+    details.open = openAll || group === openOne;
+
+    const summaryEl = document.createElement("summary");
+    summaryEl.className = "review-group-title";
+    summaryEl.textContent = t("review.group", {
+      subject: t(`subject.${group.subject}`),
+      n: group.rows.length,
+      due: groupDue,
+    });
+    details.appendChild(summaryEl);
+    box.appendChild(details);
+
+    group.rows.forEach((item) => {
       const row = document.createElement("div");
       row.className = "review-row";
 
@@ -4353,8 +4615,8 @@ function renderReviewSetting() {
       meta.className = "review-row-meta";
       const remaining = daysUntilDue(item.due);
       const wrong = item.wrongCount || 1;
+      // 教科名はグループの見出しに出るので、ここには入れない
       const parts = [
-        t(`subject.${item.subject}`),
         remaining === 0 ? t("review.dueToday")
           : t(remaining === 1 ? "review.dueLaterOne" : "review.dueLater", { n: remaining }),
         t("review.stage", { current: (item.stage || 0) + 1, total: REVIEW_INTERVALS.length }),
@@ -4382,8 +4644,9 @@ function renderReviewSetting() {
       });
       row.appendChild(removeBtn);
 
-      box.appendChild(row);
+      details.appendChild(row);
     });
+  });
 }
 
 // おしらせ一覧。表示するたびに、いま見せた項目を既読にする
@@ -4636,7 +4899,7 @@ function renderPlanSetting() {
 // ===== プロフィール画面 =====
 // state.profileMode が "manage" のときは、選ぶかわりに消す操作になる
 function openProfileSelectScreen(mode) {
-  state.profileMode = mode === "manage" ? "manage" : "select";
+  state.profileMode = ["manage", "rename"].includes(mode) ? mode : "select";
   const list = document.getElementById("profile-list");
   const profiles = getProfiles();
 
@@ -4644,6 +4907,7 @@ function openProfileSelectScreen(mode) {
     <button type="button" class="profile-card" data-profile-id="${p.id}">
       <span class="profile-card-name"></span>
       ${state.profileMode === "manage" ? `<span class="profile-card-delete">${t("profile.deleteBtn")}</span>` : ""}
+      ${state.profileMode === "rename" ? `<span class="profile-card-rename">${t("profile.renameBtn")}</span>` : ""}
     </button>
   `).join("") + (state.profileMode === "select" && profiles.length < profileLimit() ? `
     <button type="button" class="profile-card profile-card--new" id="btn-profile-new">
@@ -4666,6 +4930,8 @@ function openProfileSelectScreen(mode) {
       playClickSound();
       if (state.profileMode === "manage") {
         requestProfileDelete(profile);
+      } else if (state.profileMode === "rename") {
+        openProfileRenameScreen(profile);
       } else {
         setActiveProfileId(profile.id);
         enterAppWithActiveProfile();
@@ -4698,12 +4964,34 @@ function requestProfileDelete(profile) {
 }
 
 function openProfileCreateScreen() {
+  state.profileRenameId = null;
   document.getElementById("profile-name-input").value = "";
   document.getElementById("profile-create-feedback").textContent = "";
+  applyProfileFormLabels();
 
   // プロフィールが1つも無いとき（初回起動）は戻る先がないので隠す
   document.getElementById("btn-profile-create-cancel").classList.toggle("hidden", getProfiles().length === 0);
   showScreen("screen-profile-create");
+}
+
+// なまえの変更は、作成画面をそのまま使い回す（入力欄・エラー表示・決定/やめるが同じもの）。
+// 見出しとボタンの文言だけを差し替える。
+function openProfileRenameScreen(profile) {
+  state.profileRenameId = profile.id;
+  document.getElementById("profile-name-input").value = profile.name;
+  document.getElementById("profile-create-feedback").textContent = "";
+  applyProfileFormLabels();
+  document.getElementById("btn-profile-create-cancel").classList.remove("hidden");
+  showScreen("screen-profile-create");
+  document.getElementById("profile-name-input").focus();
+}
+
+function applyProfileFormLabels() {
+  const renaming = !!state.profileRenameId;
+  const screen = document.getElementById("screen-profile-create");
+  screen.querySelector("h2").textContent = t(renaming ? "profile.renameTitle" : "profile.createTitle");
+  screen.querySelector(".sub").textContent = t(renaming ? "profile.renameSub" : "profile.createSub");
+  document.getElementById("btn-profile-create-ok").textContent = t(renaming ? "profile.renameOk" : "profile.createOk");
 }
 
 document.getElementById("btn-profile-create-ok").addEventListener("click", () => {
@@ -4714,7 +5002,22 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
     document.getElementById("profile-create-feedback").className = "backup-feedback error";
     return;
   }
+  // なまえの変更のとき。id は変えないので、学習データはそのまま残る
+  if (state.profileRenameId) {
+    renameProfile(state.profileRenameId, name);
+    state.profileRenameId = null;
+    applyProfileFormLabels();
+    refreshProfileSettingLine();
+    openProfileSelectScreen("rename");
+    return;
+  }
+
   const profile = createProfile(name);
+  if (profile === "storage-blocked") {
+    document.getElementById("profile-create-feedback").textContent = t("auth.storageBlocked");
+    document.getElementById("profile-create-feedback").className = "backup-feedback error";
+    return;
+  }
   if (!profile) {
     document.getElementById("profile-create-feedback").textContent = isPaidPlan()
       ? t("profile.full", { n: PROFILE_MAX })
@@ -4747,6 +5050,25 @@ submitOnEnter(["profile-name-input"], "btn-profile-create-ok");
 document.getElementById("btn-profile-switch").addEventListener("click", () => {
   playClickSound();
   openProfileSelectScreen("select");
+});
+
+document.getElementById("btn-resume-session").addEventListener("click", () => {
+  playClickSound();
+  if (!resumeActiveSession()) {
+    // 学年を変えたあとなどで復元できないときは、案内を消すだけにする
+    refreshResumeBox();
+  }
+});
+
+document.getElementById("btn-discard-session").addEventListener("click", () => {
+  playClickSound();
+  clearActiveSession();
+  refreshResumeBox();
+});
+
+document.getElementById("btn-profile-rename").addEventListener("click", () => {
+  playClickSound();
+  openProfileSelectScreen("rename");
 });
 
 document.getElementById("btn-profile-manage").addEventListener("click", () => {
@@ -5099,6 +5421,9 @@ function startFlashSet() {
   document.getElementById("flash-setup").classList.add("hidden");
   document.getElementById("flash-result").classList.add("hidden");
   document.getElementById("flash-play").classList.remove("hidden");
+  // 出題中の画面は showScreen を通らないので、ここでも位置を直す
+  // （「やめる」がタブバーの裏に入っていた。320x568 で実測）
+  requestAnimationFrame(() => ensureBottomActionVisible(document.getElementById("screen-flash")));
   runFlashRound();
 }
 
@@ -5212,7 +5537,9 @@ document.getElementById("btn-flash-again").addEventListener("click", () => {
   startFlashSet();
 });
 
-[["btn-back-flash", "screen-category"], ["btn-flash-back", "screen-category"]].forEach(([id]) => {
+// プレイ中の「やめる」もふくめて、抜け道はぜんぶ同じ後始末を通す。
+// clearFlashTimers() を忘れると、画面を出たあとに数字が流れ続ける。
+[["btn-back-flash", "screen-category"], ["btn-flash-back", "screen-category"], ["btn-flash-quit", "screen-category"]].forEach(([id]) => {
   document.getElementById(id).addEventListener("click", () => {
     playClickSound();
     clearFlashTimers();
@@ -5271,6 +5598,91 @@ document.getElementById("btn-back-home-1").addEventListener("click", () => {
 });
 
 // ===== クイズ画面 =====
+// とちゅうのセッションを保存しておき、リロードしても続きから解けるようにする。
+// ⚠️ **保存するのは「その問題を解く前」の状態だけ**（renderProblem のときに書く）。
+//    答え合わせのあとに書くと、答えた結果を持ったまま同じ問題をもう一度出すことになり、
+//    ポイントや正解数の数え方が二重になる。いまの作りだと、リロードすると
+//    「いま解いていた問題の最初」に戻る。
+// ⚠️ ポイントはセッションの最後にまとめて足すので、とちゅうで閉じたぶんは入らない。
+//    ここで復元しているのは、その「まだ足していないぶん」も含めた途中経過。
+const ACTIVE_SESSION_KEY = "active_session";
+
+function saveActiveSession() {
+  if (!state.problems.length) return;
+  const snapshot = {
+    grade: getGrade(),
+    subject: state.subject,
+    category: state.category,
+    index: state.index,
+    correctCount: state.correctCount,
+    sessionStamps: state.sessionStamps,
+    sessionStampsExact: state.sessionStampsExact,
+    stampsBeforeSession: state.stampsBeforeSession,
+    problems: state.problems,
+    savedAt: Date.now(),
+  };
+  try {
+    localStorage.setItem(pk(ACTIVE_SESSION_KEY), JSON.stringify(snapshot));
+  } catch {
+    // 保存できない端末でも、いま解いている問題は続けられるほうが大事なので黙って諦める
+  }
+}
+
+function getActiveSession() {
+  try {
+    const raw = localStorage.getItem(pk(ACTIVE_SESSION_KEY));
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    // 学年を変えたあとの古い途中経過は、いまの学年と食い違うので出さない
+    if (!saved || !Array.isArray(saved.problems) || !saved.problems.length) return null;
+    if (saved.grade !== getGrade()) return null;
+    if (saved.index >= saved.problems.length) return null;
+    return saved;
+  } catch {
+    return null;
+  }
+}
+
+function clearActiveSession() {
+  try {
+    localStorage.removeItem(pk(ACTIVE_SESSION_KEY));
+  } catch {
+    /* 消せなくても実害はない（学年や問題数が合わなければ復元しない） */
+  }
+}
+
+// ホームの「つづきから」。⚠️ **勝手に再開しない。**リロードして抜けたつもりの子を
+// いきなりクイズに戻すと、逃げ道がなくなったように見える。出すのは案内だけにする。
+function refreshResumeBox() {
+  const box = document.getElementById("home-resume-box");
+  if (!box) return;
+  const saved = getActiveSession();
+  box.classList.toggle("hidden", !saved);
+  if (!saved) return;
+  const subjectLabel = t(`subject.${saved.subject}`);
+  document.getElementById("home-resume-text").textContent = t("resume.text", {
+    subject: subjectLabel,
+    current: saved.index + 1,
+    total: saved.problems.length,
+  });
+}
+
+function resumeActiveSession() {
+  const saved = getActiveSession();
+  if (!saved) return false;
+  state.subject = saved.subject;
+  state.category = saved.category;
+  state.problems = saved.problems;
+  state.index = saved.index;
+  state.correctCount = saved.correctCount || 0;
+  state.sessionStamps = saved.sessionStamps || 0;
+  state.sessionStampsExact = saved.sessionStampsExact || 0;
+  state.stampsBeforeSession = getTotalStamps();
+  renderProblem();
+  showScreen("screen-quiz");
+  return true;
+}
+
 function startSession() {
   state.problems = buildSessionProblems(getGrade(), state.subject, state.category, SESSION_SIZE);
   state.index = 0;
@@ -5304,6 +5716,7 @@ function renderProblem() {
   document.getElementById("feedback").textContent = "";
   document.getElementById("feedback").className = "feedback";
   document.getElementById("btn-next").classList.add("hidden");
+  document.getElementById("btn-next").disabled = false;
 
   document.getElementById("hint-box").classList.add("hidden");
   document.getElementById("hint-box").textContent = "";
@@ -5341,6 +5754,17 @@ function renderProblem() {
     form.querySelector("button").disabled = false;
     input.focus();
   }
+
+  // この問題を解く前の状態を残す。リロードするとここから再開する
+  saveActiveSession();
+
+  // 横向き（例: 844x390）だと、出題した直後は問題文・ヒント・こたえ欄が
+  // タブバーの裏に入ってしまう（2026-09-19 日次QAで発見）。答え合わせのあとは
+  // applyAnswerResult が同じことをしていたが、**最初に問題が出た瞬間は素通り**だった。
+  // ⚠️ 読解のように中身が長い問題で本文の頭が流れないよう、上限を付けて呼ぶ。
+  // 上限220px：横向き（844x390）で「こたえる」までを出すのに169px必要だったので、
+  //   そこは助ける。読解の長文は376px以上必要になるので、上限で弾かれて何もしない。
+  requestAnimationFrame(() => ensureBottomActionVisible(document.getElementById("screen-quiz"), 220));
 }
 
 function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
@@ -5385,6 +5809,7 @@ function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
   const isLast = state.index === state.problems.length - 1;
   const nextBtn = document.getElementById("btn-next");
   nextBtn.textContent = isLast ? t("quiz.seeResult") : t("quiz.next");
+  nextBtn.disabled = false;
   nextBtn.classList.remove("hidden");
 
   // 不正解で解説が伸びると「つぎへ」がタブバーの裏に隠れることがある
@@ -5443,6 +5868,18 @@ document.getElementById("btn-hint").addEventListener("click", () => {
 });
 
 document.getElementById("btn-next").addEventListener("click", () => {
+  // ⚠️ **押したらすぐ disabled にする。**`.hidden` だけでは二重発火を防げない。
+  //    クリックのあともボタンにフォーカスが残るので、勢いでEnterを2回押すと
+  //    2回目が同じボタンに届く（座標の当たり判定を通らないため .hidden が効かない）。
+  //    10問目なら finishSession() が2回走ってポイントが倍に入り、途中の問題なら
+  //    2回目のEnterが次の問題の入力欄（renderProblem が focus する）に届いて、
+  //    こたえ欄が空のまま自動で送信され「不正解」になっていた。見てもいない問題が
+  //    復習キューに積まれる（2026-09-19 日次QAで発見。Enterでの再現率100%）。
+  //    選択肢ボタンと回答フォームは元から disabled で塞いである。ここだけ抜けていた。
+  const btn = document.getElementById("btn-next");
+  if (btn.disabled) return;
+  btn.disabled = true;
+
   state.index++;
   if (state.index >= state.problems.length) {
     finishSession();
@@ -5453,6 +5890,7 @@ document.getElementById("btn-next").addEventListener("click", () => {
 
 // ===== 結果画面 =====
 function finishSession() {
+  clearActiveSession();
   const totalAfter = addStamps(state.sessionStamps);
   recordDailyPoints(state.sessionStamps);
 
@@ -5493,15 +5931,22 @@ function buildResultSummary(r) {
   });
 
   const bodyLines = [
-    t("summary.intro", { date }),
-    "",
     t("summary.course", { grade, subject: subjectLabel }),
     t("summary.result", { total: r.total, correct: r.correctCount, rate: r.rate }),
     t("summary.earned", { pt: r.sessionStamps }),
     t("summary.total", { grade, total: r.totalStampsAfter }),
   ];
 
-  return { subject: t("summary.subject", { date }), body: bodyLines.join("\n") };
+  // ⚠️ intro（「◯月◯日 の学習成果です。」）を body に含めない。
+  //    subject（「【まなびめぐる】◯月◯日 の学習成果」）と続けて貼ると、
+  //    同じ日付・同じ趣旨の見出しが2行つづく（2026-09-16 日次QAで発見）。
+  //    共有シートは title と text が別の欄なので intro が要るが、
+  //    クリップボードへは subject を見出しにするので intro は要らない。
+  return {
+    subject: t("summary.subject", { date }),
+    intro: t("summary.intro", { date }),
+    body: bodyLines.join("\n"),
+  };
 }
 
 document.getElementById("btn-share-result").addEventListener("click", shareResult);
@@ -5511,12 +5956,13 @@ async function shareResult() {
   const copyBox = document.getElementById("manual-copy-box");
   copyBox.classList.add("hidden");
 
-  const { subject, body } = buildResultSummary(state.lastResult);
+  const { subject, intro, body } = buildResultSummary(state.lastResult);
   const fullText = `${subject}\n\n${body}`;
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: subject, text: body });
+      // 共有シートは title を表示しない送り先もあるので、text 側は intro から始める
+      await navigator.share({ title: subject, text: `${intro}\n\n${body}` });
       feedback.textContent = t("share.done");
       feedback.className = "action-feedback ok";
     } catch (err) {
@@ -6056,7 +6502,13 @@ function setAuthBackToGuestVisible(visible) {
 
 document.getElementById("btn-login-guest").addEventListener("click", () => {
   playClickSound();
-  setGuestMode(true);
+  if (!setGuestMode(true)) {
+    // 端末にデータを保存できない。黙って止まるより、理由を出して気づけるようにする
+    const box = document.getElementById("login-feedback");
+    box.textContent = t("auth.storageBlocked");
+    box.className = "backup-feedback error";
+    return;
+  }
   setAuthBackToGuestVisible(false);
   refreshAuthAccountLine();
   startInitialScreen();
