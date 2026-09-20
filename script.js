@@ -499,7 +499,7 @@ function setGrade(grade) {
 // 保護者に毎回きくと手間になるので、表示言語から初期値を決めて、変えたい人だけ触る。
 const SCHOOL_YEAR_START_KEY = "school_year_start";
 const SCHOOL_YEAR_START_QUICK = [4, 9, 3];
-const SCHOOL_YEAR_START_BY_LOCALE = { ja: 4, en: 9, es: 9 };
+const SCHOOL_YEAR_START_BY_LOCALE = { ja: 4, en: 9, es: 9, de: 9 };
 
 function defaultSchoolYearStart() {
   return SCHOOL_YEAR_START_BY_LOCALE[getLocale()] || 4;

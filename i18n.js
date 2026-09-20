@@ -1490,6 +1490,738 @@ const LOCALES = {
     "months": ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
 
   },
+  de: {
+    label: "Deutsch",
+
+    // --- 共通 ---
+    "common.back": "Zurück",
+    "common.home": "Start",
+    "common.sound": "Ton ein/aus",
+    // 複数の文をJS側で連結するときの区切り（subtractStepsExplain など）。
+    // 日本語の句点をそのままハードコードすると他言語でも「。」が混ざってしまうため。
+    "common.sentenceSep": ". ",
+
+    // --- タブバー ---
+    "tab.home": "Start",
+    "tab.study": "Lernen",
+    "tab.gacha": "Kapseln",
+    "tab.collection": "Album",
+    "tab.settings": "Einstellungen",
+    "tab.gachaAria": "Kapsel öffnen",
+
+    // --- オープニング ---
+    "splash.tap": "Tippen zum Start",
+
+    // --- せってい ---
+    "settings.title": "⚙️ Einstellungen",
+    "settings.sub": "Wähle deine Klassenstufe, dann passen sich die Aufgaben daran an",
+    "settings.languageTitle": "🌐 Sprache",
+    "settings.languageDesc": "Wechselt die Sprache der App. Nach der Auswahl wird die Seite neu geladen.",
+    "settings.yearStartTitle": "📅 Monat des Schuljahresbeginns",
+    "settings.yearStartDesc": "Wähle den Monat passend zu deiner Region. Die Aufgabenarten kommen nach und nach dazu, angepasst an den Lehrplan der Schule (in Deutschland ist es August/September, in Japan April, in vielen Ländern Europas und Amerikas September, in Korea und auf der Südhalbkugel März).",
+    "settings.yearStartMonth": "{n}",
+    "settings.yearStartOther": "Anderer Monat",
+
+    // --- おしらせ（保護者向け）。新カード・新動画などの告知を静的に置く（ANNOUNCEMENTSを参照） ---
+    "announce.title": "📢 Neuigkeiten",
+    "announce.desc": "Hier informieren wir über neue Geisterkarten und Videos.",
+    "announce.empty": "Im Moment gibt es keine Neuigkeiten.",
+    "announce.new": "NEU",
+    "announce.ctaPlan": "Tarif ansehen",
+
+    "todayQ.title": "🍚 Die Frage des Tages",
+    "todayQ.desc": "Hier erscheint eine einzige Frage, an der Ihr Kind heute gescheitert ist. Stellen Sie sie zum Beispiel beim Abendessen noch einmal mündlich. Wenn Ihr Kind sie ohne nachzuschauen beantworten kann, hat es den Stoff verinnerlicht.",
+    "todayQ.locked": "Mit einem Konto sehen Sie die Frage, an der Ihr Kind heute gescheitert ist.",
+    "todayQ.lockedPaid": "Mit dem Premium-Tarif sehen Sie die Frage, an der Ihr Kind heute gescheitert ist.",
+    "todayQ.empty": "Es gibt noch keine Frage anzuzeigen. Sobald Ihr Kind Aufgaben löst, erscheinen hier die schwierigen Stellen.",
+    "todayQ.missedToday": "Diese Frage wurde heute falsch beantwortet",
+    "todayQ.missedDaysAgo": "Diese Frage wurde vor {n} Tagen falsch beantwortet",
+    "todayQ.missedBefore": "Diese Frage wurde früher falsch beantwortet",
+    "todayQ.answerLabel": "Antwort: {answer}",
+    "todayQ.showAnswer": "Antwort anzeigen",
+    "todayQ.hideAnswer": "Antwort verbergen",
+    "todayQ.noAnswerYet": "* Diese Frage stammt aus der Zeit, bevor Antworten gespeichert wurden. Ab dem nächsten Fehler wird auch die Antwort angezeigt.",
+    "review.title": "💪 Schwachstellen",
+    "review.desc": "Falsch beantwortete Fragen kommen am nächsten Tag sowie nach 3, 7 und 20 Tagen erneut. Bei richtiger Antwort geht es zum nächsten Intervall, nach dem vierten richtigen Mal verschwindet die Frage aus dieser Liste. Die Intervalle bleiben erhalten, auch wenn nicht jeden Tag geübt wird. Mit „×“ können Fragen entfernt werden, die nicht wiederholt werden müssen.",
+    "review.empty": "Im Moment gibt es nichts zu wiederholen.",
+    "review.dueToday": "Kommt heute",
+    // 日本語は単複で形が変わらないので One も同じ文言。スペイン語側で使い分ける
+    "review.dueLater": "In {n} Tagen",
+    "review.dueLaterOne": "Morgen",
+    "review.wrongCount": "{n}-mal falsch beantwortet",
+    "review.wrongCountOne": "1-mal falsch beantwortet",
+    "review.stage": "{current}/{total}. Wiederholung",
+    "review.summary": "{n} in Wiederholung (davon {due} heute fällig)",
+    "review.group": "{subject}: {n} (davon {due} heute fällig)",
+    "resume.text": "Du hast {subject} noch nicht fertig (Frage {current} von {total})",
+    "resume.continue": "Weitermachen",
+    "resume.discard": "Verwerfen",
+    "review.remove": "Diesen Eintrag entfernen",
+    "review.removeConfirm": "„{name}“ wird aus der Liste entfernt. Bei erneutem Fehler kommt die Frage wieder in die Wiederholung. Fortfahren?",
+    "settings.backupTitle": "📦 Sicherung",
+    "settings.backupDesc": "Für den Wechsel auf ein anderes Gerät oder falls Daten verloren gehen, können Sie den bisherigen Fortschritt (Klassenstufe, Karten, Punkte) als Datei speichern.",
+    "settings.backupExport": "Exportieren",
+    "settings.backupImport": "Importieren",
+    "settings.backupConfirmYes": "Importieren",
+    "settings.backupConfirmNo": "Abbrechen",
+    "settings.backupExportOk": "Gespeichert! Bewahren Sie die Datei gut auf",
+    "settings.backupExportFailed": "Export fehlgeschlagen. Bitte noch einmal versuchen",
+    "settings.backupImportInvalid": "Diese Datei konnte nicht gelesen werden",
+    "settings.backupImportConfirm": "Es werden {profiles} Profil(e), {cards} Kartenarten und {points} Punkte importiert. Der aktuelle Stand wird dabei überschrieben. Fortfahren?",
+    "settings.backupImportOk": "Importiert!",
+    "settings.backupImportFailed": "Import fehlgeschlagen. Bitte noch einmal versuchen",
+
+    // --- プロフィール ---
+    "profile.selectTitle": "Wer spielt?",
+    "profile.selectSub": "Wähle deinen Namen",
+    "profile.createTitle": "Neu anlegen",
+    "profile.createSub": "Wie heißt du?",
+    "profile.createNew": "＋ Neu anlegen",
+    "profile.nameLabel": "Name",
+    "profile.createOk": "Anlegen",
+    "profile.nameRequired": "Gib deinen Namen ein",
+    "profile.defaultName": "Ich",
+    "profile.settingsTitle": "👤 Profil",
+    "profile.currentLine": "Gerade spielt {name}",
+    "profile.switch": "Wechseln",
+    "profile.manage": "Löschen",
+    "profile.rename": "Namen ändern",
+    "profile.renameBtn": "Ändern",
+    "profile.renameTitle": "Namen ändern",
+    "profile.renameSub": "Wie soll der neue Name lauten?",
+    "profile.renameOk": "Ändern",
+    "profile.deleteConfirm": "Der gesamte Fortschritt von {name} (Karten, Punkte, Klassenstufe) wird gelöscht. Das kann nicht rückgängig gemacht werden. Fortfahren?",
+    "profile.deleteBtn": "Löschen",
+    "profile.deleteCancel": "Abbrechen",
+    "profile.full": "Es sind höchstens {n} Profile möglich",
+    "profile.freeLimit": "Im kostenlosen Tarif ist nur 1 Profil möglich. Mit dem Premium-Tarif können bis zu {n} Profile angelegt werden.",
+
+    // --- ログイン／新規登録（保護者向け） ---
+    "auth.loginTitle": "Anmelden",
+    "auth.loginSub": "Bitte melden Sie sich mit der E-Mail-Adresse der Eltern an.",
+    "auth.signupTitle": "Konto erstellen",
+    "auth.signupSub": "Bitte registrieren Sie sich gemeinsam mit Ihrem Kind. Dieser Schritt ist für Erziehungsberechtigte.",
+    "auth.emailLabel": "E-Mail-Adresse",
+    "auth.passwordLabel": "Passwort",
+    "auth.passwordHint": "Mindestens 6 Zeichen.",
+    "auth.loginSubmit": "Anmelden",
+    "auth.signupSubmit": "Registrieren",
+    "auth.needAccount": "Noch kein Konto? Hier registrieren",
+    "auth.haveAccount": "Sie haben bereits ein Konto? Hier anmelden",
+    "auth.forgotPassword": "Passwort vergessen?",
+    "auth.forgotSent": "Wir haben eine E-Mail zum Zurücksetzen des Passworts gesendet. Bitte prüfen Sie Ihr Postfach.",
+    "auth.emailRequired": "Bitte geben Sie Ihre E-Mail-Adresse ein",
+    "auth.fieldsRequired": "Bitte geben Sie E-Mail-Adresse und Passwort ein",
+    "auth.working": "Wird verarbeitet…",
+    "auth.errorInvalidEmail": "Die E-Mail-Adresse hat kein gültiges Format",
+    "auth.errorWeakPassword": "Das Passwort muss mindestens 6 Zeichen haben",
+    "auth.errorEmailInUse": "Diese E-Mail-Adresse ist bereits registriert",
+    "auth.errorWrongPassword": "E-Mail-Adresse oder Passwort ist falsch",
+    "auth.errorUserNotFound": "Diese E-Mail-Adresse ist nicht registriert",
+    "auth.errorGeneric": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut",
+    "auth.accountTitle": "🔐 Konto",
+    "auth.accountLine": "Angemeldet als: {email}",
+    "auth.logout": "Abmelden",
+    "auth.syncing": "Wird synchronisiert…",
+    "auth.syncDone": "Synchronisiert",
+    "auth.syncFailed": "Synchronisierung fehlgeschlagen (nächster Versuch folgt automatisch)",
+
+    // --- メールアドレスの確認 ---
+    "auth.verifyNotice": "📧 Ihre E-Mail-Adresse ist noch nicht bestätigt. Wir haben eine Bestätigungs-E-Mail an Ihre Adresse gesendet – bitte öffnen Sie den Link darin. Auch Hinweise vor der Verlängerung des Jahresabos gehen an diese Adresse.",
+    "auth.verifyResend": "Bestätigungs-E-Mail erneut senden",
+    "auth.verifyCheck": "Bestätigung prüfen",
+    "auth.verifySent": "Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihr Postfach (auch den Spam-Ordner)",
+    "auth.verifyDone": "Bestätigt. Vielen Dank!",
+    "auth.verifyStillPending": "Noch nicht bestätigt. Bitte öffnen Sie den Link in der E-Mail und versuchen Sie es erneut",
+    "auth.verifyFailed": "Senden fehlgeschlagen. Bitte versuchen Sie es später erneut",
+
+    // --- おためし（未登録で使う） ---
+    "auth.tryAsGuest": "Ohne Registrierung testen",
+    "auth.storageBlocked": "Dieses Gerät scheint das Speichern der Daten von Manabimeguru nicht zuzulassen. Bitte prüfen Sie die Browsereinstellungen (privater Modus oder Blockieren von Website-Daten).",
+    "auth.guestNotice": "Du kannst alles auch ohne Registrierung nutzen.",
+    "auth.guestAccountLine": "Testmodus (nicht registriert)",
+    "auth.guestSignupPrompt": "Mit einem Konto können Sie den Fortschritt auch bei einem Gerätewechsel mitnehmen. Bereits gesammelte Karten und Punkte bleiben dabei erhalten.",
+    "auth.guestDataWarning": "⚠️ Der aktuelle Fortschritt ist nur im Browser dieses Geräts gespeichert. Beim Löschen der Browserdaten oder einem Gerätewechsel geht er verloren. Die Kontoregistrierung ist kostenlos.",
+    "auth.guestSignup": "Konto erstellen",
+    "auth.guestLogin": "Anmelden",
+    "auth.backToGuest": "Zurück",
+
+    // --- ご要望・お問い合わせ（保護者のアカウントがある場合のみ送信可） ---
+    "feedback.title": "💬 Feedback & Wünsche",
+    "feedback.desc": "Schicken Sie uns gerne Ihre Meinung oder Wünsche zur App. Eine persönliche Antwort können wir nicht garantieren, aber wir lesen alles.",
+    "feedback.placeholder": "Zum Beispiel eine Aufgabenart, die du dir wünschst, oder eine Funktion, die fehlt",
+    "feedback.submit": "Senden",
+    "feedback.guestNotice": "Mit einem Konto können Sie Nachrichten senden.",
+    "feedback.empty": "Bitte geben Sie einen Text ein",
+    "feedback.sending": "Wird gesendet…",
+    "feedback.sent": "Gesendet. Vielen Dank!",
+    "feedback.failed": "Senden fehlgeschlagen. Bitte versuchen Sie es später erneut",
+
+    // --- 感想を送る（保護者のアカウントがある場合のみ送信可） ---
+    "testimonial.title": "⭐ Erfahrungsbericht senden",
+    "testimonial.desc": "Erzählen Sie uns, wie Ihnen Manabimeguru gefällt.",
+    "testimonial.ratingLabel": "Bewertung",
+    "testimonial.placeholder": "Was gut war, was noch besser sein könnte (freiwillig)",
+    "testimonial.consentLabel": "Dieser Erfahrungsbericht darf zu Werbezwecken (z. B. auf der Website) verwendet werden",
+    "testimonial.submit": "Senden",
+    "testimonial.guestNotice": "Mit einem Konto können Sie Nachrichten senden.",
+    "testimonial.ratingRequired": "Bitte wählen Sie eine Bewertung",
+    "testimonial.sending": "Wird gesendet…",
+    "testimonial.sent": "Gesendet. Vielen Dank!",
+    "testimonial.failed": "Senden fehlgeschlagen. Bitte versuchen Sie es später erneut",
+
+    // --- プラン（無料→ファミリー） ---
+    "plan.title": "🎫 Tarif",
+    "plan.freeLine": "Sie nutzen gerade den kostenlosen Tarif",
+    "plan.paidLine": "Sie nutzen den Familientarif 🎉",
+    "plan.benefitIntro": "Mit einem Upgrade erhalten Sie:",
+    "plan.benefit1": "Bis zu {n} Kinderprofile",
+    "plan.benefit2": "Alle {n} Geisterkarten (auch SR und UR)",
+    "plan.benefit3": "Familienalbum (gemeinsam gesammelte Karten der ganzen Familie)",
+    "plan.gachaPromise": "Kartenkapseln lassen sich nicht mit Geld ziehen. Nur durch Lernen.",
+    "plan.monthly": "Monatlich 14,80 € zzgl. Steuern",
+    "plan.yearly": "Jährlich 148,00 € zzgl. Steuern (2 Monate gratis)",
+    "plan.comingSoon": "Der Familientarif wird gerade vorbereitet. Bitte etwas Geduld.",
+    "plan.guestNote": "Für den Kauf müssen sich zunächst die Eltern registrieren.",
+    "plan.afterBuyNote": "Die Zahlung muss von den Eltern durchgeführt werden. Nach Abschluss wird sie in der App wirksam.",
+    "plan.managePortal": "Abo verwalten (kündigen, Zahlungsmethode ändern)",
+    "plan.manageNote": "Geben Sie die registrierte E-Mail-Adresse ein, dann erhalten Sie einen Bestätigungslink. Auch nach einer Kündigung können Sie die App bis zum Ende des bereits bezahlten Zeitraums weiter nutzen.",
+    "plan.cancelByMail": "Für eine Kündigung wenden Sie sich bitte an {email}. Sie können die App bis zum Ende des bereits bezahlten Zeitraums weiter nutzen.",
+    "plan.legalLink": "Rechtliche Hinweise (Angaben nach japanischem Handelsrecht)",
+    "plan.upgradedNotice": "🎉 Sie haben jetzt den Familientarif! Alle Karten können gesammelt werden",
+
+    // --- 共有 ---
+    "share.copyHint": "↑ Diesen Text kopieren und verwenden",
+    "share.copyPrompt": "Den Text unten kopieren und verwenden",
+
+    // --- ホーム ---
+    "home.title": "Manabimeguru",
+    "home.heroGreeting": "Auch heute lernen\nwir zusammen!",
+    "home.heroSub": "Heute wieder 10 Fragen!",
+    "home.startStudy": "📖 Lernen starten",
+    "home.weekTitle": "Deine Woche",
+    "home.weekToggle": "Wochenübersicht öffnen/schließen",
+    "home.drawGacha": "🎰 Kapsel öffnen",
+
+    // --- 公式YouTube（アプリの外に出る） ---
+    "youtube.linkHome": "📺 Videos der Geister ansehen",
+    "youtube.linkCollection": "📺 Geister-Album-Kanal",
+    "youtube.external": "YouTube wird geöffnet",
+    "youtube.url": "https://www.youtube.com/@manabimeguru",
+
+    // --- 学年 ---
+    "grade.1": "1. Klasse",
+    "grade.2": "2. Klasse",
+    "grade.3": "3. Klasse",
+    "grade.4": "4. Klasse",
+    "grade.5": "5. Klasse",
+    "grade.6": "6. Klasse",
+    "grade.course": "{grade}",
+
+    // --- 図鑑ランク ---
+    "rank.0": "Forscherlehrling",
+    "rank.4": "Nachwuchsforscher",
+    "rank.8": "Albummeister",
+    "rank.12": "Jahreszeitenforscher",
+    "rank.16": "Altgedienter Forscher",
+    "rank.20": "Legendärer Chronist",
+    "rank.40": "Forschungsleiter",
+    "rank.60": "Weiser des Albums",
+    "rank.80": "Forscher aller Jahreszeiten",
+    "rank.100": "Berater der Geister",
+    "rank.120": "Weber der Legenden",
+    "rank.140": "Führer des fernen Himmels",
+    "rank.160": "Hüter des Geisteralbums",
+    "rank.180": "Kenner aller Jahreszeiten",
+    "rank.200": "Großforscher des Geisteralbums",
+
+    // --- 科目・分野 ---
+    "subject.pick": "Wähle ein Fach",
+    "subject.math": "Mathe",
+    "subject.japanese": "Deutsch",
+    "subject.mathDesc": "Rechnen & Textaufgaben",
+    "subject.japaneseDesc": "Rechtschreibung, Wortschatz & Lesen",
+    "subject.english": "Englisch",
+    "subject.englishDesc": "Wörter & einfache Gespräche",
+    "subject.englishLocked": "Englisch gibt es ab der 3. Klasse",
+    "category.pick": "Wähle einen Bereich",
+
+    // --- クイズ ---
+    "quiz.start": "Los geht's mit 10 Fragen!",
+    "quiz.progress": "{current} / {total}",
+    "quiz.stamps": "Stempel: {n} 🐣",
+    "quiz.hint": "💡 Nicht sicher? Hol dir einen Tipp",
+    "quiz.answerPlaceholder": "Antwort",
+    "quiz.fractionPlaceholder": "z. B.: 3/4",
+    "quiz.submit": "Antworten",
+    "quiz.next": "Weiter",
+    "quiz.badges": "Abzeichen heute: {n} 🏅",
+    "quiz.badgeNew": "🆕 Neue Frage",
+    "quiz.badgeRepeat": "🔁 Frage aus früherer Runde (halbe Punktzahl)",
+    "quiz.repeatNote": "(🔁 halbe Punktzahl)",
+    "quiz.badgeReview": "💪 Frage, die du vorher falsch hattest",
+    "quiz.reviewCleared": "Die hattest du vorher falsch. Sehr gut gemacht!",
+
+    // --- 結果 ---
+    "result.title": "Gut gemacht!",
+    "result.score": "{correct} von {total} richtig!",
+    "result.points": "🎰 Kapselpunkte +{pt} Pkt. (gesamt {total} Pkt.)",
+    "result.retry": "Noch einmal",
+    "result.share": "📤 Heutiges Ergebnis teilen",
+
+    // --- ガチャ ---
+    "gacha.title": "🎰 Kapseln",
+    "gacha.titleFor": "🎰 Kapseln für {grade}",
+    "gacha.points": "Kapselpunkte",
+    "gacha.cost": "10 Punkte pro Kapsel",
+    "gacha.pull": "🎰 Kapsel öffnen!",
+    "gacha.skip": "Überspringen ▶▶",
+    "gacha.close": "Schließen",
+    "gacha.new": "Zum ersten Mal bekommen!",
+    "gacha.insufficient": "Du hast noch nicht genug Punkte. Löse Aufgaben, um Punkte zu sammeln!",
+    "gacha.rankUp": "🎉 Albumrang aufgestiegen! 🎉",
+    "gacha.pityHint": "In {n} weiteren Kapseln bekommst du sicher eine neue Karte",
+    "gacha.pityReady": "Die nächste Kapsel enthält garantiert eine neue Karte!",
+    "gacha.pityDone": "Du hast alle gesammelt!",
+    "gacha.refund": "Diese Karte hattest du schon – dafür bekommst du {n} Pkt. zurück!",
+    "gacha.newCard": "Zum ersten Mal bekommen!",
+
+    // --- ずかん ---
+    "collection.title": "🎴 Kartenalbum",
+    "collection.count": "{owned} von {total} gesammelt!",
+    "collection.scopeSelf": "Ich",
+    "collection.scopeFamily": "Familie",
+    "collection.countFamily": "Die ganze Familie hat zusammen {owned} von {total} gesammelt!",
+    "collection.premiumNote": "🔒 {n} Karten gibt es nur mit dem Premium-Tarif",
+    "collection.seasonProgress": "{owned} / {total}",
+    "collection.seasonRange": "{from} – {to}",
+    "gacha.seasonPick": "Welche Jahreszeit möchtest du ziehen?",
+    "season.all": "Alle",
+    "season.natsu": "Sommer",
+    "season.aki": "Herbst",
+    "season.fuyu": "Winter",
+    "season.haru": "Frühling",
+    "collection.premiumBadge": "Premium",
+
+    // --- レアリティ ---
+    "rarity.N": "Normal",
+    "rarity.R": "Selten",
+    "rarity.SR": "Super selten",
+    "rarity.UR": "Ultra selten",
+
+    // --- テーマ ---
+    "theme.fireworks": "Feuerwerk & Nachthimmel",
+    "theme.ocean": "Meer & Wasserspaß",
+    "theme.festival": "Fest & Buden am Abend",
+    "theme.bugs": "Insekten & Naturbeobachtung",
+    "theme.dessert": "Erfrischende Nachspeisen",
+    "theme.special": "Sinnbild des Sommers",
+    "theme.coolbreeze": "Kühle Brise",
+    "theme.starrysky": "Sternenhimmel",
+
+    // --- ぶんや名 ---
+    "cat.keisan": "Rechnen",
+    "cat.keisanDesc": "Addition, Subtraktion, Multiplikation, Division, Brüche usw.",
+    "cat.bunshoMath": "Textaufgaben",
+    "cat.bunshoMathDesc": "Aufgaben zum Lesen und Lösen",
+    "cat.flash": "Additions-Sprint",
+    "cat.flashDesc": "Zahlen erscheinen nacheinander. Addiere sie alle!",
+    "flash.title": "⚡ Additions-Sprint",
+    "flash.desc": "Die Zahlen erscheinen nacheinander. Gib die Summe aller Zahlen ein.",
+    "flash.rule": "Es erscheinen {count} Zahlen mit {digits} Stelle(n). Insgesamt {rounds} Runden.",
+    "flash.best": "Dein Rekord: {n} von {total} richtig",
+    "flash.noBest": "Noch kein Rekord. Stell den ersten auf!",
+    "flash.speed.slow": "🐢 Langsam",
+    "flash.speed.normal": "🚶 Normal",
+    "flash.speed.fast": "🐇 Schnell",
+    "flash.start": "Start!",
+    "flash.progress": "Runde {n} von {total}",
+    "flash.answerPlaceholder": "Wie viel ist die Summe?",
+    "flash.submit": "Antworten",
+    "flash.correct": "Richtig!",
+    "flash.wrong": "So knapp! Die Antwort war {answer}",
+    "flash.score": "{n} von {total} richtig!",
+    "flash.gotPoints": "🎰 {n} Punkte bekommen!",
+    "flash.capped": "Beim Additions-Sprint sind heute schon {n} Punkte erreicht. Mehr gibt es heute nicht.",
+    "flash.newBest": "🎉 Neuer Rekord!",
+    "flash.again": "Noch einmal",
+    "flash.quit": "Beenden",
+    "cat.kanji": "Rechtschreibung",
+    "cat.kanjiDesc": "Wie man Wörter richtig schreibt",
+    "cat.kotoba": "Gegenteile",
+    "cat.kotobaDesc": "Wörter mit gegenteiliger Bedeutung",
+    "cat.kotowaza": "Redewendungen",
+    "cat.kotowazaDesc": "Errate die Bedeutung der Redewendung",
+    "cat.yojijukugo": "Ausdrücke",
+    "cat.yojijukugoDesc": "Errate die Bedeutung",
+    "cat.bunshoJa": "Leseverständnis",
+    "cat.bunshoJaDesc": "Lies den Text und beantworte die Frage",
+    "cat.tango": "Wortschatz",
+    "cat.tangoDesc": "Verbinde Englisch mit Deutsch",
+    "cat.kaiwa": "Gespräch",
+    "cat.kaiwaDesc": "Ergänze Begrüßungen und Dialoge",
+    "cat.titleFor": "{grade} - {subject}",
+    "settings.gradeRange": "Aufgaben der {lo}. bis {n}. Klasse",
+    "settings.gradeRange1": "Aufgaben der 1. Klasse",
+
+    // --- 問題文・解説のひな形 ---
+    "q.kanjiRead": "Wie schreibt man „{kanji}“ richtig?",
+    "q.kanjiReadHint": "Es beginnt mit „{first}“",
+    "q.shortAnswerHint": "Es ist ein kurzes Wort. Sprich es einmal laut aus",
+    "q.kanjiReadExplain": "„{kanji}“ schreibt man „{reading}“",
+    "q.antonym": "Was ist das Gegenteil von „{word}“?",
+    "q.antonymHint": "Es beginnt mit „{first}“",
+    "q.antonymExplain": "Das Gegenteil von „{word}“ ist „{opposite}“",
+    "q.meaning": "Was bedeutet „{word}“?",
+    "q.meaningReverse": "Welches Wort bedeutet „{meaning}“?",
+    "q.kanjiWrite": "Welches Wort spricht man „{reading}“?",
+    "q.meaningExplain": "„{word}“ bedeutet „{meaning}“",
+    "q.enToJa": "Was bedeutet „{word}“?",
+    "q.jaToEn": "Wie sagt man „{ja}“ auf Englisch?",
+    "q.enExplain": "„{word}“ bedeutet „{ja}“",
+    "q.enPhrase": "{sentence}\n\nWelches Wort passt in die Lücke (___)?",
+    "q.enPhraseExplain": "{sentence} ({ja})",
+    "q.choiceHint": "Eine Antwortmöglichkeit wird entfernt",
+    "q.readingPositionHint": "Schau dir den Text im Bereich {zone} genauer an",
+    "q.reading": "{passage}\n\nFrage: {question}",
+    "q.readingExplain": "Im Text, {why}",
+
+    // --- ガイドのセリフ ---
+    "guide.home": [
+      "Hallo! Lernen wir heute wieder zusammen?",
+      "Welche Stufe probierst du heute aus?",
+      "Jeden Tag ein bisschen – dann klappt's bestimmt!",
+    ],
+    "guide.subject": [
+      "Mathe oder Deutsch – was möchtest du machen?",
+      "Fang mit dem an, was dir am meisten liegt!",
+    ],
+    "guide.category": [
+      "Welche Aufgaben möchtest du üben?",
+      "Fang mit deinem Lieblingsbereich an!",
+    ],
+    "guide.gacha": [
+      "Welchem Geist begegnest du wohl?",
+      "Hoffentlich ist eine tolle Karte dabei!",
+    ],
+    "guide.collection": [
+      "Schau dir die gesammelten Geister an!",
+      "Schaffst du es, alle zu sammeln?",
+    ],
+    "guide.settings": [
+      "Schau dir die Einstellungen zusammen mit einem Erwachsenen an",
+      "Wenn du nicht weiterweißt, schau hier nach",
+    ],
+    "guide.start": [
+      "Bist du bereit? Auf geht's mit 10 Fragen!",
+      "Wenn du dich anstrengst, gibt's eine Kapsel. Füll dein Geisteralbum!",
+    ],
+    "guide.flash": [
+      "Schau dir die Zahlen genau an. Addiere alle – das ist die Antwort!",
+      "Wenn du der Reihe nach von vorne addierst, schaffst du es!",
+    ],
+    "guide.correct": [
+      "Richtig! Klasse!",
+      "Super gemacht! Weiter so!",
+      "Perfekt! Du hast es verstanden!",
+      "Fantastisch!",
+    ],
+    "guide.wrong": [
+      "So knapp! Beim nächsten Mal klappt's!",
+      "Kein Problem, denk noch einmal nach!",
+      "Das war etwas schwierig. Merk dir die Antwort gut!",
+    ],
+    "guide.resultPerfect": [
+      "Wow! Alles richtig! Das war perfekt!",
+      "Volle Punktzahl! Super gemacht!",
+    ],
+    "guide.resultHigh": [
+      "Wow! Fast alles richtig!",
+      "Klasse! Echt stark!",
+    ],
+    "guide.resultMid": [
+      "Gut gemacht! Beim nächsten Mal wird's noch besser!",
+      "Du bist auf einem guten Weg! Mach weiter so!",
+    ],
+    "guide.resultLow": [
+      "Fehler machen ist kein Problem! Mit Übung schaffst du es bestimmt!",
+      "Beim nächsten Mal klappt's! Ich drück dir die Daumen!",
+    ],
+
+
+    // --- 画面から出るその他の文言 ---
+    "quiz.explainPrefix": "💡 So denkst du: {text}",
+    "quiz.hintPrefix": "💡 Tipp: {text}",
+    "quiz.hintFallback": "Lies dir die Aufgabe noch einmal in Ruhe durch",
+    "quiz.listen": "🔊 „{text}“ anhören",
+    "quiz.listenSentence": "🔊 Diesen Satz anhören",
+    "quiz.seeResult": "Ergebnis ansehen",
+    "quiz.wrongText": "Schade… die Antwort war {answer}",
+    "quiz.wrongChoice": "Die richtige Antwort war „{answer}“",
+    "result.rate": "Richtig: {rate} %",
+    "rank.nextIn": "Noch {n} Karten bis zum nächsten Rang",
+    "rank.max": "Höchsten Rang erreicht!",
+    "rank.beyond": "{base} Lv. {n}",
+    "share.done": "Geteilt!",
+    "share.failed": "Teilen fehlgeschlagen. Bitte noch einmal versuchen",
+    "share.copied": "Kopiert! Füg es dort ein, wo du es teilen möchtest",
+
+    "summary.subject": "[Manabimeguru] Lernergebnis vom {date}",
+    "summary.intro": "Das ist das Lernergebnis vom {date}.",
+    "summary.course": "Kurs: {grade} - {subject}",
+    "summary.result": "Ergebnis: {correct} von {total} richtig (Erfolgsquote {rate} %)",
+    "summary.earned": "Erhaltene Kapselpunkte: {pt} Pkt.",
+    "summary.total": "Gesamte Kapselpunkte ({grade}): {total} Pkt.",
+    // --- 算数の生成器（1〜3年） ---
+    // ⚠️ 問題文の数字は生成器が作る。ここにあるのは文だけ。
+    //    キー名は生成器の関数名に合わせてある（genAdd1 → math.add1.*）。
+    //    {c} は助数詞（「こ」）、{howMany} は「なんこ」。ドイツ語では {c} は空で、
+    //    {howMany} は Wie viele になる。
+    "math.add1.hint": "Addiere {b} zu {a}. Du kannst auch mit den Fingern zählen.",
+    "math.add1.explainTen": "10 plus {b} ist {sum}.",
+    "math.add1.explainSplit": "{a} ist 10 und {aOnes}. {aOnes} plus {b} ist {part}. 10 und {part} ergibt {sum}.",
+    "math.add1.explainMakeTen": "Zu {a} addierst du {toTen} und kommst auf 10. Der Rest {rest} kommt dazu, macht {sum}.",
+    "math.add1.explainPlain": "{a} plus {b} ist {sum}.",
+    "math.sub1.hint": "Von {a} ziehst du {b} ab.",
+    "math.sub1.explainPlain": "{a} minus {b} ist {diff}.",
+    "math.sub1.explainFromTen": "10 ist genau ein Zehner. 10 minus {b} ist {diff}.",
+    "math.sub1.explainSplit": "{a} ist 10 und {aOnes}. {aOnes} − {b} = {part}. 10 und {part} ergibt {diff}.",
+    "math.sub1.explainBorrow": "{a} ist 10 und {aOnes}. 10 − {b} = {borrow}. {borrow} plus {aOnes} ergibt {diff}.",
+    "math.sub1.explainTeens": "{a} ist 10 und {aOnes}, {b} ist 10 und {bOnes}. Die Zehner sind gleich und heben sich auf: {aOnes} − {bOnes} = {diff}.",
+    // 2桁〜4桁の加減算で共通（script.js の stepwiseAddSubExplain）。
+    // 桁ごとに文言を分けない。分けると考え方がずれる（hint-explain-audit.md の P8）。
+    "math.stepwise.hintAdd": "Teile die Zahl, die du addierst, nach Stellenwert auf und fang mit dem größten Teil an",
+    "math.stepwise.hintSub": "Teile die Zahl, die du abziehst, nach Stellenwert auf und fang mit dem größten Teil an",
+    "math.stepwise.and": " und ",
+    "math.stepwise.listSep": ", ",
+    "math.stepwise.introAdd": "{b} ist {parts}",
+    "math.stepwise.introSub": "{b} ist {parts}",
+    "math.stepwise.stepAdd": "Zu {cur} addierst du {part}: {next}",
+    "math.stepwise.stepSub": "Von {cur} ziehst du {part} ab: {next}",
+    "math.mul2.hint": "Denk an das {a}er-Einmaleins.",
+    "math.mul2.explain": "{a} × {b} heißt, {a} insgesamt {b}-mal zu addieren: {terms} = {product}.",
+    // ⚠️ ひき算はくり下がりがあるので「一の位から」が正しい。
+    //    以前は「大きい位から順に」と書いてあり、解説（subtractStepsExplain は一の位から）
+    //    ・math.add3.hint・スペイン語版のいずれとも矛盾していた（2026-08-13 修正）。
+    "math.placeOnes": "die Einer",
+    "math.placeTens": "die Zehner",
+    "math.placeHundreds": "die Hunderter",
+    "math.placeThousands": "die Tausender",
+    "math.mul3.hint": "Teile {a} in Zehner und Einer auf und multipliziere jeden Teil mit {b}.",
+    "math.mul3.explain": "{tens}×{b}={tensPart}, {ones}×{b}={onesPart}. Zusammen: {tensPart}+{onesPart}={product}.",
+    "math.div3.hint": "Such im {b}er-Einmaleins die Zahl, die {a} ergibt.",
+    "math.div3.explain": "{b} × {q} = {a}, also ist {a} ÷ {b} = {q}.",
+    "math.divRemainder3.text": "{a} ÷ {b} = ? (Schreib es so: „Zahl Rest Zahl“. Beispiel: 5 Rest 3)",
+    "math.divRemainder3.answer": "{q} Rest {r}",
+    "math.divRemainder3.accept": ["{q}Rest{r}", "{q} r {r}"],
+    "math.divRemainder3.hint": "Such im {b}er-Einmaleins die größte Zahl, die nicht über {a} hinausgeht.",
+    "math.divRemainder3.explain": "{b} × {q} = {product}. {a} − {product} = {r} bleibt übrig. Also {q} Rest {r}.",
+    "math.decimal3.hint": "Richte die Kommas untereinander aus und rechne dann.",
+    "math.decimal3.explainAdd": "{a} mal 10 ist {na}, {b} mal 10 ist {nb}. {na}+{nb}={raw}. Geteilt durch 10 ergibt wieder {answer}.",
+    "math.decimal3.explainSub": "{hi} mal 10 ist {hiRaw}, {lo} mal 10 ist {loRaw}. {hiRaw}−{loRaw}={raw}. Geteilt durch 10 ergibt wieder {answer}.",
+    "math.fraction.reduceSuffix": ". Teilst du {rawNum} und {d} durch {g}, kürzt sich das zu {reduced}",
+    "math.fractionSame3.hintAdd": "Der Nenner bleibt gleich, addiere nur die Zähler",
+    "math.fractionSame3.explainAdd": "Der Nenner bleibt gleich, der Zähler ist {n1}+{n2}={sum}. Also {sum}/{d}",
+    "math.fractionSame3.hintSub": "Der Nenner bleibt gleich, subtrahiere nur die Zähler",
+    "math.fractionSame3.explainSub": "Der Nenner bleibt gleich, der Zähler ist {n1}−{n2}={diff}. Also {diff}/{d}",
+    "math.wordAdd.text": "Es waren {a} {item} da. {b} {item} kamen dazu. Wie viele sind es insgesamt?",
+    "math.wordAdd.hint": "Wenn etwas „dazukommt“, wird die Menge größer. Nutze die Addition.",
+    "math.wordAdd.explain": "Am Anfang waren es {a}, dazu kamen {b}: {a}+{b}={sum}.",
+    "math.wordSub.text": "Es waren {bigger} {item} da. {b} {item} {past}. Wie viele bleiben übrig?",
+    "math.wordSub.hint": "Wenn etwas „{plain}“ wird, wird die Menge kleiner. Nutze die Subtraktion.",
+    "math.wordSub.explain": "Am Anfang waren es {bigger}, und {b} {plain}, also {bigger}−{b}={rest}.",
+    "math.wordMul.text": "In jeder Tüte sind {perBag} {item}. Wie viele sind es bei {bags} Tüten?",
+    "math.wordMul.hint": "Wenn „so viele pro Tüte“ und mehrere Tüten vorkommen, nutze die Multiplikation.",
+    "math.wordMul.explain": "{perBag} pro Tüte mal {bags} Tüten: {perBag}×{bags}={total}.",
+    "math.wordDiv.text": "Es gibt {total} {item}. Sie werden gleichmäßig auf {people} Kinder verteilt. Wie viele bekommt jedes Kind?",
+    "math.wordDiv.hint": "Wenn „gleichmäßig verteilt“ wird, nutze die Division.",
+    "math.wordDiv.explain": "{total} gleichmäßig auf {people} verteilt: {total}÷{people}={each}.",
+    "math.wordCompare.textMore": "{nameA} hat {b} {item}. {nameB} hat {diff} mehr als {nameA}. Wie viele hat {nameB}?",
+    "math.wordCompare.textLess": "{nameA} hat {b} {item}. {nameB} hat {diff} weniger als {nameA}. Wie viele hat {nameB}?",
+    "math.wordCompare.hintMore": "Bei „mehr“ nutze die Addition.",
+    "math.wordCompare.hintLess": "Bei „weniger“ nutze die Subtraktion.",
+    "math.wordCompare.explainMore": "{nameA} hat {b}. {nameB} hat {diff} mehr: {b}+{diff}={total}.",
+    "math.wordCompare.explainLess": "{nameA} hat {b}. {nameB} hat {diff} weniger: {b}−{diff}={total}.",
+    "math.wordAddCombine.text": "{a} {item} sind {place1}, {b} sind {place2}. Wie viele sind es insgesamt?",
+    "math.wordAddCombine.hint": "Bei der Frage „insgesamt“ nutze die Addition.",
+    "math.wordAddCombine.explain": "{a} {place1}, {b} {place2}. Zusammen: {a}+{b}={sum}.",
+    "math.wordSubDiff1.text": "{nameA} hat {a} {item}, {nameB} hat {b}. Wie groß ist der Unterschied?",
+    "math.wordSubDiff1.hint": "Bei der Frage nach dem „Unterschied“ ziehst du die kleinere von der größeren Zahl ab.",
+    "math.wordSubDiff1.explain": "{a}−{b}={diff}. {nameA} hat {diff} mehr.",
+    "math.wordAddSub1.text": "Es waren {a} {item} da. {b} kamen dazu, und danach {past} {c2}. Wie viele bleiben übrig?",
+    "math.wordAddSub1.hint": "Addiere zuerst die dazugekommene Menge, ziehe danach die {plain} Menge ab.",
+    "math.wordAddSub1.explain": "{a}+{b}={sum}. Danach {c2} {plain}: {sum}−{c2}={rest}.",
+    "math.wordLength2.textAdd": "Ein blaues Band ist {a} cm lang, ein rotes Band {b} cm. Wie lang sind sie zusammen?",
+    "math.wordLength2.hintAdd": "Die Gesamtlänge bekommst du, wenn du die Längen der beiden Bänder addierst.",
+    "math.wordLength2.explainAdd": "{a}+{b}={sum} (cm)",
+    "math.wordLength2.textSub": "Von einem {a} cm langen Band werden {b} cm abgeschnitten. Wie viel cm bleiben übrig?",
+    "math.wordLength2.hintSub": "Zieh das abgeschnittene Stück ab, dann hast du den Rest.",
+    "math.wordLength2.explainSub": "{a}−{b}={diff} (cm)",
+    "math.wordDivRemainder3.text": "{total} Personen fahren in Autos, {perCar} pro Auto. Wie viele Autos werden gebraucht, damit alle mitkommen?",
+    "math.wordDivRemainder3.hint": "Rechne {total}÷{perCar} und zähl für die übrigen Personen noch ein Auto dazu.",
+    "math.wordDivRemainder3.explain": "{total}÷{perCar}={cars} Rest {rest}. Für die übrigen {rest} Personen wird noch ein Auto gebraucht: {cars}+1={need} Autos.",
+    "math.wordMulArray2.text": "Aufkleber werden in {rows} Reihen und {cols} Spalten aufgeklebt. Wie viele Aufkleber sind es insgesamt?",
+    "math.wordMulArray2.hint": "„Reihen × Spalten“ ergibt die Gesamtzahl.",
+    "math.wordMulArray2.explain": "{rows} Reihen mal {cols} Spalten: {rows}×{cols}={total} Aufkleber.",
+
+    // --- 算数の生成器（4年） ---
+    "math.divLong4.hint": "Teile die Zahl, die du dividierst, nach Stellenwert auf und dividiere jeden Teil.",
+    "math.divLong4.explainExact": "{a} geteilt durch {b} ergibt genau {qTens} ({tensPart}÷{b}={qTens})",
+    "math.divLong4.explainSplit": "Teile {a} in {tensPart} und {onesPart}: {tensPart}÷{b}={qTens}, {onesPart}÷{b}={qOnes}. Zusammen {q}",
+    "math.decimalAddSub4.hint": "Multipliziere mit 100, damit du mit ganzen Zahlen rechnest. Setz das Komma am Ende wieder zurück.",
+    "math.decimalAddSub4.explainAdd": "{a} mal 100 ist {aRaw}, {b} mal 100 ist {bRaw}. {aRaw}+{bRaw}={raw}. Geteilt durch 100 ergibt wieder {answer}.",
+    "math.decimalAddSub4.explainSub": "{big} mal 100 ist {bigRaw}, {small} mal 100 ist {smallRaw}. {bigRaw}−{smallRaw}={raw}. Geteilt durch 100 ergibt wieder {answer}.",
+    "math.rectArea4.textSquare": "Ein Quadrat hat eine Seitenlänge von {side} cm. Wie groß ist die Fläche in cm²?",
+    "math.rectArea4.textRect": "Ein Rechteck ist {h} cm hoch und {w} cm breit. Wie groß ist die Fläche in cm²?",
+    "math.rectArea4.hintSquare": "Fläche des Quadrats = Seite × Seite",
+    "math.rectArea4.hintRect": "Fläche des Rechtecks = Höhe × Breite",
+    "math.rectArea4.explainSquare": "{side} × {side} = {area} (cm²)",
+    "math.rectArea4.explainRect": "{h} × {w} = {area} (cm²)",
+    "math.rounding4.text": "Runde {n} auf {place}. Welche Zahl kommt dabei heraus?",
+    "math.rounding4.hint": "Schau dir die Ziffer direkt unter {place} an: Bei 4 oder weniger wird abgerundet, bei 5 oder mehr aufgerundet",
+    "math.rounding4.explain": "Die Ziffer der {lower}, direkt unter {place}, ist {lowerDigit}. {decision} auf {place} gerundet ergibt {answer}.",
+    "math.rounding4.up": "Da es 5 oder mehr ist, wird aufgerundet, also",
+    "math.rounding4.down": "Da es 4 oder weniger ist, wird abgerundet, also",
+    "math.angle4.text": "Auf einer Geraden liegen zwei Winkel nebeneinander. Einer ist {a} Grad, der andere {b} Grad. Wie groß ist der verbleibende Winkel?",
+    "math.angle4.hint": "Die Winkel auf einer Geraden ergeben zusammen immer 180 Grad",
+    "math.angle4.explain": "180 − {a} − {b} = {rest} (Grad)",
+    "math.wordUnit4.text": "Ein Band ist {total} cm lang. Wie viel m und cm sind das? (Schreib nur die cm auf: {m} m ◯ cm)",
+    "math.wordUnit4.hint": "100 cm = 1 m. Denk an den Rest bei der Division durch 100.",
+    "math.wordUnit4.explain": "{total} cm = {m} m {cm} cm ({m}-mal 100 cm, Rest {cm} cm)",
+    "math.wordBigNumber4.text": "{what} von {place} beträgt {base} {unit} {amount}. Der Nachbar-{place} hat das {times}-Fache. Wie viel {unit} {amount} hat der Nachbar-{place}? (Schreib die Zahl ohne „{unit}“ auf)",
+    "math.wordBigNumber4.hint": "Überlege, wie oft {unit} vorkommt. Rechne {base} × {times}.",
+    "math.wordBigNumber4.explain": "{base} {unit} mal {times} ist {base}×{times}={total}. Also {total} {unit} {amount}",
+    "math.wordEstimate4.text": "In einem Geschäft waren am Montag {a} Personen und am Dienstag {b} Personen. Runde beide Zahlen auf {label} und berechne, wie viele Personen es an den beiden Tagen ungefähr insgesamt waren.",
+    "math.wordEstimate4.hint": "Runde zuerst beide Zahlen auf {label} und addiere sie danach.",
+    "math.wordEstimate4.explain": "{a} ist ungefähr {ra}, {b} ist ungefähr {rb}. {ra}+{rb}={total} (Personen)",
+    "math.wordDivLarge4.textNeed": "{total} Bälle werden in Kisten gepackt, {perBox} pro Kiste. Wie viele Kisten werden gebraucht, um alle zu verstauen?",
+    "math.wordDivLarge4.hintNeed": "Rechne {total}÷{perBox} und zähl für die übrigen Bälle noch eine Kiste dazu.",
+    "math.wordDivLarge4.explainNeed": "{total}÷{perBox}={boxes} Rest {rest}. Für die übrigen {rest} wird noch eine Kiste gebraucht: {boxes}+1={need} Kisten.",
+    "math.wordDivLarge4.textFull": "{total} Bälle werden in Kisten gepackt, {perBox} pro Kiste. Wie viele Kisten werden ganz voll?",
+    "math.wordDivLarge4.hintFull": "Der Quotient von {total}÷{perBox} ist die Anzahl der vollen Kisten.",
+    "math.wordDivLarge4.explainFull": "{total}÷{perBox}={boxes} Rest {rest}. {boxes} Kisten werden voll, {rest} bleiben übrig.",
+    "math.wordAreaRoom4.textSide": "{place} hat eine Fläche von {area} m². Bei einer Länge von {h} m, wie breit ist es?",
+    "math.wordAreaRoom4.hintSide": "Fläche ÷ Länge = Breite. Das ist die Umkehrung der Multiplikation.",
+    "math.wordAreaRoom4.explainSide": "{area}÷{h}={w} (m)",
+    "math.wordAreaRoom4.textArea": "{place} ist {h} m lang und {w} m breit. Wie groß ist die Fläche in m²?",
+    "math.wordAreaRoom4.hintArea": "Fläche des Rechtecks = Länge × Breite",
+    "math.wordAreaRoom4.explainArea": "{h}×{w}={area} (m²)",
+    "math.wordDecimalAmount4.textAdd": "Es gibt {a} {unit} {name} in einem großen Gefäß und {b} {unit} in einem kleinen. Wie viel {unit} sind es insgesamt?",
+    "math.wordDecimalAmount4.hintAdd": "Richte die Kommas untereinander aus und addiere",
+    "math.wordDecimalAmount4.explainAdd": "{a}+{b}={sum} ({unit})",
+    "math.wordDecimalAmount4.textSub": "Es waren {a} {unit} {name} vorhanden. {b} {unit} wurden verbraucht. Wie viel {unit} bleiben übrig?",
+    "math.wordDecimalAmount4.hintSub": "Richte die Kommas untereinander aus und subtrahiere",
+    "math.wordDecimalAmount4.explainSub": "{a}−{b}={diff} ({unit})",
+    "math.wordProportion4.text": "{n1} {unit} {name} haben {word} von {first} {amount}. Wie viel {amount} haben {n2} {unit} desselben {name}?",
+    "math.wordProportion4.hint": "Berechne zuerst {word} für 1 {unit}.",
+    "math.wordProportion4.explain": "1 {unit} ist {first}÷{n1}={per} {amount}. Für {n2} {unit}: {per}×{n2}={total} {amount}.",
+
+    // --- 算数の生成器（5・6年） ---
+    // 数を並べるときの区切り。日本語は「、」、ドイツ語は「, 」。
+    "math.listSeparator": ", ",
+    "math.itemSeparator": ", ",
+    "math.decimalMul5.hint": "Rechne so, als gäbe es kein Komma, und setz es am Ende wieder ein.",
+    "math.decimalMul5.explain": "{a10} × {b} = {raw}. Das Komma um eine Stelle zurückgesetzt ergibt {answer}.",
+    "math.decimalDiv5.hint": "Das Komma des Dividenden wird direkt in den Quotienten übernommen.",
+    "math.decimalDiv5.explain": "{a} mal 10 ist {a10}. {inner}. Geteilt durch 10 ergibt wieder {q}.",
+    "math.fractionAddDiff5.text": "{n1}/{d1} + {n2}/{d2} = ? (kürze das Ergebnis)",
+    "math.fractionAddDiff5.hint": "Bring beide Brüche auf denselben Nenner und addiere dann.",
+    // 末尾に句点を置かない。約分が起きたときだけ reduceExplainSuffix が
+    //「。…やくぶんすると …」を足す（fractionMul6・fractionSame3 と同じ作り）。
+    "math.fractionAddDiff5.explain": "Mit gleichem Nenner: {a}/{den} + {b}/{den} = {num}/{den}",
+    "math.average5.text": "Wie groß ist der Durchschnitt dieser {n} Zahlen: {values}?",
+    "math.average5.hint": "Durchschnitt = Summe aller Zahlen ÷ Anzahl",
+    "math.average5.explain": "Die Summe ist {sum}. Geteilt durch {n} ergibt {avg}.",
+    "math.percent5.text": "Wie viel sind {pct} % von {base}?",
+    "math.percent5.hint": "Ein Prozentsatz ist ein Anteil von 100. Multipliziere die Zahl mit diesem Anteil.",
+    "math.percent5.explain": "{pct} % = {ratio}. {base} × {ratio} = {answer}.",
+    "math.triangleArea5.text": "Ein Dreieck hat eine Grundseite von {base} cm und eine Höhe von {height} cm. Wie groß ist die Fläche in cm²?",
+    "math.triangleArea5.hint": "Fläche des Dreiecks = Grundseite × Höhe ÷ 2",
+    "math.triangleArea5.explain": "{base} × {height} ÷ 2 = {area} (cm²)",
+    "math.wordPerUnit5.text": "{units} {unit} {item} haben {label} {total} {per}. Wie viel {per} sind es pro {unit}?",
+    "math.wordPerUnit5.hint": "Menge pro Einheit = Gesamtmenge ÷ Anzahl der Einheiten",
+    "math.wordPerUnit5.explain": "{total} ÷ {units} = {perUnit} ({per})",
+    "math.wordMultiple5.textBus": "Vom Bahnhof fährt Bus A alle {a} Minuten, Bus B alle {b} Minuten. Wenn beide gerade gleichzeitig losgefahren sind, in wie vielen Minuten fahren sie wieder gleichzeitig los?",
+    "math.wordMultiple5.hintBus": "Such das kleinste gemeinsame Vielfache von {a} und {b}.",
+    "math.wordMultiple5.explainBus": "Die kleinste Zahl, die Vielfaches von {a} und {b} ist, ist {lcm}. Also nach {lcm} Minuten.",
+    "math.wordMultiple5.textCard": "Mit Karten von {a} cm Höhe und {b} cm Breite wird ohne Lücken ein Quadrat gebildet. Wie lang ist die Seite des kleinstmöglichen Quadrats?",
+    "math.wordMultiple5.hintCard": "Die Seitenlänge, die sowohl in der Höhe als auch in der Breite genau passt, ist das kleinste gemeinsame Vielfache von {a} und {b}.",
+    "math.wordMultiple5.explainCard": "Das kleinste gemeinsame Vielfache von {a} und {b} ist {lcm}. Also ist die Seite {lcm} cm lang.",
+    "math.wordDivisor5.text": "Es gibt {a} Bonbons und {b} Kekse. Beides wird ohne Rest gleichmäßig aufgeteilt. Auf höchstens wie viele Personen lässt es sich verteilen?",
+    "math.wordDivisor5.hint": "Es ist die größte Zahl, durch die sowohl {a} als auch {b} ohne Rest teilbar sind (der größte gemeinsame Teiler).",
+    "math.wordDivisor5.explain": "{a}÷{g}={m} und {b}÷{g}={n}, beide gehen ohne Rest auf. Mit einer größeren Zahl als {g} geht es nicht mehr auf, also {g} Personen.",
+    "math.wordPercent5.textDiscount": "Eine Ware, die {price} Cent gekostet hat, wird um {pct} % reduziert. Was kostet sie jetzt?",
+    "math.wordPercent5.hintDiscount": "{pct} % Rabatt bedeutet, (100−{pct}) % des ursprünglichen Preises zu zahlen.",
+    "math.wordPercent5.explainDiscount": "Der Rabatt beträgt {price}×{ratio}={diff} Cent. {price}−{diff}={lower} Cent.",
+    "math.wordPercent5.textRaise": "Eine Ware, die ursprünglich {price} Cent gekostet hat, wurde um {pct} % teurer. Was kostet sie jetzt?",
+    "math.wordPercent5.hintRaise": "Die Erhöhung beträgt {pct} % des ursprünglichen Preises. Addiere sie zum ursprünglichen Preis.",
+    "math.wordPercent5.explainRaise": "Die Erhöhung beträgt {price}×{ratio}={diff} Cent. {price}+{diff}={higher} Cent.",
+    "math.wordAverage5.text": "Nach {n} Tests liegt der Durchschnitt bei {avgSoFar} Punkten. Wie viele Punkte müssen beim nächsten Test erreicht werden, damit der Durchschnitt der {n1} Tests {targetAvg} Punkte beträgt?",
+    "math.wordAverage5.hint": "Berechne zuerst, wie hoch die Gesamtpunktzahl der {n1} Tests sein muss.",
+    "math.wordAverage5.explain": "Die aktuelle Summe ist {avgSoFar}×{n}={now}. Die benötigte Summe ist {targetAvg}×{n1}={want}. Die Differenz von {need} Punkten muss noch erreicht werden.",
+    "math.wordDensity5.text": "Im Kaninchenstall A leben {totalA} Kaninchen auf {areaA} m², im Stall B leben {totalB} Kaninchen auf {areaB} m². Wie viele Kaninchen pro m² leben im volleren Stall?",
+    "math.wordDensity5.hint": "Berechne für beide Ställe, wie viele Kaninchen pro m² leben, und vergleiche.",
+    "math.wordDensity5.explain": "A: {totalA}÷{areaA}={perA} pro m². B: {totalB}÷{areaB}={perB} pro m². Voller ist {denser} mit {dense}.",
+    "math.fractionMul6.text": "{a}/{b} × {c}/{d} = ? (kürze das Ergebnis)",
+    "math.fractionMul6.hint": "Multipliziere Zähler mit Zähler und Nenner mit Nenner, und kürze dann.",
+    "math.fractionMul6.explain": "Zähler: {a}×{c}={rawNum}. Nenner: {b}×{d}={rawDen}. Ergibt {rawNum}/{rawDen}",
+    "math.fractionDiv6.text": "{n1}/{d1} ÷ {n2}/{d2} = ? (kürze das Ergebnis)",
+    "math.fractionDiv6.hint": "Dreh den Bruch, durch den geteilt wird, um und mach daraus eine Multiplikation.",
+    "math.fractionDiv6.explain": "{n2}/{d2} umgedreht ist {d2}/{n2}. {n1}/{d1} × {d2}/{n2} = {rawNum}/{rawDen}",
+    "math.circleArea6.text": "Wie groß ist die Fläche eines Kreises mit Radius {r} cm? (in cm², nimm 3,14 für π)",
+    "math.circleArea6.hint": "Kreisfläche = Radius × Radius × 3,14",
+    "math.circleArea6.explain": "{r} × {r} × 3,14 = {area}",
+    "math.volume6.text": "Wie groß ist das Volumen eines Quaders mit {w} cm Länge, {l} cm Breite und {h} cm Höhe? (in cm³)",
+    "math.volume6.hint": "Volumen des Quaders = Länge × Breite × Höhe",
+    "math.volume6.explain": "{w} × {l} × {h} = {volume}",
+    "math.ratio6.text": "Wie lautet das Verhältnis {a} : {b} in der einfachsten Form?",
+    "math.ratio6.hint": "Teile beide Zahlen durch einen gemeinsamen Teiler, bis es nicht mehr geht.",
+    "math.ratio6.explain": "Der größte gemeinsame Teiler von {a} und {b} ist {factor}. Teilst du beide dadurch, ergibt sich {simpleX}:{simpleY}.",
+    "math.wordSpeed.textTime": "Ein Auto fährt mit {speed} km/h. Wie viele Stunden braucht es für {dist} km?",
+    "math.wordSpeed.hintTime": "Zeit = Strecke ÷ Geschwindigkeit",
+    "math.wordSpeed.explainTime": "{dist} ÷ {speed} = {hours} (Stunden)",
+    "math.wordSpeed.textSpeed": "Ein Auto fährt {dist} km in {hours} Stunden. Mit wie viel km/h fährt es?",
+    "math.wordSpeed.hintSpeed": "Geschwindigkeit = Strecke ÷ Zeit",
+    "math.wordSpeed.explainSpeed": "{dist} ÷ {hours} = {speed} (km/h)",
+    "math.wordSpeed.textDist": "Ein Auto fährt {hours} Stunden lang mit {speed} km/h. Wie viele km legt es zurück?",
+    "math.wordSpeed.hintDist": "Strecke = Geschwindigkeit × Zeit",
+    "math.wordSpeed.explainDist": "{speed} km/h × {hours} h = {dist} km",
+    "math.proportion6.text": "„y“ ist proportional zu „x“. Wenn x={x1}, dann y={y1}. Wie groß ist y, wenn x={x2}?",
+    "math.proportion6.hint": "Bei einer proportionalen Beziehung ist „y“ immer „x“ multipliziert mit einer festen Zahl.",
+    "math.proportion6.explain": "Da x={x1} und y={y1} ergibt, ist die feste Zahl {y1}÷{x1}={k}. Bei x={x2}: y = {x2} × {k} = {y2}.",
+    "math.combination6.text": "{n} Karten dieser Sorten werden in einer Reihe aufgestellt: {items}. Auf wie viele verschiedene Arten lassen sie sich anordnen?",
+    "math.combination6.hint": "Für die erste Karte gibt es {n} Möglichkeiten, für die nächste {n1} … und so weiter, alles multiplizieren.",
+    "math.combination6.explain": "{terms} = {fact} Arten",
+    "math.wordRatioSplit6.text": "{total} Cent werden zwischen zwei Personen im Verhältnis {rx}:{ry} aufgeteilt. Wie viel bekommt die Person mit dem größeren Anteil?",
+    "math.wordRatioSplit6.hint": "Addiere die Teile des Verhältnisses und überlege, in wie viele Teile das Ganze aufgeteilt wird.",
+    "math.wordRatioSplit6.explain": "Das Verhältnis ergibt {rx}+{ry}={totalUnits}. {total}÷{totalUnits}={perUnit} Cent pro Teil. Die Person mit dem größeren Anteil bekommt {bigger}×{perUnit}={answer} Cent.",
+    "math.wordFractionMul6.text": "Eine Stange wiegt {num}/{den} kg pro Meter. Wie viel wiegen {len} m dieser Stange?",
+    "math.wordFractionMul6.hint": "Gewicht pro Meter × Länge",
+    "math.wordFractionMul6.explain": "{num}/{den} × {len} = {num}×{len}/{den} = {prod}/{den} = {answer} (kg)",
+    "math.wordCombinationPick6.textTeam": "{n} Teams spielen je einmal gegen jedes andere Team. Wie viele Spiele finden insgesamt statt?",
+    "math.wordCombinationPick6.hintTeam": "Es ist die Anzahl der Möglichkeiten, 2 Teams aus {n} auszuwählen. Die Reihenfolge zählt nicht.",
+    "math.wordCombinationPick6.explainTeam": "{n}×({n}−1)÷2 = {n}×{n1}÷2 = {answer} Spiele (A gegen B zählt nur einmal)",
+    "math.wordCombinationPick6.textShake": "{n} Personen geben sich einmal die Hand mit jeder anderen Person. Wie viele Handschläge gibt es insgesamt?",
+    "math.wordCombinationPick6.hintShake": "Es ist die Anzahl der Möglichkeiten, 2 Personen aus {n} auszuwählen.",
+    "math.wordCombinationPick6.explainShake": "{n}×({n}−1)÷2 = {n}×{n1}÷2 = {answer} Handschläge",
+    "math.wordInverse6.text": "Ein Rechteck hat eine Fläche von {total} cm². Bei einer Höhe von {x1} cm ist die Breite {y1} cm. Wenn die Höhe auf {x2} cm geändert wird, wie breit ist es dann?",
+    "math.wordInverse6.hint": "Höhe × Breite ergibt immer dieselbe Zahl (die Fläche). Das ist eine umgekehrt proportionale Beziehung.",
+    "math.wordInverse6.explain": "Höhe×Breite={total} bleibt immer gleich. {total}÷{x2}={y2} (cm)",
+    "math.wordCircle6.text": "Es gibt ein rundes Blumenbeet mit {d} m Durchmesser. Wie groß ist die Fläche in m²? (nimm 3,14 für π)",
+    "math.wordCircle6.hint": "Berechne zuerst den Radius: Radius = Durchmesser ÷ 2",
+    "math.wordCircle6.explain": "Der Radius ist {d}÷2={r} m. {r}×{r}×3,14={area} (m²)",
+    "math.wordRatioFind6.text": "Essig und Öl werden im Verhältnis {rx}:{ry} gemischt. Wenn {known} mL Essig verwendet werden, wie viel mL Öl werden gebraucht?",
+    "math.wordRatioFind6.hint": "Die {rx} Teile Essig entsprechen {known} mL. Berechne, wie viel ein Teil des Verhältnisses ist.",
+    "math.wordRatioFind6.explain": "Ein Teil ist {known}÷{rx}={unit} mL. Das Öl ist {ry}×{unit}={answer} mL.",
+
+    "locale.dateFormat": "de-DE",
+    "home.heroDate": "{weekday}, {day}.{month}.",
+    "weekdays": ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+    // weekdays は Date.getDay() の値（0=日曜）で引くので、並びは日曜始まりで固定。
+    // 週の始まりが月曜の地域でも、ホームの週グラフは「今日から数えて7日ぶん」を
+    // 日付順に並べるだけなので、この並びを変える必要はない。
+    "months": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+  },
 };
 
 // ── 算数の単元名（保護者向けの「にがて分野」表示だけで使う）──────────
@@ -1564,6 +2296,39 @@ const MATH_GEN_LABELS = {
     genWordRatioSplit6: "Problemas de repartir en una razón", genWordInverse6: "Problemas de proporcionalidad inversa",
     genWordCombinationPick6: "Problemas de combinatoria",
   },
+  de: {
+    genAdd1: "Addition (1. Klasse)", genSub1: "Subtraktion (1. Klasse)",
+    genAdd2: "Addition (2. Klasse)", genSub2: "Subtraktion (2. Klasse)", genMul2: "Einmaleins",
+    genAdd3: "Schriftliche Addition", genSub3: "Schriftliche Subtraktion", genMul3: "Multiplikation (3. Klasse)",
+    genDiv3: "Division", genDivRemainder3: "Division mit Rest",
+    genDecimal3: "Addition/Subtraktion mit Dezimalzahlen (3. Klasse)", genFractionSame3: "Brüche addieren/subtrahieren (gleicher Nenner)",
+    genRounding4: "Runden und Schätzen", genDivLong4: "Schriftliche Division",
+    genDecimalAddSub4: "Addition/Subtraktion mit Dezimalzahlen (4. Klasse)", genRectArea4: "Fläche von Rechteck und Quadrat",
+    genAngle4: "Winkelgröße",
+    genDecimalMul5: "Multiplikation von Dezimalzahlen", genDecimalDiv5: "Division von Dezimalzahlen",
+    genFractionAddDiff5: "Brüche addieren/subtrahieren (verschiedener Nenner)", genPercent5: "Anteile und Prozentrechnung",
+    genAverage5: "Durchschnitt", genTriangleArea5: "Fläche des Dreiecks",
+    genFractionMul6: "Multiplikation von Brüchen", genFractionDiv6: "Division von Brüchen",
+    genCircleArea6: "Kreisfläche", genVolume6: "Volumen", genRatio6: "Verhältnisse",
+    genProportion6: "Proportionalität", genCombination6: "Kombinatorik",
+    genWordAdd: "Textaufgaben: Addition", genWordSub: "Textaufgaben: Subtraktion",
+    genWordAddSub1: "Textaufgaben: Addition/Subtraktion (1. Klasse)", genWordSubDiff1: "Textaufgaben: Unterschied berechnen",
+    genWordAddCombine: "Textaufgaben: Mengen zusammenzählen", genWordCompare: "Textaufgaben: Vergleichen",
+    genWordMul: "Textaufgaben: Multiplikation", genWordDiv: "Textaufgaben: Division",
+    genWordMulArray2: "Textaufgaben: Multiplikation (gleiche Gruppen)", genWordLength2: "Textaufgaben: Längen",
+    genWordDivRemainder3: "Textaufgaben: Division mit Rest",
+    genWordUnit4: "Textaufgaben: Einheiten", genWordBigNumber4: "Textaufgaben: Große Zahlen",
+    genWordEstimate4: "Textaufgaben: Schätzen", genWordDivLarge4: "Textaufgaben: Division mit großen Zahlen",
+    genWordAreaRoom4: "Textaufgaben: Fläche", genWordProportion4: "Textaufgaben: Verhältnismäßige Veränderung",
+    genWordDecimalAmount4: "Textaufgaben: Dezimalzahlen (Menge/Gewicht)",
+    genWordAverage5: "Textaufgaben: Durchschnitt", genWordPercent5: "Textaufgaben: Prozentrechnung",
+    genWordPerUnit5: "Textaufgaben: Menge pro Einheit", genWordDensity5: "Textaufgaben: Dichte",
+    genWordMultiple5: "Textaufgaben: gemeinsame Vielfache", genWordDivisor5: "Textaufgaben: gemeinsame Teiler",
+    genWordSpeed: "Textaufgaben: Geschwindigkeit", genWordCircle6: "Textaufgaben: Kreis",
+    genWordFractionMul6: "Textaufgaben: Multiplikation von Brüchen", genWordRatioFind6: "Textaufgaben: Verhältnisse",
+    genWordRatioSplit6: "Textaufgaben: Aufteilen nach Verhältnis", genWordInverse6: "Textaufgaben: umgekehrte Proportionalität",
+    genWordCombinationPick6: "Textaufgaben: Kombinatorik",
+  },
 };
 
 function mathGenLabel(name) {
@@ -1582,6 +2347,7 @@ function mathGenLabel(name) {
 const LOCALE_CARD_DIR = {
   ja: "assets/cards",
   es: "assets/cards-es",
+  de: "assets/cards-de",
 };
 
 // 説明文（flavor）は画像の中だけにあり、HTMLには一度も描画されない。
@@ -1752,6 +2518,168 @@ const CARD_NAMES = {
     "haru-sr8": "Primer Vendaval",               // No.158
     "haru-ur3": "Gran Fortaleza del Despertar",  // No.159
     "haru-ur4": "Rey de los Espíritus de la Primavera", // No.160
+  },
+  de: {
+    n1: "Funkenkobold",                    // No.001
+    n2: "Blubberchen",                          // No.002
+    n3: "Marktspatz",                   // No.003
+    n4: "Hirschkäferchen",                     // No.004
+    n5: "Eisstückchen",                       // No.005
+    n6: "Wunderkerzenfünkchen",                // No.006
+    n7: "Schwimmotter",                     // No.007
+    n8: "Goldfischchen",                     // No.008
+    r1: "Herr des großen BUMM",                 // No.009
+    r2: "Geist der Gezeiten",                // No.010
+    r3: "Trommeljunge",                   // No.011
+    r4: "Käferkapitän",                 // No.012
+    r5: "Eisstielgeist",                  // No.013
+    r6: "Glühwürmchenlicht",                  // No.014
+    sr1: "Regenbogenfeuerwerk",                 // No.015
+    sr2: "Herr der Tiefsee",                  // No.016
+    sr3: "Sommerfest-Tänzerin",               // No.017
+    sr4: "Eisprinzessin",                 // No.018
+    ur1: "Feuerschriftdrache",              // No.019
+    ur2: "König der Sommerhimmel-Geister",              // No.020
+    n9: "Fünkchen",                   // No.021
+    r7: "Feuerwerkslehrling",               // No.022
+    n10: "Wellenkindchen",                             // No.023
+    r8: "Muschelsammlerchen",                       // No.024
+    n11: "Zuckerwattewölkchen",                       // No.025
+    r9: "Glänzapfel",                  // No.026
+    n12: "Zikadensänger",                   // No.027
+    n13: "Libellenonkel",                      // No.028
+    sr5: "Juwelenkäfer",                   // No.029
+    n14: "Wassermelonenkern",                  // No.030
+    r10: "Sodadrächlein",                // No.031
+    n15: "Windspielklang",               // No.032
+    r11: "Kühler Schatten",                     // No.033
+    sr6: "Sommerschauer",                // No.034
+    ur3: "Herr der kühlen Brise",                 // No.035
+    n16: "Sternschnuppensplitter",               // No.036
+    r12: "Milchstraßen-Schlaflied",             // No.037
+    sr7: "Wunschballon",               // No.038
+    sr8: "Sternbildgelehrter",                // No.039
+    ur4: "Königin der Mondnacht",                  // No.040
+    "aki-n1": "Ahornhändchen",                  // No.041
+    "aki-n2": "Goldener Ginkgo",                   // No.042
+    "aki-r1": "Laubhaufen",                // No.043
+    "aki-r2": "Windgetriebenes Blättchen",                // No.044
+    "aki-sr1": "Weberin des Herbstgewebes",            // No.045
+    "aki-sr2": "Meister des Bergpinsels",             // No.046
+    "aki-n3": "Eichelbübchen",                        // No.047
+    "aki-n4": "Zapfenschirmchen",                   // No.048
+    "aki-n5": "Kastanienigel",                // No.049
+    "aki-r3": "Kakirot",                    // No.050
+    "aki-r4": "Harte Walnuss",                     // No.051
+    "aki-sr3": "Erntekorbträger",            // No.052
+    "aki-n6": "Dango-Stapler",               // No.053
+    "aki-n7": "Silbergras-Ährchen",                 // No.054
+    "aki-r5": "Mondhäschen",               // No.055
+    "aki-r6": "Wolkenversteckchen",                   // No.056
+    "aki-sr4": "Große Vollmondaugen",         // No.057
+    "aki-ur1": "Herbstnacht-Prinzessin",     // No.058
+    "aki-n8": "Pilzhütchen",                 // No.059
+    "aki-n9": "Shimeji-Grüppchen",               // No.060
+    "aki-n10": "Tanzpilz",                   // No.061
+    "aki-r7": "Giftpilzchen",                  // No.062
+    "aki-sr5": "Pilzgelehrter des Waldes",             // No.063
+    "aki-n11": "Grillenklang",                // No.064
+    "aki-n12": "Glöckchengrille",                // No.065
+    "aki-n13": "Heupferdchen",           // No.066
+    "aki-r8": "Dirigent der Grillen",         // No.067
+    "aki-r9": "Herbstliedprinzessin",              // No.068
+    "aki-n14": "Warme Ofenkartoffel",              // No.069
+    "aki-n15": "Ausgegrabene Süßkartoffel",           // No.070
+    "aki-n16": "Duftende Ginkgonuss",                // No.071
+    "aki-r10": "Mondlicht im Sakebecher",                // No.072
+    "aki-r11": "Rauchschwade vom Grillfisch",                   // No.073
+    "aki-sr6": "Herr der Erntetafel",             // No.074
+    "aki-r12": "Wachvogelscheuche",           // No.075
+    "aki-sr7": "Verbeugte Reisähre",                 // No.076
+    "aki-sr8": "Zugvogel-Anführer",                    // No.077
+    "aki-ur2": "Großer Erntekessel",       // No.078
+    "aki-ur3": "Läufer des trockenen Windes",       // No.079
+    "aki-ur4": "König der Herbsthimmel-Geister", // No.080
+    "fuyu-n1": "Schneeflöckchen",                // No.081
+    "fuyu-n2": "Pulverschneechen",                 // No.082
+    "fuyu-r1": "Tanzflocke",                     // No.083
+    "fuyu-r2": "Eiszapfenstab",            // No.084
+    "fuyu-sr1": "Raureif-Knirschen",            // No.085
+    "fuyu-ur1": "Schneemaler",            // No.086
+    "fuyu-n3": "Schneemann-Kugelchen",             // No.087
+    "fuyu-n4": "Schneeballmeister",                     // No.088
+    "fuyu-n5": "Schlittenflitzer",                   // No.089
+    "fuyu-r3": "Iglukindchen",                 // No.090
+    "fuyu-r4": "Fußspurfolger",               // No.091
+    "fuyu-sr2": "Schneegipfelspitze",                 // No.092
+    "fuyu-n6": "Mochi-Türmchen",                  // No.093
+    "fuyu-n7": "Kreiselchen",                  // No.094
+    "fuyu-n8": "Drachenflieger",                // No.095
+    "fuyu-r5": "Glücksumschlag",                 // No.096
+    "fuyu-r6": "Letzter der Neujahrsschlange",              // No.097
+    "fuyu-sr3": "Neujahrs-Morgenstern",           // No.098
+    "fuyu-n9": "Kotatsu-Versteckchen",              // No.099
+    "fuyu-n10": "Mandarinenschäler",           // No.100
+    "fuyu-n11": "Eintopfblubberchen",              // No.101
+    "fuyu-r7": "Wärmflaschenfüßchen",         // No.102
+    "fuyu-r8": "Oden-Schmorgeist",                // No.103
+    "fuyu-sr4": "Kaminwächter",       // No.104
+    "fuyu-n12": "Kerzenflämmchen",               // No.105
+    "fuyu-n13": "Lichterglanz der Stadt",            // No.106
+    "fuyu-r9": "Fensterhauchmuster",             // No.107
+    "fuyu-r10": "Großer Hund des Winterhimmels",            // No.108
+    "fuyu-sr5": "Schneelicht-Stille",             // No.109
+    "fuyu-n14": "Schlafbär",                  // No.110
+    "fuyu-n15": "Vorratseichhörnchen",            // No.111
+    "fuyu-n16": "Frosch unter der Erde",              // No.112
+    "fuyu-r11": "Wintersamenkorn",            // No.113
+    "fuyu-sr6": "Schlummerlied",             // No.114
+    "fuyu-sr7": "Nordwindbö",              // No.115
+    "fuyu-r12": "Weißer Atemhauch",                // No.116
+    "fuyu-ur2": "Aurora-Prinzessin",               // No.117
+    "fuyu-sr8": "Winterdreieck",         // No.118
+    "fuyu-ur3": "Große Eisfestung",       // No.119
+    "fuyu-ur4": "König der Winterhimmel-Geister", // No.120
+    "haru-n1": "Erste Kirschblüte",                  // No.121
+    "haru-n2": "Tanzendes Blütenblatt",                // No.122
+    "haru-r1": "Grünes Kirschblatt",              // No.123
+    "haru-r2": "Kirschblütenlaterne",           // No.124
+    "haru-ur1": "Kirschblütensturm-Tänzerin",          // No.125
+    "haru-sr1": "Spätblüte",                   // No.126
+    "haru-n3": "Schachtelhalm-Buben",               // No.127
+    "haru-n4": "Pusteblumen-Flug",                // No.128
+    "haru-n5": "Bitterknospe",                   // No.129
+    "haru-n6": "Knospenhändchen",                         // No.130
+    "haru-r3": "Wurzelarbeiter",               // No.131
+    "haru-sr2": "Keimwecker",         // No.132
+    "haru-n7": "Kohlweißling",                // No.133
+    "haru-r4": "Heimkehrschwalbe",             // No.134
+    "haru-n8": "Überraschte Kaulquappe",          // No.135
+    "haru-r5": "Bienenbote",                // No.136
+    "haru-r6": "Frühlingssänger-Lehrling",              // No.137
+    "haru-sr3": "Schmetterlingsführer",         // No.138
+    "haru-n9": "Gelbes Rapsfeld",                 // No.139
+    "haru-n10": "Tulpenreihe",             // No.140
+    "haru-n11": "Eckenveilchen",            // No.141
+    "haru-r7": "Blumenkorbträger",                // No.142
+    "haru-sr4": "Blumenfeld-Königin",              // No.143
+    "haru-n12": "Frühlingsregen",                  // No.144
+    "haru-n13": "Frühlingsdunst",            // No.145
+    "haru-r8": "Schabernackwind",                 // No.146
+    "haru-sr5": "Regenbogenbrücke",            // No.147
+    "haru-sr6": "Blütenwolkenhimmel",             // No.148
+    "haru-n14": "Hina-Püppchen",          // No.149
+    "haru-n15": "Windkarpfen",                // No.150
+    "haru-n16": "Kirschblütenmochi",           // No.151
+    "haru-r9": "Erdbeertüpfelchen",                        // No.152
+    "haru-r10": "Beifußküchlein",           // No.153
+    "haru-sr7": "Schulanfänger",                  // No.154
+    "haru-r11": "Hoch fliegende Lerche",              // No.155
+    "haru-r12": "Flimmernde Luft",          // No.156
+    "haru-ur2": "Verschleierter Frühlingsmond",                 // No.157
+    "haru-sr8": "Erster Frühlingssturm",               // No.158
+    "haru-ur3": "Große Festung des Erwachens",  // No.159
+    "haru-ur4": "König der Frühlingshimmel-Geister", // No.160
   },
 };
 
