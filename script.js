@@ -638,17 +638,26 @@ function fractionToText(f) {
   return `${f.num}/${f.den}`;
 }
 
+// ⚠️ 分数も同じ。parseInt は `4abc` を 4 と読んでしまうので、
+//    **整数そのものかどうかを正規表現で確かめてから**数にする
+//    （`3/4abc` が正解になっていた。2026-09-21 日次QAで発見）。
+const INTEGER_ONLY = /^-?\d+$/;
+
 function parseFractionInput(str) {
   // 全角スラッシュ・全角数字も受理する（タブレットのかな入力だと全角で入るため）
   str = toHalfWidth(str).trim().replace(/／/g, "/");
   if (str.includes("/")) {
-    const [n, d] = str.split("/").map((s) => parseInt(s.trim(), 10));
-    if (Number.isFinite(n) && Number.isFinite(d) && d !== 0) return reduceFraction(n, d);
-    return null;
+    const parts = str.split("/");
+    if (parts.length !== 2) return null;
+    const [rawN, rawD] = parts.map((part) => part.trim());
+    if (!INTEGER_ONLY.test(rawN) || !INTEGER_ONLY.test(rawD)) return null;
+    const n = parseInt(rawN, 10);
+    const d = parseInt(rawD, 10);
+    if (d === 0) return null;
+    return reduceFraction(n, d);
   }
-  const n = parseInt(str, 10);
-  if (!Number.isFinite(n)) return null;
-  return { num: n, den: 1 };
+  if (!INTEGER_ONLY.test(str)) return null;
+  return { num: parseInt(str, 10), den: 1 };
 }
 
 // ===== 効果音（Web Audio APIで合成、音声ファイル不要） =====
@@ -1404,8 +1413,19 @@ function drawGachaCard() {
   const unowned = pool.filter((c) => !owned[c.id]);
   const pityHit = getPity() >= PITY_LIMIT && unowned.length > 0;
 
-  // 天井に達していたら未所持のみから、そうでなければ通常のレアリティ抽選から選ぶ
-  const card = pityHit ? pick(unowned) : pick(pool.filter((c) => c.rarity === rollRarity()));
+  // 天井に達していたら未所持のみから、そうでなければ通常のレアリティ抽選から選ぶ。
+  // ⚠️ **rollRarity() は filter の中で呼ばない。**中で呼ぶと
+  //    「1枚ごとに別の乱数でレアリティを振り、自分のレアリティと一致したら残す」になり、
+  //    当選確率が **重み × そのレアリティの枚数** に比例してしまう。枚数はNが多くURが少ないので、
+  //    **URが設計の約1/3、SRが約6割しか出ていなかった**（2026-09-22 日次QAで実測して発見。
+  //    プレミアムで実測 N68.6/R24.9/SR5.8/UR0.71% ← 設計は 60/28/10/2%）。
+  //    さらに、全部のカードが自分の抽選に外れると空配列になり、pick() が undefined を返して落ちる
+  //    （確率は極小だが起こりうる）。**1回だけ引いて、そのレアリティから選ぶ。**
+  const rarity = rollRarity();
+  const ofRarity = pool.filter((c) => c.rarity === rarity);
+  // 選んだ季節にそのレアリティが1枚も無い場合の保険（いまの構成では起きないが、
+  // 季節やロケールを足したときに静かに落ちないように）
+  const card = pityHit ? pick(unowned) : pick(ofRarity.length ? ofRarity : pool);
 
   const isNew = !owned[card.id];
   owned[card.id] = (owned[card.id] || 0) + 1;
@@ -3977,8 +3997,20 @@ function toHalfWidth(str) {
     .replace(/\u3000/g, " ");
 }
 
+// ⚠️ **数字以外を「捨てる」のではなく「弾く」。**以前は `[^\d.,-]` をぜんぶ削ってから
+//    parseFloat していたので、`1a8` が `18` になり、**まちがった入力が「せいかい」に
+//    なっていた**（2026-09-21 日次QAで発見。`abc18` `1a8` `18__WRONG` がすべて正解扱い）。
+//    採点はポイント・ずかん・復習キューの卒業判定の土台なので、緩いほうへ間違えない。
+// 単位（`18こ` `18kg`）は受け取る。子どもが数のうしろに単位を足すのは自然なので、
+// **先頭から続く数だけを読み、そのあとに数字が出てこなければ**単位とみなして許す。
 function parseLocaleNumber(str) {
-  let numStr = toHalfWidth(str).replace(/[^\d.,\-]/g, "");
+  const src = toHalfWidth(str).trim();
+  const matched = src.match(/^-?(?:\d[\d,]*(?:\.\d+)?|\.\d+)/);
+  if (!matched) return NaN;
+  // 読み取った数より後ろにまだ数字がある＝数の途中に別の文字が挟まっている（`1a8`）
+  if (/\d/.test(src.slice(matched[0].length))) return NaN;
+
+  let numStr = matched[0];
   numStr = numStr.includes(".") ? numStr.replace(/,/g, "") : numStr.replace(",", ".");
   return parseFloat(numStr);
 }
@@ -4369,6 +4401,10 @@ function openSettingsScreen() {
   renderReviewNotifySetting();
 
   refreshProfileSettingLine();
+  // アカウント欄は、ログインしたその瞬間にしか書いていなかった。画面を開いたときにも
+  // 描き直しておく（開いた画面が自分の中身を用意する、という形に揃える。
+  // 2026-09-23、おためしモード廃止のあとに設定のアカウント欄が空で出るのを検査が検出）
+  refreshAuthAccountLine();
 
   setGuide("settings");
   showScreen("screen-settings");
@@ -4940,8 +4976,12 @@ function renderReviewNotifySetting() {
 
 // ===== プロフィール画面 =====
 // state.profileMode が "manage" のときは、選ぶかわりに消す操作になる
-function openProfileSelectScreen(mode) {
+// fromSettings: せってい画面から来たかどうか。**起動時の「だれが あそぶ？」では false**
+// （まだ入る前なので、戻る先が無い）。省略したときは、いまの値を引き継ぐ
+// （削除・改名のあとに同じモードで開き直すときに、いちいち渡さなくてよいように）。
+function openProfileSelectScreen(mode, fromSettings) {
   state.profileMode = ["manage", "rename"].includes(mode) ? mode : "select";
+  if (fromSettings !== undefined) state.profileSelectFromSettings = !!fromSettings;
   const list = document.getElementById("profile-list");
   const profiles = getProfiles();
 
@@ -4989,6 +5029,11 @@ function openProfileSelectScreen(mode) {
       openProfileCreateScreen();
     });
   }
+
+  // 「けす」はここから戻れないと、押せるのが削除だけになる
+  document
+    .getElementById("btn-profile-select-back")
+    .classList.toggle("hidden", !state.profileSelectFromSettings);
 
   showScreen("screen-profile-select");
 }
@@ -5089,9 +5134,14 @@ function submitOnEnter(inputIds, btnId) {
 }
 submitOnEnter(["profile-name-input"], "btn-profile-create-ok");
 
+document.getElementById("btn-profile-select-back").addEventListener("click", () => {
+  playClickSound();
+  openSettingsScreen();
+});
+
 document.getElementById("btn-profile-switch").addEventListener("click", () => {
   playClickSound();
-  openProfileSelectScreen("select");
+  openProfileSelectScreen("select", true);
 });
 
 document.getElementById("btn-resume-session").addEventListener("click", () => {
@@ -5110,12 +5160,12 @@ document.getElementById("btn-discard-session").addEventListener("click", () => {
 
 document.getElementById("btn-profile-rename").addEventListener("click", () => {
   playClickSound();
-  openProfileSelectScreen("rename");
+  openProfileSelectScreen("rename", true);
 });
 
 document.getElementById("btn-profile-manage").addEventListener("click", () => {
   playClickSound();
-  openProfileSelectScreen("manage");
+  openProfileSelectScreen("manage", true);
 });
 
 // プロフィールが決まった状態でアプリ本体に入る。
@@ -6087,7 +6137,8 @@ function startInitialScreen() {
   if (!getProfiles().some((p) => p.id === getActiveProfileId())) {
     localStorage.removeItem(ACTIVE_PROFILE_KEY);
   }
-  openProfileSelectScreen("select");
+  // 起動時の「だれが あそぶ？」。まだアプリに入っていないので戻る先が無い
+  openProfileSelectScreen("select", false);
 }
 // startInitialScreen() はここでは直接呼ばない。
 // Firebase の onAuthStateChanged（下の Firebase セクション）がログイン状態を確認してから呼ぶ。

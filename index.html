@@ -89,6 +89,10 @@
     <p class="sub" data-i18n="profile.selectSub"></p>
     <p class="sub profile-limit-note hidden" id="profile-limit-note"></p>
     <div class="profile-list" id="profile-list"></div>
+    <!-- ⚠️ **逃げ道。**この画面はタブバーもステータスバーも消える（PROFILE_SCREENS）ので、
+         これが無いと「けす」から抜けられず、唯一押せるのが削除だけになる
+         （2026-09-20 日次QAで発見）。せっていから来たときだけ出す -->
+    <button type="button" id="btn-profile-select-back" class="btn-secondary hidden" data-i18n="common.back"></button>
   </section>
 
   <!-- プロフィール作成 -->
@@ -525,6 +529,6 @@
 <script src="i18n.js?v=63"></script>
 <script src="content-ja.js?v=15"></script>
 <script src="content-en.js?v=9"></script>
-<script src="script.js?v=111"></script>
+<script src="script.js?v=112"></script>
 </body>
 </html>
