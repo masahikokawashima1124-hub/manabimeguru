@@ -516,6 +516,31 @@
   font-weight: 700;
 }
 
+/* 復習リマインド（せってい内・保護者向け）。account-design.md §10-13 */
+.review-notify-box {
+  background: linear-gradient(160deg, #ffffff, var(--card-bg-2));
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow), var(--gloss-top);
+  margin-top: 10px;
+}
+
+.review-notify-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.review-notify-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 /* 有料になった瞬間の通知。別タブで支払ったあと、アプリ側で何も起きないと
    反映されたか分からないため、画面のどこにいても見えるよう固定で出す。 */
 .plan-upgraded-toast {
@@ -2328,30 +2353,6 @@ h2 {
   font-weight: 700;
 }
 
-/* ログイン画面：登録せずに試す導線をログインフォームより目立たせる */
-.guest-entry {
-  margin: 0 auto 18px;
-  max-width: 420px;
-  text-align: center;
-}
-
-.btn-guest {
-  width: 100%;
-  font-size: 1.05rem;
-  padding: 14px 18px;
-}
-
-.guest-note {
-  margin-top: 8px;
-  font-size: 0.82rem;
-  color: #6b7280;
-}
-
-.guest-prompt {
-  font-size: 0.82rem;
-  line-height: 1.6;
-}
-
 /* メールアドレス未確認の案内。更新前通知が届かない実害があるので目に留める */
 .verify-box {
   margin: 12px 0 0;
@@ -2366,20 +2367,6 @@ h2 {
   font-weight: 700;
   line-height: 1.8;
   color: #1d4f7c;
-}
-
-/* おためし中のデータ消失リスク。見落とすと長く遊んだあとに全部消えるので、
-   通常の注記（.guest-prompt）より一段強く出す */
-.guest-data-warning {
-  margin: 10px 0 0;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  background: #fff8e8;
-  border: 1.5px solid #f4d9a0;
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1.8;
-  color: #7a5a10;
 }
 
 .profile-limit-note {

@@ -4,21 +4,10 @@
 let fbCurrentUser = null;
 let _syncDirtyTimer = null;
 
-// ===== おためしモード（未登録のまま使う） =====
-// 初めて来た人にメール登録を求めると、そこで大半が離脱する。
-// 登録せずにそのまま遊べるようにし、データはこの端末の localStorage にだけ置く。
-// あとからアカウント登録すると migrateLocalProfilesToFirestore() がそのまま引き取る。
-const GUEST_KEY = "guest_mode";
-
-function isGuestMode() {
-  return localStorage.getItem(GUEST_KEY) === "1";
-}
-
 // ⚠️ **localStorage への書き込みは失敗することがある。**学校配布のChromebookのように
 //    サイトのデータ保存が禁止されている端末や、端末のストレージが本当に一杯のとき、
 //    setItem は例外を投げる。投げたまま外へ出すと、呼び出し元がそこで止まって
-//    「押しても何も起きないボタン」になる（2026-09-19 日次QAで発見。
-//    ゲスト開始がログイン画面から一歩も動かず、エラーも出なかった）。
+//    「押しても何も起きないボタン」になる（2026-09-19 日次QAで発見）。
 //    **書けたかどうかを返し、呼び出し元が案内を出せるようにする。**
 function tryLocalSet(key, value) {
   try {
@@ -27,16 +16,6 @@ function tryLocalSet(key, value) {
   } catch {
     return false;
   }
-}
-
-function setGuestMode(on) {
-  if (on) return tryLocalSet(GUEST_KEY, "1");
-  try {
-    localStorage.removeItem(GUEST_KEY);
-  } catch {
-    /* 消せなくても実害はない */
-  }
-  return true;
 }
 
 // ===== プラン（無料／プレミアム） =====
@@ -49,26 +28,38 @@ function isPaidPlan() {
   return fbPlan === "paid";
 }
 
+// 復習リマインド（account-design.md §10-13）。有料会員だけが設定でき、
+// households/{uid}.notify_review（既定 false）をそのままミラーしておく。
+let fbNotifyReview = false;
+
+async function setNotifyReview(on) {
+  if (!fbCurrentUser) return;
+  fbNotifyReview = !!on;
+  try {
+    await fbDb.collection("households").doc(fbCurrentUser.uid)
+      .set({ notify_review: fbNotifyReview }, { merge: true });
+  } catch (e) {
+    console.warn("[notify_review] write failed:", e.message);
+  }
+}
+
 // ===== 機能の解放条件 =====
 // 機能ごとの「誰が使えるか」を1か所に集めてある。
 //
-//   "all"     … おためし中でも使える
-//   "account" … メールアドレスの登録が要る（＝登録してもらう動機になる）
-//   "paid"    … プレミアム限定
+//   "all"  … 無料でも使える（2026-09-23よりログインは全員必須なので、
+//            以前あった「アカウント登録が要る」区分は意味を持たなくなった）
+//   "paid" … プレミアム限定
 //
 // ⚠️ **この表を書き換えるだけで解放条件を変えられるようにしてある。**
 //    利用者が増えたあとで「きょうの1問」を有料専用にしたくなったら、
-//    "account" を "paid" にする。それ以外のコードは触らない（2026-09-13 方針）。
+//    "all" を "paid" にする。それ以外のコードは触らない（2026-09-13 方針）。
 //    判定を各画面に散らすと、あとから変えるときに拾い漏れる。
 const FEATURE_GATES = {
-  // 保護者向け。子が今日つまずいた問題を1問だけ見せる。
-  // いまはメール登録の動機づけが目的なので "account"。
-  todayQuestion: "account",
+  todayQuestion: "all",
 };
 
 function isFeatureUnlocked(name) {
   switch (FEATURE_GATES[name] || "all") {
-    case "account": return !!fbCurrentUser;
     case "paid": return isPaidPlan();
     default: return true;
   }
@@ -184,13 +175,34 @@ const SUPPORT_EMAIL = "manabimeguru@comagoto.com";
 //     ポップアップ側にはctaがあっても出さない・2026-09-05方針変更）
 //     { label: {ja, es}, url: "https://..." }        … 外部リンク（特定の動画など）を新規タブで開く
 //     { label: {ja, es}, action: "plan" }             … せってい内の「プラン」節へスクロールする
+//     { label: {ja, es}, action: "reviewNotify" }     … せってい内の「復習リマインド」節へスクロールする
 //     { label: {ja, es}, action: "youtube" }          … 公式YouTubeチャンネル（t("youtube.url")、
 //                                                        ja/esで別チャンネル）を新規タブで開く
 //   modalFrom / modalUntil: 任意。両方書くと、その期間はメイン画面が出る前にポップアップでも見せる
 //     "YYYY-MM-DD"（当日を含む）。省略するとせってい画面の一覧だけに載る（今までの動作）。
 //     **期間中は起動のたびに毎回出す**（一度見たら消える、ではない）。
 //     複数の項目が同時に該当する期間だと、配列の先頭にある項目を優先して1つだけ出す。
+//   plan: 任意。"paid" にすると有料会員にだけ見せる（account-design.md §10-13）。
+//     省略すると全員に見せる（今までの動作）。無料会員向けの「paidだけの機能」を
+//     宣伝する場合は plan を付けずに cta: { action: "plan" } で案内する。
 const ANNOUNCEMENTS = [
+  {
+    id: "2026-09-23-review-notify",
+    date: "2026-09-23",
+    plan: "paid",
+    title: {
+      ja: "復習の期日をメールでお知らせできます",
+      es: "Ahora puedes recibir un aviso por correo cuando toque repasar",
+    },
+    body: {
+      ja: "お子さまがまちがえた問題は、翌日・3日後・7日後・20日後にもう一度出る仕組みです。アプリを開かない日が続いても、期日が来た日にメールでお知らせできるようになりました。「せってい」の「復習リマインド」でオンにしてください。",
+      es: "Las preguntas falladas vuelven a salir al día siguiente y a los 3, 7 y 20 días. Ahora puedes recibir un correo el día que toque repasar, aunque no abras la app. Actívalo en «Ajustes» → «Recordatorio de repaso».",
+    },
+    cta: {
+      label: { ja: "せっていを開く", es: "Ir a Ajustes" },
+      action: "reviewNotify",
+    },
+  },
   {
     id: "2026-09-05-autumn-spirits",
     date: "2026-09-05",
@@ -234,9 +246,14 @@ function markAnnouncementsRead(ids) {
   localStorage.setItem(ANNOUNCE_READ_KEY, JSON.stringify([...read]));
 }
 
+// plan: "paid" の項目は有料会員にしか見せない（account-design.md §10-13）
+function isAnnouncementVisible(a) {
+  return !a.plan || (a.plan === "paid" && isPaidPlan());
+}
+
 function hasUnreadAnnouncements() {
   const read = getAnnounceReadIds();
-  return ANNOUNCEMENTS.some((a) => !read.has(a.id));
+  return ANNOUNCEMENTS.some((a) => isAnnouncementVisible(a) && !read.has(a.id));
 }
 
 // せっていタブの未読バッジ。起動時と、せってい画面を開いて既読にしたあとの両方で呼ぶ
@@ -251,7 +268,7 @@ function updateSettingsTabBadge() {
 function getEligibleModalAnnouncement() {
   const today = new Date().toISOString().slice(0, 10);
   return ANNOUNCEMENTS.find((a) => (
-    a.modalFrom && a.modalUntil && a.modalFrom <= today && today <= a.modalUntil
+    isAnnouncementVisible(a) && a.modalFrom && a.modalUntil && a.modalFrom <= today && today <= a.modalUntil
   )) || null;
 }
 
@@ -4335,6 +4352,7 @@ function openSettingsScreen() {
   renderFeedbackSetting();
   renderTestimonialSetting();
   renderPlanSetting();
+  renderReviewNotifySetting();
 
   refreshProfileSettingLine();
 
@@ -4656,7 +4674,7 @@ function renderAnnouncements() {
   if (!box) return;
 
   const locale = getLocale();
-  const items = ANNOUNCEMENTS.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  const items = ANNOUNCEMENTS.filter(isAnnouncementVisible).sort((a, b) => (a.date < b.date ? 1 : -1));
 
   if (items.length === 0) {
     box.innerHTML = `<p class="announce-empty">${t("announce.empty")}</p>`;
@@ -4672,6 +4690,8 @@ function renderAnnouncements() {
       const label = item.cta.label[locale] || item.cta.label.ja;
       if (item.cta.action === "plan") {
         ctaHTML = `<button type="button" class="announce-cta" data-scroll-plan="1">${label}</button>`;
+      } else if (item.cta.action === "reviewNotify") {
+        ctaHTML = `<button type="button" class="announce-cta" data-scroll-review-notify="1">${label}</button>`;
       } else if (item.cta.action === "youtube") {
         ctaHTML = `<a class="announce-cta" href="${t("youtube.url")}" target="_blank" rel="noopener noreferrer">${label}</a>`;
       } else if (item.cta.url) {
@@ -4695,6 +4715,12 @@ function renderAnnouncements() {
       document.getElementById("settings-plan").scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
+  box.querySelectorAll("[data-scroll-review-notify]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClickSound();
+      document.getElementById("settings-review-notify").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
 
   // 表示した分はここで既読にする（次回開いたときはNEWバッジが消えている）
   markAnnouncementsRead(items.map((i) => i.id));
@@ -4702,18 +4728,10 @@ function renderAnnouncements() {
 }
 
 // ご要望・お問い合わせ。Firestoreの feedback コレクションに書き込みのみ行う
-// （一方通行の目安箱。ユーザー自身も読み返せない）。おためし中は送信できない
-// ——保護者のアカウントに紐づけるため。この案内自体が登録への軽い後押しも兼ねる。
+// （一方通行の目安箱。ユーザー自身も読み返せない）。保護者のアカウントに紐づける。
 function renderFeedbackSetting() {
   const box = document.getElementById("settings-feedback");
   if (!box) return;
-
-  if (!fbCurrentUser) {
-    box.classList.add("feedback-box--guest");
-    box.innerHTML = `<p class="feedback-guest-notice">${t("feedback.guestNotice")}</p>`;
-    return;
-  }
-  box.classList.remove("feedback-box--guest");
 
   box.innerHTML = `
     <textarea class="feedback-textarea" id="feedback-text" placeholder="${t("feedback.placeholder")}"></textarea>
@@ -4759,13 +4777,6 @@ function renderFeedbackSetting() {
 function renderTestimonialSetting() {
   const box = document.getElementById("settings-testimonial");
   if (!box) return;
-
-  if (!fbCurrentUser) {
-    box.classList.add("feedback-box--guest");
-    box.innerHTML = `<p class="feedback-guest-notice">${t("testimonial.guestNotice")}</p>`;
-    return;
-  }
-  box.classList.remove("feedback-box--guest");
 
   let rating = 0;
   box.innerHTML = `
@@ -4863,19 +4874,6 @@ function renderPlanSetting() {
     </ul>
     <p class="plan-promise">${t("plan.gachaPromise")}</p>`;
 
-  // おためし中：先にアカウント登録が要る（支払いを世帯に結びつけられないため）
-  if (!fbCurrentUser) {
-    box.innerHTML = `${benefits}
-      <p class="plan-note">${t("plan.guestNote")}</p>
-      <button type="button" id="btn-plan-signup" class="btn-secondary">${t("auth.guestSignup")}</button>`;
-    document.getElementById("btn-plan-signup").addEventListener("click", () => {
-      playClickSound();
-      setAuthBackToGuestVisible(true);
-      openSignupScreen();
-    });
-    return;
-  }
-
   const links = stripePaymentLinks();
   const monthly = buildUpgradeUrl(links.monthly);
   const yearly = buildUpgradeUrl(links.yearly);
@@ -4894,6 +4892,36 @@ function renderPlanSetting() {
     </div>
     <p class="plan-note">${t("plan.afterBuyNote")}</p>
     ${legalLinkHTML()}`;
+}
+
+// 復習リマインド（account-design.md §10-13）。学習内容そのものには壁を作らず、
+// 「期日が来たことをメールで知らせる」という親の手間の代行だけを有料側に置く。
+function renderReviewNotifySetting() {
+  const box = document.getElementById("settings-review-notify");
+  if (!box) return;
+
+  if (!isPaidPlan()) {
+    box.innerHTML = `
+      <p class="plan-note">${t("reviewNotify.freeNote")}</p>
+      <button type="button" class="announce-cta" data-scroll-plan="1">${t("plan.title")}</button>`;
+    box.querySelector("[data-scroll-plan]").addEventListener("click", () => {
+      playClickSound();
+      document.getElementById("settings-plan").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return;
+  }
+
+  box.innerHTML = `
+    <label class="review-notify-toggle">
+      <input type="checkbox" id="review-notify-checkbox" ${fbNotifyReview ? "checked" : ""}>
+      <span>${t("reviewNotify.toggleLabel")}</span>
+    </label>
+    <p class="plan-note">${t("reviewNotify.paidNote")}</p>`;
+
+  document.getElementById("review-notify-checkbox").addEventListener("change", (e) => {
+    playClickSound();
+    setNotifyReview(e.target.checked);
+  });
 }
 
 // ===== プロフィール画面 =====
@@ -6238,15 +6266,21 @@ function watchHouseholdPlan() {
   _planUnsubscribe = fbDb.collection("households").doc(fbCurrentUser.uid)
     .onSnapshot((snap) => {
       if (!snap.exists) return;
-      const next = snap.data().plan === "paid" ? "paid" : "free";
-      if (next === fbPlan) return;
+      const data = snap.data();
+      const next = data.plan === "paid" ? "paid" : "free";
+      const nextNotify = !!data.notify_review;
+      const planChanged = next !== fbPlan;
+      const notifyChanged = nextNotify !== fbNotifyReview;
+      if (!planChanged && !notifyChanged) return;
 
       const becamePaid = next === "paid" && fbPlan !== "paid";
       fbPlan = next;
+      fbNotifyReview = nextNotify;
 
       // 開いている画面に即反映する（ずかんは開き直したときに新しいプランで描かれる）
       if (document.getElementById("screen-settings").classList.contains("active")) {
         renderPlanSetting();
+        renderReviewNotifySetting();
       }
       if (becamePaid) showPlanUpgradedNotice();
     }, (e) => {
@@ -6287,16 +6321,20 @@ async function migrateLocalProfilesToFirestore() {
 
   const snap = await householdRef.get();
   if (snap.exists) {
-    // すでに世帯が存在する → 移行済み。プランだけ読み取る。
-    fbPlan = snap.data().plan === "paid" ? "paid" : "free";
+    // すでに世帯が存在する → 移行済み。プランと復習リマインドの設定を読み取る。
+    const data = snap.data();
+    fbPlan = data.plan === "paid" ? "paid" : "free";
+    fbNotifyReview = !!data.notify_review;
     return;
   }
 
-  // 世帯ドキュメントを作成（新規登録の既定は無料プラン）
+  // 世帯ドキュメントを作成（新規登録の既定は無料プラン・復習リマインドはオフ）
   fbPlan = "free";
+  fbNotifyReview = false;
   await householdRef.set({
     email: fbCurrentUser.email,
     plan: "free",
+    notify_review: false,
     createdAt: new Date().toISOString(),
   });
 
@@ -6429,17 +6467,8 @@ document.getElementById("btn-account-logout").addEventListener("click", async ()
 
 function refreshAuthAccountLine() {
   const el = document.getElementById("auth-account-line");
-  if (!el) return;
-  const guest = !fbCurrentUser;
-  el.textContent = guest ? t("auth.guestAccountLine") : t("auth.accountLine", { email: fbCurrentUser.email });
-
-  // おためし中は「登録する／ログインする」、ログイン後は「ログアウト」を出す
-  document.getElementById("auth-guest-warning").classList.toggle("hidden", !guest);
-  document.getElementById("auth-guest-prompt").classList.toggle("hidden", !guest);
-  document.getElementById("btn-guest-signup").classList.toggle("hidden", !guest);
-  document.getElementById("btn-guest-login").classList.toggle("hidden", !guest);
-  document.getElementById("btn-account-logout").classList.toggle("hidden", guest);
-
+  if (!el || !fbCurrentUser) return;
+  el.textContent = t("auth.accountLine", { email: fbCurrentUser.email });
   refreshEmailVerifyNotice();
 }
 
@@ -6493,50 +6522,10 @@ function setVerifyFeedback(text, kind) {
   el.className = "backup-feedback" + (kind ? " " + kind : "");
 }
 
-// おためし中からログイン／新規登録に進んだときだけ「もどる」を出す。
-// 未登録の初回起動では戻る先がないので隠しておく。
-function setAuthBackToGuestVisible(visible) {
-  document.getElementById("btn-login-back-to-guest").classList.toggle("hidden", !visible);
-  document.getElementById("btn-signup-back-to-guest").classList.toggle("hidden", !visible);
-}
-
-document.getElementById("btn-login-guest").addEventListener("click", () => {
-  playClickSound();
-  if (!setGuestMode(true)) {
-    // 端末にデータを保存できない。黙って止まるより、理由を出して気づけるようにする
-    const box = document.getElementById("login-feedback");
-    box.textContent = t("auth.storageBlocked");
-    box.className = "backup-feedback error";
-    return;
-  }
-  setAuthBackToGuestVisible(false);
-  refreshAuthAccountLine();
-  startInitialScreen();
-});
-
-document.getElementById("btn-guest-signup").addEventListener("click", () => {
-  playClickSound();
-  setAuthBackToGuestVisible(true);
-  openSignupScreen();
-});
-
-document.getElementById("btn-guest-login").addEventListener("click", () => {
-  playClickSound();
-  setAuthBackToGuestVisible(true);
-  openLoginScreen();
-});
-
-[["btn-login-back-to-guest"], ["btn-signup-back-to-guest"]].forEach(([id]) => {
-  document.getElementById(id).addEventListener("click", () => {
-    playClickSound();
-    setAuthBackToGuestVisible(false);
-    startInitialScreen();
-  });
-});
-
 // ------- 認証状態の監視（起動フローの入り口） -------
 // onAuthStateChanged は Firebase がキャッシュした認証情報をもとにほぼ即座に発火する。
-// ログイン済みであれば移行確認 → startInitialScreen()、未ログインならログイン画面へ。
+// ログイン済みであれば移行確認 → startInitialScreen()、未ログインなら常にログイン画面へ
+// （2026-09-23よりアカウント登録は必須。おためしモードは廃止した）。
 
 fbAuth.onAuthStateChanged(async (user) => {
   fbCurrentUser = user;
@@ -6544,17 +6533,12 @@ fbAuth.onAuthStateChanged(async (user) => {
   document.getElementById("btn-signup-submit").disabled = false;
 
   if (!user) {
-    // 未ログインでも、おためし中ならそのままアプリに入る
     stopWatchingHouseholdPlan();
     fbPlan = "free";
-    refreshAuthAccountLine();
-    if (isGuestMode()) startInitialScreen();
-    else openLoginScreen();
+    fbNotifyReview = false;
+    openLoginScreen();
     return;
   }
-
-  // 登録・ログインできたらおためしは終了（ローカルのデータは移行で引き継がれる）
-  setGuestMode(false);
 
   try {
     await migrateLocalProfilesToFirestore();
