@@ -193,36 +193,37 @@ const ANNOUNCEMENTS = [
     title: {
       ja: "復習の期日をメールでお知らせできます",
       es: "Ahora puedes recibir un aviso por correo cuando toque repasar",
+      de: "Wir können dich jetzt per E-Mail an fällige Wiederholungen erinnern",
     },
     body: {
       ja: "お子さまがまちがえた問題は、翌日・3日後・7日後・20日後にもう一度出る仕組みです。アプリを開かない日が続いても、期日が来た日にメールでお知らせできるようになりました。「せってい」の「復習リマインド」でオンにしてください。",
       es: "Las preguntas falladas vuelven a salir al día siguiente y a los 3, 7 y 20 días. Ahora puedes recibir un correo el día que toque repasar, aunque no abras la app. Actívalo en «Ajustes» → «Recordatorio de repaso».",
+      de: "Falsch beantwortete Fragen kommen am nächsten Tag sowie nach 3, 7 und 20 Tagen wieder. Jetzt kannst du eine E-Mail erhalten, sobald eine Wiederholung fällig ist – auch wenn du die App länger nicht öffnest. Aktiviere es unter „Einstellungen“ → „Wiederholungs-Erinnerung“.",
     },
     cta: {
-      label: { ja: "せっていを開く", es: "Ir a Ajustes" },
+      label: { ja: "せっていを開く", es: "Ir a Ajustes", de: "Zu den Einstellungen" },
       action: "reviewNotify",
     },
   },
   {
     id: "2026-09-05-autumn-spirits",
     date: "2026-09-05",
-    // ⚠️ ja と es で見出しの中身が違う。ja は四季160体が出そろった話、
-    //    es はまだ秋のカードが出る前の予告（下の body も同じ理由でロケール別）。
+    // ⚠️ ロケールごとに公開済みの季節数が違うため、見出し・本文もロケール別（事実がロケールで
+    //    異なる）。2026-09-23時点: ja=夏秋冬春の全160体 / es=夏秋冬の120体（春は未公開）/
+    //    de=夏秋の80体（冬春は未公開）。カードの絵が言語ごとに別物で、まだ全部は
+    //    作り終えていないため。片方だけ直す・言語ごとに違う文面にするのが正解になる場合がある。
     title: {
       ja: "秋・冬・春の精霊たち、そろいました！",
-      es: "¡Nuevos espíritus de otoño!",
+      es: "¡Espíritus de otoño e invierno disponibles!",
+      de: "Herbst- und Wintergeister sind da!",
     },
-    // ⚠️ 日本語版は 2026-09-13 に四季160体を公開したので、本文を「近日中に追加されます」
-    //    から実際に出た形に直した（日本語の文面はユーザー指定）。
-    //    **スペイン語版はまだ夏の40体だけ**（カードの絵が言語ごとに別物で、スペイン語版の
-    //    120体ぶんが未制作）なので、es の本文は「もうすぐ」のままが正しい。
-    //    おしらせはロケールで事実が違うことがあり、片方だけ直すのが正解になる場合がある。
     body: {
       ja: "精霊カードに秋・冬・春の120体が加わり、全160体になりました！精霊たちのコミカルな日常はYouTubeに順次アップされます。お楽しみに。",
-      es: "Muy pronto se añadirán las cartas de los espíritus de otoño. Ya puedes verlos por adelantado en nuestro canal de YouTube. ¡No te lo pierdas!",
+      es: "Ya se han añadido las cartas de los espíritus de otoño e invierno (120 en total). Las de primavera llegarán más adelante. Ya puedes ver a los espíritus en nuestro canal de YouTube. ¡No te lo pierdas!",
+      de: "Die Herbst- und Wintergeister sind jetzt verfügbar (insgesamt 80 Karten). Die Frühlingskarten folgen später. Schau dir die Geister schon jetzt auf unserem YouTube-Kanal an.",
     },
     cta: {
-      label: { ja: "YouTubeを見る", es: "Ver YouTube" },
+      label: { ja: "YouTubeを見る", es: "Ver YouTube", de: "YouTube ansehen" },
       action: "youtube",
     },
     modalFrom: "2026-09-05",
@@ -862,20 +863,33 @@ function stopAllBgmExcept(keepKey) {
   });
 }
 
+// "home" は日本語の歌詞つき主題歌「まなびめぐる」（ASSETS.md参照）。
+// 日本語版以外では流さず、代わりに collection.mp3（インスト曲）を流す
+// （2026-09-23 ユーザー決定）。currentBgmKey 自体は論理キー（"home"）のまま保つ
+// （画面遷移の同一判定・サウンドON/OFF切り替え時の再開先はそのまま "home" 扱いにする）。
+function isThemeSongKey(key) {
+  return key === "home";
+}
+
+function effectiveBgmKey(key) {
+  return isThemeSongKey(key) && getLocale() !== "ja" ? "collection" : key;
+}
+
 function playBgm(key, { restart = false } = {}) {
   if (!key || !BGM_SOURCES[key]) return;
   if (currentBgmKey === key && !restart) return;
 
   currentBgmKey = key;
-  stopAllBgmExcept(key);
+  const playKey = effectiveBgmKey(key);
+  stopAllBgmExcept(playKey);
 
   if (!isSoundEnabled() || !audioUnlocked) return;
 
-  const audio = getBgmPlayer(key);
+  const audio = getBgmPlayer(playKey);
   if (restart) audio.currentTime = 0;
   const play = audio.play();
   if (play && play.catch) play.catch(() => {}); // 自動再生がまだ許可されていない場合は次の操作で再開する
-  fadeAudio(audio, bgmVolumeFor(key), BGM_FADE_MS);
+  fadeAudio(audio, bgmVolumeFor(playKey), BGM_FADE_MS);
 }
 
 function updateBgmForScreen(id) {
