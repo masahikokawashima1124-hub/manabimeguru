@@ -1478,6 +1478,17 @@ h2 {
   border-color: var(--text-muted);
   color: var(--text-muted);
 }
+/* 上限に達していて押せない「＋」。⚠️ **消さずに薄く出す。**消すと
+   「増やせる機能そのものが無い」ように見えるため（2026-09-24 ユーザー決定）。 */
+.profile-card--locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.profile-card--locked:hover,
+.profile-card--locked:active { transform: none; box-shadow: none; }
+.profile-card--locked .profile-card-plus { font-size: 1.8rem; }
+
 /* 「＋ あたらしく つくる」だけが持つ記号。名前カードには絵柄を置かない */
 .profile-card-plus { font-size: 2.6rem; line-height: 1; }
 /* アイコンを廃したぶん、名前そのものを主役にする */

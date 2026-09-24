@@ -358,6 +358,9 @@ const REPEAT_STAMP_RATIO = 0.5;
 // 音のON/OFFと言語は端末ごとの設定なので、プロフィールでは分けない。
 const PROFILES_KEY = "profiles";
 const ACTIVE_PROFILE_KEY = "active_profile";
+// 一度でもログイン（または新規登録）まで到達したことがあるか。
+// **最初の画面をログインにするか新規登録にするか**の判断にだけ使う。
+const AUTH_SEEN_KEY = "auth_seen";
 const PROFILE_NAME_MAX = 8;
 const PROFILE_MAX = 6;
 
@@ -4984,6 +4987,7 @@ function openProfileSelectScreen(mode, fromSettings) {
   if (fromSettings !== undefined) state.profileSelectFromSettings = !!fromSettings;
   const list = document.getElementById("profile-list");
   const profiles = getProfiles();
+  const canAddProfile = profiles.length < profileLimit();
 
   list.innerHTML = profiles.map((p) => `
     <button type="button" class="profile-card" data-profile-id="${p.id}">
@@ -4991,17 +4995,19 @@ function openProfileSelectScreen(mode, fromSettings) {
       ${state.profileMode === "manage" ? `<span class="profile-card-delete">${t("profile.deleteBtn")}</span>` : ""}
       ${state.profileMode === "rename" ? `<span class="profile-card-rename">${t("profile.renameBtn")}</span>` : ""}
     </button>
-  `).join("") + (state.profileMode === "select" && profiles.length < profileLimit() ? `
-    <button type="button" class="profile-card profile-card--new" id="btn-profile-new">
-      <span class="profile-card-plus">＋</span>
-      <span class="profile-card-name">${t("profile.createNew")}</span>
+  `).join("") + (state.profileMode === "select" ? `
+    <button type="button" class="profile-card profile-card--new${canAddProfile ? "" : " profile-card--locked"}"
+            id="btn-profile-new"${canAddProfile ? "" : " disabled aria-disabled=\"true\""}>
+      <span class="profile-card-plus">${canAddProfile ? "＋" : "🔒"}</span>
+      <span class="profile-card-name">${canAddProfile ? t("profile.createNew") : t("profile.addLocked")}</span>
     </button>
   ` : "");
 
-  // 上限に達しているときは「＋」を出さず、なぜ増やせないかを書く
+  // ⚠️ **上限でも「＋」を消さない**（2026-09-24 ユーザー決定）。消してしまうと
+  //    「増やせる機能そのものが無い」ように見える。薄く鍵つきで置いて、
+  //    なぜ押せないかを下に書く。
   const limitNote = document.getElementById("profile-limit-note");
-  const atLimit = state.profileMode === "select" && profiles.length >= profileLimit();
-  limitNote.textContent = atLimit && !isPaidPlan() ? t("profile.freeLimit", { n: PROFILE_MAX }) : "";
+  limitNote.textContent = !canAddProfile && !isPaidPlan() ? t("profile.freeLimit", { n: PROFILE_MAX }) : "";
   limitNote.classList.toggle("hidden", !limitNote.textContent);
 
   // なまえはユーザー入力なので、HTMLに混ぜずtextContentで入れる
@@ -6129,11 +6135,10 @@ function startInitialScreen() {
     openProfileCreateScreen();
     return;
   }
-  if (profiles.length === 1) {
-    setActiveProfileId(profiles[0].id);
-    enterAppWithActiveProfile();
-    return;
-  }
+  // ⚠️ **1人でも選択画面を出す**（2026-09-24 ユーザー決定。Netflix のイメージ）。
+  //    以前は1人なら素通りしてホームへ入れていたが、それだと
+  //    「いま誰として遊んでいるか」が画面に出ないまま始まり、
+  //    2人目を足す入口も（せっていの奥にしか）見えなかった。
   if (!getProfiles().some((p) => p.id === getActiveProfileId())) {
     localStorage.removeItem(ACTIVE_PROFILE_KEY);
   }
@@ -6418,6 +6423,18 @@ function openLoginScreen() {
   showScreen("screen-login");
 }
 
+// この端末をいちど使ったことがあるか。
+// ⚠️ **プロフィールの有無だけでは足りない。**全部消したあとや、別端末で作った
+//    アカウントに入り直す場合もあるので、ログインまで到達した記録も見る。
+function hasUsedAppBefore() {
+  try {
+    if (localStorage.getItem(AUTH_SEEN_KEY) === "1") return true;
+  } catch {
+    /* 読めない端末では「初めて」として扱う（新規登録を出すほうが自然） */
+  }
+  return getProfiles().length > 0;
+}
+
 function openSignupScreen() {
   document.getElementById("signup-email-input").value = "";
   document.getElementById("signup-password-input").value = "";
@@ -6601,9 +6618,19 @@ fbAuth.onAuthStateChanged(async (user) => {
     stopWatchingHouseholdPlan();
     fbPlan = "free";
     fbNotifyReview = false;
-    openLoginScreen();
+    // ⚠️ **初めての端末には新規登録を出す**（2026-09-24 ユーザー決定）。
+    //    おためしモードを廃止して登録が必須になったので、**アプリを開く新規の人は
+    //    ほぼ全員が未登録**。それなのに常にログイン画面から始めると、全員が
+    //    「アカウントをお持ちの前提」の画面に着き、小さなリンクを探して移ることになる。
+    //    一度でも使った端末（プロフィールがある／ログインまで行った記録がある）は、
+    //    ログアウト後などにまた入るところなので、いままでどおりログイン画面。
+    if (hasUsedAppBefore()) openLoginScreen();
+    else openSignupScreen();
     return;
   }
+
+  // この端末は一度ログインまで来た。次に未ログインで開いたときはログイン画面を出す
+  tryLocalSet(AUTH_SEEN_KEY, "1");
 
   try {
     await migrateLocalProfilesToFirestore();
