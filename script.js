@@ -4982,6 +4982,13 @@ function renderReviewNotifySetting() {
 // fromSettings: せってい画面から来たかどうか。**起動時の「だれが あそぶ？」では false**
 // （まだ入る前なので、戻る先が無い）。省略したときは、いまの値を引き継ぐ
 // （削除・改名のあとに同じモードで開き直すときに、いちいち渡さなくてよいように）。
+// 「＋」が押せないときのラベル。⚠️ **プランを見ること。**プレミアムで6人まで作った家庭に
+// 「ふやせるのは プレミアムプラン」と出していた（2026-09-24 日次QAで発見）。
+// すでに払っている人に払えと言う表示になっていた。
+function lockedAddLabel() {
+  return isPaidPlan() ? t("profile.addFull", { n: PROFILE_MAX }) : t("profile.addLocked");
+}
+
 function openProfileSelectScreen(mode, fromSettings) {
   state.profileMode = ["manage", "rename"].includes(mode) ? mode : "select";
   if (fromSettings !== undefined) state.profileSelectFromSettings = !!fromSettings;
@@ -4999,7 +5006,7 @@ function openProfileSelectScreen(mode, fromSettings) {
     <button type="button" class="profile-card profile-card--new${canAddProfile ? "" : " profile-card--locked"}"
             id="btn-profile-new"${canAddProfile ? "" : " disabled aria-disabled=\"true\""}>
       <span class="profile-card-plus">${canAddProfile ? "＋" : "🔒"}</span>
-      <span class="profile-card-name">${canAddProfile ? t("profile.createNew") : t("profile.addLocked")}</span>
+      <span class="profile-card-name">${canAddProfile ? t("profile.createNew") : lockedAddLabel()}</span>
     </button>
   ` : "");
 
@@ -5007,7 +5014,11 @@ function openProfileSelectScreen(mode, fromSettings) {
   //    「増やせる機能そのものが無い」ように見える。薄く鍵つきで置いて、
   //    なぜ押せないかを下に書く。
   const limitNote = document.getElementById("profile-limit-note");
-  limitNote.textContent = !canAddProfile && !isPaidPlan() ? t("profile.freeLimit", { n: PROFILE_MAX }) : "";
+  limitNote.textContent = canAddProfile
+    ? ""
+    : isPaidPlan()
+      ? t("profile.full", { n: PROFILE_MAX })
+      : t("profile.freeLimit", { n: PROFILE_MAX });
   limitNote.classList.toggle("hidden", !limitNote.textContent);
 
   // なまえはユーザー入力なので、HTMLに混ぜずtextContentで入れる
@@ -5036,6 +5047,14 @@ function openProfileSelectScreen(mode, fromSettings) {
     });
   }
 
+  // 見出しは、いま何をする画面かに合わせる。どのモードでも「だれが あそぶ？」のままだと、
+  // カードの小さなラベルしか手がかりが無かった（2026-09-24 日次QAで発見）
+  const screen = document.getElementById("screen-profile-select");
+  const titleKey = { manage: "profile.manageTitle", rename: "profile.renameListTitle" };
+  const subKey = { manage: "profile.manageSub", rename: "profile.renameListSub" };
+  screen.querySelector("h2").textContent = t(titleKey[state.profileMode] || "profile.selectTitle");
+  screen.querySelector(".sub").textContent = t(subKey[state.profileMode] || "profile.selectSub");
+
   // 「けす」はここから戻れないと、押せるのが削除だけになる
   document
     .getElementById("btn-profile-select-back")
@@ -5058,6 +5077,7 @@ function requestProfileDelete(profile) {
 
 function openProfileCreateScreen() {
   state.profileRenameId = null;
+  document.getElementById("btn-profile-create-ok").disabled = false;
   document.getElementById("profile-name-input").value = "";
   document.getElementById("profile-create-feedback").textContent = "";
   applyProfileFormLabels();
@@ -5071,6 +5091,7 @@ function openProfileCreateScreen() {
 // 見出しとボタンの文言だけを差し替える。
 function openProfileRenameScreen(profile) {
   state.profileRenameId = profile.id;
+  document.getElementById("btn-profile-create-ok").disabled = false;
   document.getElementById("profile-name-input").value = profile.name;
   document.getElementById("profile-create-feedback").textContent = "";
   applyProfileFormLabels();
@@ -5088,11 +5109,22 @@ function applyProfileFormLabels() {
 }
 
 document.getElementById("btn-profile-create-ok").addEventListener("click", () => {
+  // ⚠️ **押したらすぐ止める。**素早く2回押すと、同じ名前のプロフィールが2つできていた
+  //    （2026-09-24 日次QAで発見。プレミアムのように枠に余裕があるときに踏む）。
+  //    「つぎへ」で 2026-09-19 に直したのと同じ穴が、この画面に残っていた。
+  //    ⚠️ **やり直せる終わり方（名前が空・上限・保存できない）では必ず戻すこと。**
+  //    戻し忘れると、二度と押せないボタンになる。
+  const okBtn = document.getElementById("btn-profile-create-ok");
+  if (okBtn.disabled) return;
+  okBtn.disabled = true;
+  const giveBack = () => { okBtn.disabled = false; };
+
   playClickSound();
   const name = document.getElementById("profile-name-input").value.trim();
   if (!name) {
     document.getElementById("profile-create-feedback").textContent = t("profile.nameRequired");
     document.getElementById("profile-create-feedback").className = "backup-feedback error";
+    giveBack();
     return;
   }
   // なまえの変更のとき。id は変えないので、学習データはそのまま残る
@@ -5102,6 +5134,7 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
     applyProfileFormLabels();
     refreshProfileSettingLine();
     openProfileSelectScreen("rename");
+    giveBack();
     return;
   }
 
@@ -5109,6 +5142,7 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
   if (profile === "storage-blocked") {
     document.getElementById("profile-create-feedback").textContent = t("auth.storageBlocked");
     document.getElementById("profile-create-feedback").className = "backup-feedback error";
+    giveBack();
     return;
   }
   if (!profile) {
@@ -5116,6 +5150,7 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
       ? t("profile.full", { n: PROFILE_MAX })
       : t("profile.freeLimit", { n: PROFILE_MAX });
     document.getElementById("profile-create-feedback").className = "backup-feedback error";
+    giveBack();
     return;
   }
   setActiveProfileId(profile.id);

@@ -233,8 +233,9 @@ const EN_PHRASES = [
   { grade: 4, text: "___ go to the park.", answer: "Let's",
     options: ["Let's", "Let", "Lets", "Letting"], ja: "公園に行こう",
     es: "Vamos al parque", de: "Lass uns in den Park gehen." },
+  // could を外した。日本語は現在形だが "He could run fast." も正しい文になり、正解が2つあった
   { grade: 4, text: "He ___ run fast.", answer: "can",
-    options: ["can", "cans", "canning", "could"], ja: "彼は速く走ることができます",
+    options: ["can", "cans", "canning", "is"], ja: "彼は速く走ることができます",
     es: "Él sabe correr rápido", de: "Er kann schnell laufen." },
   { grade: 4, text: "___ time is it?", answer: "What",
     options: ["What", "When", "Where", "Why"], ja: "何時ですか",
@@ -455,8 +456,11 @@ const EN_PHRASES = [
   { grade: 4, text: "Where ___ your parents? — They're at home.", answer: "are",
     options: ["are", "is", "am", "be"], ja: "ご両親はどこですか",
     es: "¿Dónde están tus padres?", de: "Wo sind deine Eltern? — Sie sind zu Hause." },
-  { grade: 4, text: "What ___ do you want to be? — A doctor.", answer: "job",
-    options: ["job", "work", "thing", "place"], ja: "何の仕事につきたいですか",
+  // ⚠️ もとは "What job do you want to be?" となり、英語として成り立っていなかった
+  //    （2026-09-24 日次QAで発見）。文を作り直し、選択肢も「A doctor」と噛み合うのが
+  //    job だけになるようにした（work は "What work do you want?" でも通ってしまう）
+  { grade: 4, text: "What ___ do you want? — A doctor.", answer: "job",
+    options: ["job", "color", "food", "place"], ja: "どんな仕事がしたいですか",
     es: "¿De qué quieres trabajar?", de: "Was möchtest du werden? — Arzt." },
   { grade: 5, text: "I ___ to Kyoto last year.", answer: "went",
     options: ["went", "go", "goes", "going"], ja: "去年京都に行きました",
@@ -464,11 +468,13 @@ const EN_PHRASES = [
   { grade: 5, text: "I ___ soccer yesterday.", answer: "played",
     options: ["played", "play", "plays", "playing"], ja: "きのうサッカーをしました",
     es: "Ayer jugué al fútbol", de: "Gestern habe ich Fußball gespielt." },
+  // is を外した。文中に時をしめす語が無く、"It is fun." も正しい文になっていた
   { grade: 5, text: "It ___ fun.", answer: "was",
-    options: ["was", "is", "were", "be"], ja: "楽しかったです",
+    options: ["was", "were", "be", "been"], ja: "楽しかったです",
     es: "Fue divertido", de: "Es war lustig." },
+  // are を外した。"We are happy to see you." も正しい文になっていた
   { grade: 5, text: "We ___ happy to see you.", answer: "were",
-    options: ["were", "was", "are", "be"], ja: "あなたに会えてうれしかったです",
+    options: ["were", "was", "be", "been"], ja: "あなたに会えてうれしかったです",
     es: "Nos alegramos de verte", de: "Wir haben uns gefreut, dich zu sehen." },
   { grade: 5, text: "I ___ eat natto, but now I like it.", answer: "didn't",
     options: ["didn't", "don't", "wasn't", "haven't"], ja: "昔は納豆を食べませんでしたが、今はすきです",
@@ -518,8 +524,9 @@ const EN_PHRASES = [
   { grade: 5, text: "My dream is to ___ a vet.", answer: "become",
     options: ["become", "becomes", "becoming", "became"], ja: "わたしの夢はじゅう医になることです",
     es: "Mi sueño es ser veterinario", de: "Mein Traum ist, Tierarzt zu werden." },
+  // are を外した。"There are many people..." も数が合っていて正しい文になっていた
   { grade: 5, text: "There ___ many people at the festival.", answer: "were",
-    options: ["were", "was", "are", "is"], ja: "祭りにはたくさんの人がいました",
+    options: ["were", "was", "be", "been"], ja: "祭りにはたくさんの人がいました",
     es: "Había mucha gente en la fiesta", de: "Beim Fest waren viele Leute." },
   { grade: 6, text: "This is the ___ movie I have ever seen.", answer: "best",
     options: ["best", "good", "better", "more good"], ja: "これは今まで見た中でいちばんよい映画です",
