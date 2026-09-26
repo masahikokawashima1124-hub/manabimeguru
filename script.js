@@ -3611,11 +3611,26 @@ function subjectAvailable(subject) {
   return !allowed || allowed.includes(getLocale());
 }
 
+// ⚠️ **意味がほぼ同じ語どうしを、選択肢に同居させない。**
+//    ことわざ・四字熟語は「ほかの語の意味」をランダムに3つ拾って選択肢にするので、
+//    意味が重なる語（一石二鳥と一挙両得など）が混ざると**正解が2つある4択**になる。
+//    実測で約6%の頻度で起きていた（2026-09-25 日次QAで発見）。
+//    `similarTo`（content-ja.js）で組にしてある語は、互いの選択肢から外す。
+//    ⚠️ **語そのものは消していない。**出題はされる。混ざらないだけ。
+function isConfusablePair(x, y) {
+  const near = (p, q) => Array.isArray(p.similarTo) && p.similarTo.includes(q.a);
+  return near(x, y) || near(y, x);
+}
+
+function meaningDistractorPool(bank, idx) {
+  return bank.filter((entry, i) => i !== idx && !isConfusablePair(bank[idx], entry));
+}
+
 // idx は出題する語の位置。呼ぶたびにランダムに選ぶと同じ語が何度も出るため、
 // 出題側が語を1つずつ指定する。まぎらわしい選択肢だけをランダムにする。
 function buildChoiceProblemFromMeaningBank(bank, idx) {
   const { a: word, b: meaning, grade } = bank[idx];
-  const distractors = shuffle(bank.filter((_, i) => i !== idx).map((x) => x.b)).slice(0, 3);
+  const distractors = shuffle(meaningDistractorPool(bank, idx).map((x) => x.b)).slice(0, 3);
   return {
     grade,
     text: t("q.meaning", { word }),
@@ -3632,7 +3647,7 @@ function buildChoiceProblemFromMeaningBank(bank, idx) {
 // 「この意味になることばはどれ？」の逆引き問題
 function buildReverseMeaningProblem(bank, idx) {
   const { a: word, b: meaning, grade } = bank[idx];
-  const distractors = shuffle(bank.filter((_, i) => i !== idx).map((x) => x.a)).slice(0, 3);
+  const distractors = shuffle(meaningDistractorPool(bank, idx).map((x) => x.a)).slice(0, 3);
   return {
     grade,
     text: t("q.meaningReverse", { meaning }),
