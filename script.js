@@ -551,8 +551,13 @@ function currentSchoolMonth(now) {
 // 学年を変えても引き継げるよう、ポイントとカードは学年で分けずに1つにまとめる。
 const STORAGE_KEY = "stamps_total";
 
+// 壊れた値（数でない・負・NaN）は0として読む。
+// ⚠️ ここを素の parseInt にしておくと、いったんNaNが入ると spendStamps が
+// Math.max(0, NaN - 10) = NaN を書き戻すだけで**自己修復せず、ガチャが無料で回り続ける**。
+// getGrade/getSchoolYearStart と同じく、読むときに必ず妥当性を見る。
 function getTotalStamps() {
-  return parseInt(localStorage.getItem(pk(STORAGE_KEY)) || "0", 10);
+  const v = parseInt(localStorage.getItem(pk(STORAGE_KEY)) || "0", 10);
+  return Number.isFinite(v) && v >= 0 ? v : 0;
 }
 
 function addStamps(count) {
@@ -582,7 +587,7 @@ function dayKey(date) {
 function getDailyPoints() {
   try {
     const parsed = JSON.parse(localStorage.getItem(pk(DAILY_POINTS_KEY)) || "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
     return {};
   }
@@ -1355,7 +1360,8 @@ const PITY_KEY = "gacha_pity";
 const DUPLICATE_REFUND = { N: 3, R: 4, SR: 6, UR: 8 };
 
 function getPity() {
-  return parseInt(localStorage.getItem(pk(PITY_KEY)) || "0", 10);
+  const v = parseInt(localStorage.getItem(pk(PITY_KEY)) || "0", 10);
+  return Number.isFinite(v) && v >= 0 ? v : 0;
 }
 
 // 引きたい季節を選べるようにする（2026-09-16 ユーザー決定）。
@@ -1794,11 +1800,12 @@ document.querySelectorAll("#collection-scope .collection-scope-btn").forEach((bt
 // ===== ガイドキャラのセリフ =====
 
 // 場面名を渡すと、その場面のセリフをランダムに選び、表情もあわせて切り替える
-function setGuide(mood) {
-  const lines = tList(`guide.${mood}`);
+// mood … セリフの取り出し元（guide.<mood>）。poseAs を渡すと、立ち絵だけそちらの気分にする。
+function setGuide(mood, vars, poseAs) {
+  const lines = tList(`guide.${mood}`, vars);
   if (lines.length) document.getElementById("guide-bubble").textContent = pick(lines);
 
-  const pose = GUIDE_MOOD_POSE[mood] || "greet";
+  const pose = GUIDE_MOOD_POSE[poseAs || mood] || "greet";
   const img = document.getElementById("guide-character-img");
   if (!img) return;
   const src = GUIDE_CHARACTER.poses[pose];
@@ -2011,9 +2018,12 @@ function randNonMultipleOf10(min, max) {
 // 小数の表示をロケールに合わせる（スペイン語の学校では小数点にカンマを使う）。
 // checkAnswer() は既にカンマ入力を許容しているので、表示側もここで揃える。
 // 内部で比較に使う answer 文字列（ピリオド区切り）自体は変えず、画面に出す直前だけ通す。
+// 小数点はロケールで変わる。スペイン語もドイツ語もコンマ（3,8）。
+// ⚠️ 受理側（parseLocaleNumber）はコンマ・ピリオドの両方を読むので、表示だけ合わせればよい。
+const DECIMAL_COMMA_LOCALES = ["es", "de"];
 function fmtDecimal(n) {
   const s = String(n);
-  return getLocale() === "es" ? s.replace(".", ",") : s;
+  return DECIMAL_COMMA_LOCALES.includes(getLocale()) ? s.replace(".", ",") : s;
 }
 
 function genDecimal3() {
@@ -2185,6 +2195,66 @@ const MATH_WORDS = {
       { unit: "cajas", unitSg: "caja", item: "lápices", per: "céntimos", label: "un precio" },
     ],
     colors: ["rojo", "azul", "amarillo", "verde", "morado", "naranja", "rosa", "celeste"],
+  },
+  // de … ドイツ語には助数詞が無いので counter は空、howMany も文型に出てこない。
+  //      代わりに**格と性**が効くので、次の3点を守ること。
+  //        ① 文頭に来る語（areaPlaces）は冠詞つき・大文字で持つ
+  //        ② 「pro …」に置く単位は単数形が要るので unitSg を必ず書く
+  //        ③ 品物は**複数形**で持つ（"Es waren 5 Äpfel da."）
+  de: {
+    names: ["Jonas", "Lena", "Felix", "Mia", "Paul", "Emma"],
+    items: [
+      { w: "Äpfel", counter: "", howMany: "Wie viele", edible: true },
+      { w: "Mandarinen", counter: "", howMany: "Wie viele", edible: true },
+      { w: "Bonbons", counter: "", howMany: "Wie viele", edible: true },
+      { w: "Kekse", counter: "", howMany: "Wie viele", edible: true },
+      { w: "Bleistifte", counter: "", howMany: "Wie viele", edible: false },
+      { w: "Aufkleber", counter: "", howMany: "Wie viele", edible: false },
+      { w: "Murmeln", counter: "", howMany: "Wie viele", edible: false },
+      { w: "Eicheln", counter: "", howMany: "Wie viele", edible: false },
+    ],
+    places: ["in der Schachtel", "auf dem Tisch", "im Korb", "in der Tüte"],
+    // past は受動の定形（"5 Äpfel wurden gegessen."）、plain は分詞だけ。
+    consumed: {
+      edible: { past: "wurden gegessen", plain: "gegessen" },
+      other: { past: "wurden verbraucht", plain: "verbraucht" },
+    },
+    roundPlaces: [
+      { label: "Zehner", unit: 10, lower: "Einer" },
+      { label: "Hunderter", unit: 100, lower: "Zehner" },
+      { label: "Tausender", unit: 1000, lower: "Hunderter" },
+    ],
+    // ⚠️ 桁の区切り方はスペイン語と同じ（Tausend=10^3・Millionen=10^6）。日本語の万・億とは違う。
+    bigUnits: [
+      { label: "Tausend", what: "Die Bevölkerung", amount: "Einwohner" },
+      { label: "Millionen", what: "Das Budget", amount: "Euro" },
+    ],
+    // 「Stadt A」「Stadt B」と並べて使うので、冠詞を付けずに持つ。
+    bigPlaces: ["Stadt", "Dorf", "Gemeinde"],
+    estimatePlaces: [{ label: "Hunderter", unit: 100 }, { label: "Tausender", unit: 1000 }],
+    // 常に文頭に来るので冠詞つき・大文字で持つ。
+    areaPlaces: ["Das Klassenzimmer", "Das Blumenbeet", "Der Garten", "Der Parkplatz"],
+    amountItems: [
+      { name: "Saft", unit: "L" },
+      { name: "Wasser", unit: "L" },
+      { name: "Zucker", unit: "kg" },
+    ],
+    // word は「haben {word} von …」に入るので対格（ein Gewicht／einen Preis）。
+    proportionItems: [
+      { name: "Draht", unit: "m", amount: "g", word: "ein Gewicht", heavy: true },
+      { name: "Band", unit: "m", amount: "Cent", word: "einen Preis", heavy: false },
+    ],
+    // label は「haben {label} {total} {per}」に入るので "von" まで込みで持つ。
+    // unitSg は「pro …」に置く単数形（複数形のままだと "pro Schachteln" になる）。
+    perUnitItems: [
+      { unit: "m", unitSg: "m", item: "Band", per: "g", label: "ein Gewicht von" },
+      { unit: "kg", unitSg: "kg", item: "Bonbons", per: "Cent", label: "einen Preis von" },
+      { unit: "L", unitSg: "L", item: "Farbe", per: "m²", label: "eine Deckung von" },
+      { unit: "Pakete", unitSg: "Paket", item: "Hefte", per: "Cent", label: "einen Preis von" },
+      { unit: "Schachteln", unitSg: "Schachtel", item: "Bleistifte", per: "Cent", label: "einen Preis von" },
+    ],
+    // カードの名前として並べるので名詞化（大文字）。
+    colors: ["Rot", "Blau", "Gelb", "Grün", "Lila", "Orange", "Rosa", "Hellblau"],
   },
 };
 
@@ -3341,7 +3411,9 @@ const REVIEW_MAX_PER_SESSION = 3;
 function getReviewQueue() {
   try {
     const parsed = JSON.parse(localStorage.getItem(pk(REVIEW_KEY)) || "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
+    // ⚠️ 配列も typeof は "object" なので素通りする。配列に文字列キーを生やしても
+    // JSON.stringify が捨てるため、まちがえた記録が黙って消える
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
     return {};
   }
@@ -4227,7 +4299,16 @@ function openSubjectScreen() {
   english.classList.toggle("is-locked", !enabled);
   english.querySelector(".level-desc").textContent =
     enabled ? t("subject.englishDesc") : t("subject.englishLocked");
-  setGuide("subject");
+
+  // 吹き出しは**いま画面に出ていて、押せる科目だけ**を読み上げる。
+  // ⚠️ 科目の顔ぶれはロケールと学年で変わる（国語は日本語版だけ、英語は3年から）。
+  //    以前は文言に科目名が焼き込まれていて、ドイツ語版では画面に無い「Deutsch」を
+  //    すすめ、日本語版では3科目あるのに英語だけ名前が出なかった。
+  const shown = [...document.querySelectorAll(".level-card[data-subject]")]
+    .filter((btn) => !btn.classList.contains("hidden") && !btn.disabled)
+    .map((btn) => t(`subject.${btn.dataset.subject}`));
+  const moodKey = { 2: "subjectTwo", 3: "subjectThree" }[shown.length] || "subject";
+  setGuide(moodKey, { a: shown[0], b: shown[1], c: shown[2] }, "subject");
   showScreen("screen-subject");
 }
 
@@ -5090,12 +5171,51 @@ function requestProfileDelete(profile) {
   }
 }
 
+// アカウントを新しく作った直後かどうか。ここでだけ学年を聞く（ユーザー決定 2026-09-27）。
+// ⚠️ 2人目以降のプロフィール作成では聞かない。画面をまたぐのでモジュール変数ではなく
+//    localStorage に置く（登録直後にリロードが挟まっても消えないように）。
+const SIGNUP_ASK_GRADE_KEY = "signup_ask_grade";
+
+function markSignupNeedsGrade() {
+  try { localStorage.setItem(SIGNUP_ASK_GRADE_KEY, "1"); } catch {}
+}
+function signupNeedsGrade() {
+  try { return localStorage.getItem(SIGNUP_ASK_GRADE_KEY) === "1"; } catch { return false; }
+}
+function clearSignupNeedsGrade() {
+  try { localStorage.removeItem(SIGNUP_ASK_GRADE_KEY); } catch {}
+}
+
+// 学年えらび（新規登録のときだけ出す）。既定は DEFAULT_GRADE を選んだ状態にしておき、
+// 何も触らずに進んでも、これまでと同じ学年で始まるようにする。
+function renderProfileGradeChoices() {
+  const box = document.getElementById("profile-create-grade");
+  const asking = signupNeedsGrade() && !state.profileRenameId;
+  box.classList.toggle("hidden", !asking);
+  if (!asking) return;
+  state.newProfileGrade = state.newProfileGrade || DEFAULT_GRADE;
+  const list = document.getElementById("profile-grade-choices");
+  list.innerHTML = GRADES.map((g) => `
+    <button type="button" class="grade-choice${g === state.newProfileGrade ? " active" : ""}" data-grade="${g}">
+      ${gradeLabel(g)}
+    </button>
+  `).join("");
+  list.querySelectorAll(".grade-choice").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClickSound();
+      state.newProfileGrade = parseInt(btn.dataset.grade, 10);
+      renderProfileGradeChoices();
+    });
+  });
+}
+
 function openProfileCreateScreen() {
   state.profileRenameId = null;
   document.getElementById("btn-profile-create-ok").disabled = false;
   document.getElementById("profile-name-input").value = "";
   document.getElementById("profile-create-feedback").textContent = "";
   applyProfileFormLabels();
+  renderProfileGradeChoices();
 
   // プロフィールが1つも無いとき（初回起動）は戻る先がないので隠す
   document.getElementById("btn-profile-create-cancel").classList.toggle("hidden", getProfiles().length === 0);
@@ -5110,6 +5230,7 @@ function openProfileRenameScreen(profile) {
   document.getElementById("profile-name-input").value = profile.name;
   document.getElementById("profile-create-feedback").textContent = "";
   applyProfileFormLabels();
+  renderProfileGradeChoices();
   document.getElementById("btn-profile-create-cancel").classList.remove("hidden");
   showScreen("screen-profile-create");
   document.getElementById("profile-name-input").focus();
@@ -5169,6 +5290,11 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
     return;
   }
   setActiveProfileId(profile.id);
+  // ⚠️ setGrade はプロフィールごとの領域に書くので、**setActiveProfileId のあと**に呼ぶ。
+  //    先に呼ぶと、ひとつ前のプロフィールの学年を書き換えてしまう。
+  if (signupNeedsGrade() && state.newProfileGrade) setGrade(state.newProfileGrade);
+  clearSignupNeedsGrade();
+  state.newProfileGrade = null;
   enterAppWithActiveProfile();
 });
 
@@ -5740,7 +5866,22 @@ function renderCharacterBox() {
   }
 }
 
-document.getElementById("btn-begin").addEventListener("click", startSession);
+// ⚠️ **とちゅうのセッションがあるときは、黙って上書きしない。**
+//    ホームに「とちゅうの算数があるよ（4／10もんめ）」と出しておきながら、
+//    別の分野を始めた瞬間に無言で消えていた（2026-09-27 日次QAで発見）。
+//    実害は小さい（完走までポイントは入らない）が、一度見せたものが黙って消えるのは不親切。
+document.getElementById("btn-begin").addEventListener("click", () => {
+  const saved = getActiveSession();
+  if (saved) {
+    const ok = window.confirm(t("resume.overwriteConfirm", {
+      subject: t(`subject.${saved.subject}`),
+      current: saved.index + 1,
+      total: saved.problems.length,
+    }));
+    if (!ok) return;
+  }
+  startSession();
+});
 document.getElementById("btn-back-home-1").addEventListener("click", () => {
   openCategoryScreen();
 });
@@ -6248,6 +6389,18 @@ function applySeenHistory(profileId, seenHistory) {
   });
 }
 
+// 同期で降ってきた値を「数」として受け付けてよいか。
+// ⚠️ Number(null) === 0、Number([]) === 0 なので、素の Number() では弾けない。
+// 弾き忘れると、壊れたドキュメントが降ってきたときに子どものポイントを0で上書きしてしまう。
+function isNonNegativeNumberLike(v) {
+  if (typeof v === "number") return Number.isFinite(v) && v >= 0;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  }
+  return false;
+}
+
 // ------- プッシュ -------
 
 // localStorageの現在の進捗をFirestore書き込み用オブジェクトに変換する
@@ -6352,7 +6505,12 @@ async function pullProfileFromFirestore(profileId) {
   localStorage.setItem(pre(GACHA_KEY), JSON.stringify(mergedOwned));
 
   // 以下は last-write-wins（サーバが新しいので上書き）
-  if (server.stampsTotal !== undefined) localStorage.setItem(pre(STORAGE_KEY), String(server.stampsTotal));
+  // ⚠️ サーバの値をそのまま String() して入れないこと。null・文字列・オブジェクトが
+  // 入っていると "null" / "[object Object]" が書かれ、以後 parseInt が NaN を返し続ける。
+  // grade・schoolYearStart は前から妥当性を見ていたのに、ポイントと天井だけ素通しだった。
+  if (isNonNegativeNumberLike(server.stampsTotal)) {
+    localStorage.setItem(pre(STORAGE_KEY), String(Math.floor(Number(server.stampsTotal))));
+  }
   if (server.grade !== undefined && GRADES.includes(Number(server.grade))) {
     localStorage.setItem(pre(GRADE_KEY), String(server.grade));
   }
@@ -6360,11 +6518,13 @@ async function pullProfileFromFirestore(profileId) {
     const m = Number(server.schoolYearStart);
     if (m >= 1 && m <= 12) localStorage.setItem(pre(SCHOOL_YEAR_START_KEY), String(m));
   }
-  if (server.pity !== undefined) localStorage.setItem(pre(PITY_KEY), String(server.pity));
-  if (server.dailyPoints && typeof server.dailyPoints === "object") {
+  if (isNonNegativeNumberLike(server.pity)) {
+    localStorage.setItem(pre(PITY_KEY), String(Math.floor(Number(server.pity))));
+  }
+  if (server.dailyPoints && typeof server.dailyPoints === "object" && !Array.isArray(server.dailyPoints)) {
     localStorage.setItem(pre(DAILY_POINTS_KEY), JSON.stringify(server.dailyPoints));
   }
-  if (server.reviewQueue && typeof server.reviewQueue === "object") {
+  if (server.reviewQueue && typeof server.reviewQueue === "object" && !Array.isArray(server.reviewQueue)) {
     localStorage.setItem(pre(REVIEW_KEY), JSON.stringify(server.reviewQueue));
   }
   if (server.seenHistory) applySeenHistory(profileId, server.seenHistory);
@@ -6566,6 +6726,8 @@ document.getElementById("btn-signup-submit").addEventListener("click", async () 
   document.getElementById("btn-signup-submit").disabled = true;
   try {
     const cred = await fbAuth.createUserWithEmailAndPassword(email, password);
+    // このあとのプロフィール作成でだけ学年を聞く
+    markSignupNeedsGrade();
     // 確認メールを送る。届かなくてもアプリは使えるようにする（ここで止めると
     // 登録直後に何もできなくなり離脱する）。未確認であることはせっていに出す。
     try {

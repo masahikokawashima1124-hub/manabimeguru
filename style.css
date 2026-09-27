@@ -205,6 +205,38 @@
   color: var(--text-muted);
 }
 
+/* 学年えらび（新規登録のときだけプロフィール作成画面に出る）。
+   せっていの .grade-option より小さい。名前の入力と同じ箱の中に収めるため。 */
+.profile-create-grade {
+  margin-top: 14px;
+  text-align: left;
+}
+.grade-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+.grade-choice {
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: linear-gradient(160deg, #ffffff, var(--card-bg-2));
+  padding: 10px 4px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--shadow), var(--gloss-top);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.grade-choice:active { transform: scale(0.96); }
+.grade-choice.active {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  box-shadow: var(--shadow), 0 0 0 4px var(--primary-soft);
+}
+
 /* 年度の開始月：よく使う3つはボタン、それ以外はこのセレクトから選ぶ。
    .settings-box の2列グリッドに、ボタン3つと並んで4つめのマスとして収まる。 */
 .year-start-other {

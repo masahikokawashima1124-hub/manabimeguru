@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=58">
+<link rel="stylesheet" href="style.css?v=59">
 </head>
 <body>
 
@@ -102,6 +102,12 @@
     <div class="profile-create-box">
       <label class="profile-field-label" for="profile-name-input" data-i18n="profile.nameLabel"></label>
       <input type="text" id="profile-name-input" class="profile-name-input" maxlength="8" autocomplete="off">
+      <!-- 学年は**アカウントを新しく作ったときだけ**ここで聞く（ユーザー決定 2026-09-27）。
+           2人目以降のプロフィール作成では出さない。あとからせっていで変えられる。 -->
+      <div id="profile-create-grade" class="profile-create-grade hidden">
+        <label class="profile-field-label" data-i18n="profile.gradeLabel"></label>
+        <div class="grade-choices" id="profile-grade-choices"></div>
+      </div>
       <p id="profile-create-feedback" class="backup-feedback"></p>
       <div class="profile-create-actions">
         <button type="button" id="btn-profile-create-ok" class="btn-primary" data-i18n="profile.createOk"></button>
@@ -526,9 +532,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=65"></script>
+<script src="i18n.js?v=66"></script>
 <script src="content-ja.js?v=16"></script>
 <script src="content-en.js?v=10"></script>
-<script src="script.js?v=116"></script>
+<script src="script.js?v=118"></script>
 </body>
 </html>
