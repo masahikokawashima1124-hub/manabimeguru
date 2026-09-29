@@ -1992,8 +1992,13 @@ function genDiv3() {
 }
 
 function genDivRemainder3() {
-  const b = randInt(2, 12);
-  const q = randInt(2, 12);
+  // ⚠️ **九九の範囲に収める（わる数・商ともに2〜9）。**
+  //    以前は 2〜12 で、145÷12 のような問題が出ていた（2026-09-28 日次QAで発見）。
+  //    小3で習うのは2けた÷1けたまでで、÷12 は小4の範囲。
+  //    さらにヒントは「{b}のだんの九九」と言うのに、**10〜12の段は存在しない。**
+  //    あまりの無い genDiv3 は前から 2〜9 だったので、そちらに揃える。
+  const b = randInt(2, 9);
+  const q = randInt(2, 9);
   const r = randInt(1, b - 1);
   const a = b * q + r;
   return {
@@ -2107,7 +2112,11 @@ const MATH_WORDS = {
       { w: "どんぐり", counter: "こ", howMany: "なんこ", edible: false },
     ],
     places: ["はこの中", "つくえの上", "かごの中", "ふくろの中"],
-    consumed: { edible: { past: "たべました", plain: "たべた" }, other: { past: "つかいました", plain: "つかった" } },
+    // agent は「だれかが〜した」の形（数に引きずられない言い方）。日本語は数で形が変わらないので past と同じ。
+    consumed: {
+      edible: { past: "たべました", plain: "たべた", agent: "たべました" },
+      other: { past: "つかいました", plain: "つかった", agent: "つかいました" },
+    },
     // 四捨五入する位（genRounding4）。label は「◯の位」、lower はその1つ下の位。
     roundPlaces: [
       { label: "十", unit: 10, lower: "一" },
@@ -2159,7 +2168,12 @@ const MATH_WORDS = {
       { w: "bellotas", counter: "", howMany: "Cuántas", edible: false },
     ],
     places: ["en la caja", "encima del pupitre", "en la cesta", "en la bolsa"],
-    consumed: { edible: { past: "se comieron", plain: "comerse" }, other: { past: "se usaron", plain: "usar" } },
+    // ⚠️ past（se comieron）は複数形なので、数が1だと "se comieron 1" と壊れる。
+    //    agent は3人称単数（動詞は alguien に一致する）ので、数がいくつでも正しい。
+    consumed: {
+      edible: { past: "se comieron", plain: "comerse", agent: "se comió" },
+      other: { past: "se usaron", plain: "usar", agent: "usó" },
+    },
     roundPlaces: [
       { label: "las decenas", unit: 10, lower: "las unidades" },
       { label: "las centenas", unit: 100, lower: "las decenas" },
@@ -2215,9 +2229,11 @@ const MATH_WORDS = {
     ],
     places: ["in der Schachtel", "auf dem Tisch", "im Korb", "in der Tüte"],
     // past は受動の定形（"5 Äpfel wurden gegessen."）、plain は分詞だけ。
+    // ⚠️ past（wurden gegessen）は複数形なので、数が1だと "1 wurden gegessen" と壊れる。
+    //    agent は「Jemand hat … <分詞>」に入れる形で、動詞は Jemand に一致する。
     consumed: {
-      edible: { past: "wurden gegessen", plain: "gegessen" },
-      other: { past: "wurden verbraucht", plain: "verbraucht" },
+      edible: { past: "wurden gegessen", plain: "gegessen", agent: "gegessen" },
+      other: { past: "wurden verbraucht", plain: "verbraucht", agent: "verbraucht" },
     },
     roundPlaces: [
       { label: "Zehner", unit: 10, lower: "Einer" },
@@ -2299,7 +2315,7 @@ function genWordAdd() {
 function pickConsumable() {
   const edible = Math.random() < 0.5;
   const verbs = mathWords().consumed[edible ? "edible" : "other"];
-  return { ...pickWordItem({ edible }), past: verbs.past, plain: verbs.plain };
+  return { ...pickWordItem({ edible }), past: verbs.past, plain: verbs.plain, agent: verbs.agent };
 }
 
 function genWordSub() {
@@ -2804,7 +2820,8 @@ function genPercent5() {
     answer: String(answer),
     type: "number",
     hint: t("math.percent5.hint"),
-    explain: t("math.percent5.explain", { base, pct, ratio: pct / 100, answer }),
+    // 表示に出す数値は fmtDecimal を通す（ドイツ語・スペイン語は小数点がコンマ）。
+    explain: t("math.percent5.explain", { base, pct, ratio: fmtDecimal(pct / 100), answer: fmtDecimal(answer) }),
   };
 }
 
@@ -2900,20 +2917,23 @@ function genWordPercent5() {
   const diff = (price * pct) / 100;
   const params = { price, pct, diff, ratio: pct / 100, rest: 100 - pct,
     lower: price - diff, higher: price + diff };
+  // 表示用（小数点がコンマの言語向け）。answer は params の生の数値から作る。
+  const d = { ...params, diff: fmtDecimal(diff), ratio: fmtDecimal(pct / 100),
+    lower: fmtDecimal(price - diff), higher: fmtDecimal(price + diff) };
   return isDiscount
     ? {
-        text: t("math.wordPercent5.textDiscount", params),
+        text: t("math.wordPercent5.textDiscount", d),
         answer: String(price - diff),
         type: "number",
-        hint: t("math.wordPercent5.hintDiscount", params),
-        explain: t("math.wordPercent5.explainDiscount", params),
+        hint: t("math.wordPercent5.hintDiscount", d),
+        explain: t("math.wordPercent5.explainDiscount", d),
       }
     : {
-        text: t("math.wordPercent5.textRaise", params),
+        text: t("math.wordPercent5.textRaise", d),
         answer: String(price + diff),
         type: "number",
-        hint: t("math.wordPercent5.hintRaise", params),
-        explain: t("math.wordPercent5.explainRaise", params),
+        hint: t("math.wordPercent5.hintRaise", d),
+        explain: t("math.wordPercent5.explainRaise", d),
       };
 }
 
@@ -3005,7 +3025,7 @@ function genCircleArea6() {
     answer: `${area}`,
     type: "number",
     hint: t("math.circleArea6.hint"),
-    explain: t("math.circleArea6.explain", { r, area }),
+    explain: t("math.circleArea6.explain", { r, area: fmtDecimal(area) }),
   };
 }
 
@@ -3196,7 +3216,7 @@ function genWordCircle6() {
     answer: String(area),
     type: "number",
     hint: t("math.wordCircle6.hint"),
-    explain: t("math.wordCircle6.explain", { d, r, area }),
+    explain: t("math.wordCircle6.explain", { d, r, area: fmtDecimal(area) }),
   };
 }
 
@@ -4132,7 +4152,12 @@ function checkAnswer(userInput, problem) {
   // text または choice。余分なスペースは無視する。
   // problem.accept があれば、そのどれかに一致すれば正解にする
   // （漢字の複数の読み、漢字表記とひらがな表記、複数ある反対語などを取りこぼさないため）。
-  const normalize = (str) => str.replace(/[\s　]/g, "");
+  // ⚠️ **大文字小文字は見ない。**ドイツ語の「10 Rest 6」を子どもが小文字で
+  //    「10 rest 6」と打つと不正解になっていた（2026-09-28 日次QAで発見）。
+  //    採点はポイント・復習キューの土台なので、内容が合っているのに弾くのが一番まずい。
+  //    英語の問題はすべて選択式（content-en.js に text 型は無い）なので、
+  //    ここを緩めても「大文字小文字を問う問題」を取りこぼすことはない。
+  const normalize = (str) => str.replace(/[\s　]/g, "").toLowerCase();
   const accepted = problem.accept || [problem.answer];
   return accepted.some((a) => normalize(trimmed) === normalize(a));
 }
@@ -5218,7 +5243,13 @@ function openProfileCreateScreen() {
   renderProfileGradeChoices();
 
   // プロフィールが1つも無いとき（初回起動）は戻る先がないので隠す
-  document.getElementById("btn-profile-create-cancel").classList.toggle("hidden", getProfiles().length === 0);
+  const noProfiles = getProfiles().length === 0;
+  document.getElementById("btn-profile-create-cancel").classList.toggle("hidden", noProfiles);
+  // ⚠️ **戻るボタンを隠すなら、代わりの逃げ道を出すこと。**両方無いと、
+  //    メールアドレスを打ち間違えて登録した保護者がこの画面から動けなくなる
+  //    （リロードしても同じ画面に戻る。2026-09-28 日次QAで指摘）。
+  document.getElementById("btn-profile-create-signout")
+    .classList.toggle("hidden", !(noProfiles && fbCurrentUser));
   showScreen("screen-profile-create");
 }
 
@@ -5231,6 +5262,7 @@ function openProfileRenameScreen(profile) {
   document.getElementById("profile-create-feedback").textContent = "";
   applyProfileFormLabels();
   renderProfileGradeChoices();
+  document.getElementById("btn-profile-create-signout").classList.add("hidden");
   document.getElementById("btn-profile-create-cancel").classList.remove("hidden");
   showScreen("screen-profile-create");
   document.getElementById("profile-name-input").focus();
@@ -5293,7 +5325,6 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
   // ⚠️ setGrade はプロフィールごとの領域に書くので、**setActiveProfileId のあと**に呼ぶ。
   //    先に呼ぶと、ひとつ前のプロフィールの学年を書き換えてしまう。
   if (signupNeedsGrade() && state.newProfileGrade) setGrade(state.newProfileGrade);
-  clearSignupNeedsGrade();
   state.newProfileGrade = null;
   enterAppWithActiveProfile();
 });
@@ -5353,7 +5384,11 @@ document.getElementById("btn-profile-manage").addEventListener("click", () => {
 // プロフィールが決まった状態でアプリ本体に入る。
 // 学年・ポイント・カードはプロフィールごとに違うので、表示を作り直してから入る。
 // ログイン済みの場合はバックグラウンドでサーバからプルし、完了後にUIを再描画する（ローカルファースト）。
+// ⚠️ 学年えらびの印は**ここで必ず落とす。**作成画面を通らずにアプリへ入る経路
+//    （既存プロフィールを選んだ、別アカウントでログインした）でも消えるようにするため。
+//    消し忘れると、後日2人目を足したときに場違いな学年えらびが出る。
 function enterAppWithActiveProfile() {
+  clearSignupNeedsGrade();
   refreshHome();
   updateStatusBar();
   showScreen("screen-home");
@@ -5872,13 +5907,26 @@ function renderCharacterBox() {
 //    実害は小さい（完走までポイントは入らない）が、一度見せたものが黙って消えるのは不親切。
 document.getElementById("btn-begin").addEventListener("click", () => {
   const saved = getActiveSession();
-  if (saved) {
-    const ok = window.confirm(t("resume.overwriteConfirm", {
+  // ⚠️ **1問も答えていないなら確認しない。**とちゅう経過は問題を表示した時点で
+  //    保存されるので、開いて眺めただけでも「1／10もんめ」として残る。
+  //    そこで確認を出しても失うものが無く、ただの邪魔になる（2026-09-28 日次QAで指摘）。
+  if (saved && saved.index > 0) {
+    // 同じ教科・同じ分野をもう一度始めようとしているなら、本当の選択は
+    // 「やりなおす」か「つづける」。⚠️ **やめたときに開始画面へ取り残さない。**
+    // そのまま続きから再開する（2026-09-28 日次QAで指摘）。
+    const sameSpot = saved.subject === state.subject && saved.category === state.category;
+    const vars = {
       subject: t(`subject.${saved.subject}`),
       current: saved.index + 1,
       total: saved.problems.length,
-    }));
-    if (!ok) return;
+    };
+    const ok = window.confirm(t(sameSpot ? "resume.sameConfirm" : "resume.overwriteConfirm", vars));
+    if (!ok) {
+      // 別の分野のとちゅうを抱えている場合は、ここで勝手にそちらへ飛ばさない
+      // （国語を始めようとした子を算数へ引っぱることになる）。
+      if (sameSpot) resumeActiveSession();
+      return;
+    }
   }
   startSession();
 });
@@ -6726,8 +6774,13 @@ document.getElementById("btn-signup-submit").addEventListener("click", async () 
   document.getElementById("btn-signup-submit").disabled = true;
   try {
     const cred = await fbAuth.createUserWithEmailAndPassword(email, password);
-    // このあとのプロフィール作成でだけ学年を聞く
-    markSignupNeedsGrade();
+    // このあとのプロフィール作成でだけ学年を聞く。
+    // ⚠️ **すでにプロフィールがある端末では立てない。**登録直後に出るのは作成画面ではなく
+    //    「だれが あそぶ？」なので、印が消えないまま残り、**後日2人目を足したときに
+    //    初めて学年えらびが出る**（「2人目以降には聞かない」という決定に反する）。
+    //    2026-09-28 の日次QAで発見。9/23にアカウント必須にして以降、
+    //    既存ユーザーはほぼ全員この経路で登録する。
+    if (getProfiles().length === 0) markSignupNeedsGrade();
     // 確認メールを送る。届かなくてもアプリは使えるようにする（ここで止めると
     // 登録直後に何もできなくなり離脱する）。未確認であることはせっていに出す。
     try {
@@ -6749,14 +6802,27 @@ document.getElementById("btn-signup-to-login").addEventListener("click", () => {
   openLoginScreen();
 });
 
-document.getElementById("btn-account-logout").addEventListener("click", async () => {
-  playClickSound();
+async function signOutFromApp() {
   clearTimeout(_syncDirtyTimer);
   if (fbCurrentUser && getActiveProfileId()) {
     await pushCurrentProfileToFirestore().catch(() => {});
   }
   await fbAuth.signOut();
   // onAuthStateChanged がログイン画面に遷移させる
+}
+
+document.getElementById("btn-account-logout").addEventListener("click", async () => {
+  playClickSound();
+  await signOutFromApp();
+});
+
+// プロフィールを1人も作っていない状態からの脱出口。
+// ⚠️ 学年えらびの印も落とす。落とさないと、次にログインした人に場違いに出る。
+document.getElementById("btn-profile-create-signout").addEventListener("click", async () => {
+  playClickSound();
+  clearSignupNeedsGrade();
+  state.newProfileGrade = null;
+  await signOutFromApp();
 });
 
 function refreshAuthAccountLine() {

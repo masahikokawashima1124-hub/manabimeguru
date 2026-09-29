@@ -205,6 +205,23 @@
   color: var(--text-muted);
 }
 
+/* プロフィールを1人も作っていない状態からの脱出口。
+   主要な操作ではないので、リンクに近い控えめな見た目にする。 */
+.profile-create-signout {
+  display: block;
+  margin: 14px auto 0;
+  border: none;
+  background: none;
+  padding: 6px 4px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.profile-create-signout:active { transform: scale(0.97); }
+
 /* 学年えらび（新規登録のときだけプロフィール作成画面に出る）。
    せっていの .grade-option より小さい。名前の入力と同じ箱の中に収めるため。 */
 .profile-create-grade {

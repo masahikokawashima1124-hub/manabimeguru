@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <!-- ?v= はキャッシュ対策。style.css / script.js / i18n.js を変更したら数字を上げること -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-<link rel="stylesheet" href="style.css?v=59">
+<link rel="stylesheet" href="style.css?v=60">
 </head>
 <body>
 
@@ -113,6 +113,10 @@
         <button type="button" id="btn-profile-create-ok" class="btn-primary" data-i18n="profile.createOk"></button>
         <button type="button" id="btn-profile-create-cancel" class="btn-secondary" data-i18n="common.back"></button>
       </div>
+      <!-- プロフィールが1人もいないときの唯一の逃げ道。メールアドレスを打ち間違えて
+           登録した保護者が、この画面で引き返せなくなるのを防ぐ（2026-09-28 指摘） -->
+      <button type="button" id="btn-profile-create-signout" class="profile-create-signout hidden"
+              data-i18n="profile.signOutAndRestart"></button>
     </div>
     <img class="auth-mascot" src="assets/characters/hanabi-happy.webp" alt="">
   </section>
@@ -532,9 +536,9 @@
 <script src="vendor/firebase-auth-compat.js"></script>
 <script src="vendor/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=1"></script>
-<script src="i18n.js?v=66"></script>
+<script src="i18n.js?v=68"></script>
 <script src="content-ja.js?v=16"></script>
 <script src="content-en.js?v=10"></script>
-<script src="script.js?v=118"></script>
+<script src="script.js?v=120"></script>
 </body>
 </html>
