@@ -215,12 +215,14 @@ const ANNOUNCEMENTS = [
     title: {
       ja: "秋・冬・春の精霊たち、そろいました！",
       es: "¡Espíritus de otoño e invierno disponibles!",
-      de: "Herbst- und Wintergeister sind da!",
+      // ⚠️ ドイツ語版で公開しているのは夏と秋の80体だけ（冬・春は未公開）。
+      //    以前は「Herbst- und Wintergeister」と、無い冬のカードを「ある」と言っていた。
+      de: "Die Herbstgeister sind da!",
     },
     body: {
       ja: "精霊カードに秋・冬・春の120体が加わり、全160体になりました！精霊たちのコミカルな日常はYouTubeに順次アップされます。お楽しみに。",
       es: "Ya se han añadido las cartas de los espíritus de otoño e invierno (120 en total). Las de primavera llegarán más adelante. Ya puedes ver a los espíritus en nuestro canal de YouTube. ¡No te lo pierdas!",
-      de: "Die Herbst- und Wintergeister sind jetzt verfügbar (insgesamt 80 Karten). Die Frühlingskarten folgen später. Schau dir die Geister schon jetzt auf unserem YouTube-Kanal an.",
+      de: "Die Herbstgeister sind jetzt verfügbar (insgesamt 80 Karten). Weitere Jahreszeiten folgen später. Schau dir die Geister schon jetzt auf unserem YouTube-Kanal an.",
     },
     cta: {
       label: { ja: "YouTubeを見る", es: "Ver YouTube", de: "YouTube ansehen" },
@@ -267,7 +269,13 @@ function updateSettingsTabBadge() {
 // メイン画面が出る前にポップアップで見せる項目。期間内のものを配列の先頭優先で1つ返す。
 // 既読管理はしない（期間中は毎回出す。既読で出し分けるのはせってい画面の一覧側だけ）
 function getEligibleModalAnnouncement() {
-  const today = new Date().toISOString().slice(0, 10);
+  // ⚠️ **`toISOString()` を使わないこと。**あれは UTC の日付で、日本（UTC+9）では
+  //    9時間ずれる。「9月30日まで」のお知らせが**10月1日の朝9時まで出続けていた**
+  //    （2026-09-30 日次QAで発見。スペインでも2時間ずれる）。
+  //    ほかの日付の判定（dayKey など）はすべて端末の現地時刻なので、それに揃える。
+  //    modalFrom / modalUntil は「YYYY-MM-DD」のゼロ埋めなので、比較する側もゼロ埋めする。
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   return ANNOUNCEMENTS.find((a) => (
     isAnnouncementVisible(a) && a.modalFrom && a.modalUntil && a.modalFrom <= today && today <= a.modalUntil
   )) || null;
@@ -2183,7 +2191,8 @@ const MATH_WORDS = {
     //    倍率そのものは「単位のいくつぶんか」を答えさせる問題なので影響しない。
     bigUnits: [
       { label: "mil", what: "La población", amount: "habitantes" },
-      { label: "millones", what: "El presupuesto", amount: "euros" },
+      // ⚠️ millones のあとは「de」が要る（3 millones de euros）。mil のあとは要らない。
+      { label: "millones", what: "El presupuesto", amount: "de euros" },
     ],
     bigPlaces: ["una ciudad", "un pueblo", "una provincia"],
     estimatePlaces: [{ label: "las centenas", unit: 100 }, { label: "los millares", unit: 1000 }],
@@ -4035,9 +4044,18 @@ function buildSessionProblems(grade, subject, category, count) {
     const pool = subject === "japanese" ? buildJapanesePool(grade, category) : buildEnglishPool(grade, category);
     const reviews = dueProblems.map(tag);
     const reviewTexts = new Set(reviews.map((q) => q.text));
+    // ⚠️ **復習ぶんの `pairKey` も新規側から除く。**text だけで間引いていたので、
+    //    「港の読み」の復習と「みなとを漢字で」が同じ回に入り、**片方が答えの漏れ**に
+    //    なっていた（2026-09-29 日次QAで発見。漢字3年で約21%、英単語4年で約22%）。
+    //    pairKey は「表と裏を同じセッションに入れない」ための鍵なので、
+    //    復習側にも同じ規則を効かせる。
+    const reviewPairKeys = new Set(reviews.map((q) => q.pairKey).filter(Boolean));
+    const usablePool = reviewPairKeys.size
+      ? pool.filter((q) => !reviewPairKeys.has(q.pairKey))
+      : pool;
     const recentSet = new Set(getRecentTexts(subject, category));
     // 復習ぶんと重複しないよう多めに取ってから間引く
-    const fresh = pickSessionQuestions(pool, count, grade, recentSet)
+    const fresh = pickSessionQuestions(usablePool, count, grade, recentSet)
       .filter((q) => !reviewTexts.has(q.text))
       .slice(0, Math.max(0, count - reviews.length));
     const result = shuffle(reviews.concat(fresh.map(tag)));
@@ -4157,7 +4175,18 @@ function checkAnswer(userInput, problem) {
   //    採点はポイント・復習キューの土台なので、内容が合っているのに弾くのが一番まずい。
   //    英語の問題はすべて選択式（content-en.js に text 型は無い）なので、
   //    ここを緩めても「大文字小文字を問う問題」を取りこぼすことはない。
-  const normalize = (str) => str.replace(/[\s　]/g, "").toLowerCase();
+  //
+  // ⚠️ **全角の数字も受ける。**「7あまり3」は「あまり」を打つためにかな入力へ
+  //    切り替える必要があり、そのまま数字を打つと全角になる端末がある。
+  //    「７あまり３」が不正解になっていた（2026-09-29 日次QAで発見。比の「１０：７」も同じ）。
+  //    2026-09-19 に number 型だけ全角対応を入れたときの取りこぼし。
+  //    ⚠️ ここで `toHalfWidth()` をまるごと通してはいけない。`ー`（長音）が `-` に化けて、
+  //    ひらがなの答えを壊す。**数字だけ**に絞る。
+  const normalize = (str) =>
+    str
+      .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+      .replace(/[\s　]/g, "")
+      .toLowerCase();
   const accepted = problem.accept || [problem.answer];
   return accepted.some((a) => normalize(trimmed) === normalize(a));
 }
@@ -4296,7 +4325,11 @@ function refreshWeekChart() {
     .join("");
 }
 
-function refreshHome() {
+// opts.keepGuide … ガイドの吹き出しを触らない。
+// ⚠️ ガチャを引いたあとにも数字の更新のためここを呼ぶので、そのときは
+//    「こんにちは！きょうも いっしょに べんきょうしよう！」に差し替わらないようにする
+//    （2026-09-29 日次QAで発見。引くたびにホームの台詞が出ていた）。
+function refreshHome(opts) {
   const info = getCompendiumInfo();
   document.getElementById("home-stamps").textContent = getTotalStamps();
   document.getElementById("home-rank-badge").innerHTML = `<div class="level-badge">Lv.${info.count}</div>`;
@@ -4305,7 +4338,7 @@ function refreshHome() {
   refreshHeroDate();
   refreshWeekChart();
   refreshResumeBox();
-  setGuide("home");
+  if (!(opts && opts.keepGuide)) setGuide("home");
 }
 
 function openSubjectScreen() {
@@ -4416,7 +4449,12 @@ function refreshGachaPointsDisplay() {
   const hint = document.getElementById("gacha-pity-hint");
   if (remaining === null) hint.textContent = t("gacha.pityDone");
   else if (remaining === 0) hint.textContent = t("gacha.pityReady");
-  else hint.textContent = t("gacha.pityHint", { n: remaining });
+  // ⚠️ **+1 すること。**天井は「PITY_LIMIT 回はずれた、その次の1回」で効く。
+  //    remaining をそのまま出すと、10回目に「あと1かいで かならず」と言っておきながら
+  //    その1回は重複で、確定は11回目になる。**子どもへの約束が1回ずれていた**
+  //    （2026-09-30 日次QAで発見。抽選をNに固定して実測）。
+  //    「つぎは かならず」（remaining === 0）の表示は元から正しい。
+  else hint.textContent = t("gacha.pityHint", { n: remaining + 1 });
 
   updateStatusBar();
 }
@@ -4448,7 +4486,11 @@ document.getElementById("btn-pull-gacha").addEventListener("click", () => {
       // スクロールは closeGachaOverlay() 側で行う（オーバーレイが開いたまま＝
       // body.gacha-open で overflow:hidden の間はスクロールしても無効なため）
     }
-    refreshHome();
+    // ⚠️ ここはガチャ画面にいるので、ホームのガイドに差し替えない。
+    refreshHome({ keepGuide: true });
+    // 季節ボタンの所持数（「あき 0/40」）も引いたぶんを反映する。
+    // 以前はガチャ画面を開き直すまで古い数のままだった（2026-09-29 日次QAで発見）。
+    renderGachaSeasons();
   });
 });
 
@@ -4467,7 +4509,9 @@ document.getElementById("btn-close-gacha").addEventListener("click", () => {
 });
 
 function refreshSoundToggleLabel() {
-  document.getElementById("btn-sound-toggle").textContent = isSoundEnabled() ? "🔊" : "🔇";
+  const btn = document.getElementById("btn-sound-toggle");
+  btn.textContent = isSoundEnabled() ? "🔊" : "🔇";
+  btn.setAttribute("aria-pressed", String(isSoundEnabled()));
 }
 
 // 週間グラフの開閉。ボタンは縦の短い端末でだけ CSS で表示される（style.css の
@@ -4673,9 +4717,14 @@ function renderTodayQuestionSetting() {
   const days = item.lastWrongAt
     ? Math.round((dayKeyToDate(dayKey(new Date())) - dayKeyToDate(item.lastWrongAt)) / 86400000)
     : null;
+  // ⚠️ 1日前は「きのう」を別の文言にする。スペイン語・ドイツ語は数で語形が変わるので、
+  //    {n} に 1 を入れると「hace 1 días」「vor 1 Tagen」になる（2026-09-30 日次QAで発見）。
+  //    保護者向けの「きょうの1問」で、いちばん多いのが「きのう まちがえた」なので必ず踏む。
   when.textContent = missedToday
     ? t("todayQ.missedToday")
-    : (days ? t("todayQ.missedDaysAgo", { n: days }) : t("todayQ.missedBefore"));
+    : days === 1
+      ? t("todayQ.missedYesterday")
+      : (days ? t("todayQ.missedDaysAgo", { n: days }) : t("todayQ.missedBefore"));
   box.appendChild(when);
 
   const meta = document.createElement("p");
@@ -4956,7 +5005,7 @@ function renderTestimonialSetting() {
   box.innerHTML = `
     <p class="review-summary">${t("testimonial.ratingLabel")}</p>
     <div class="feedback-rating" id="testimonial-stars">
-      ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="feedback-star" data-star="${n}">★</button>`).join("")}
+      ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="feedback-star" data-star="${n}" aria-label="${t("testimonial.starLabel", { n })}" aria-pressed="false">★</button>`).join("")}
     </div>
     <textarea class="feedback-textarea" id="testimonial-text" placeholder="${t("testimonial.placeholder")}"></textarea>
     <label class="feedback-consent">
@@ -4974,7 +5023,10 @@ function renderTestimonialSetting() {
     btn.addEventListener("click", () => {
       playClickSound();
       rating = parseInt(btn.dataset.star, 10);
-      starButtons.forEach((b) => b.classList.toggle("active", parseInt(b.dataset.star, 10) <= rating));
+      starButtons.forEach((b) => {
+        b.classList.toggle("active", parseInt(b.dataset.star, 10) <= rating);
+        b.setAttribute("aria-pressed", String(parseInt(b.dataset.star, 10) === rating));
+      });
     });
   });
 
@@ -6120,7 +6172,16 @@ function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
     feedback.className = "feedback correct";
     if (isReview) {
       feedback.textContent += " " + t("quiz.reviewCleared");
-      recordReviewSuccess(problem);
+      // ⚠️ 復習キューへの反映は**その問題につき1回だけ。**
+      //    途中経過は「解く前」に保存するので、答えたあとに閉じて再開すると
+      //    同じ問題がもう一度出て、段階が 0→1→2 と2段飛んでいた
+      //    （2026-09-29 日次QAで発見。期日が +3日 ではなく +7日 になる）。
+      //    ⚠️ ポイントと正解数は二重にならない（実測済み）。ずれるのはキューだけ。
+      if (!problem.srsApplied) {
+        problem.srsApplied = true;
+        recordReviewSuccess(problem);
+        saveActiveSession();
+      }
     } else if (problem && problem.isRepeat) {
       feedback.textContent += " " + t("quiz.repeatNote");
     }
@@ -6130,8 +6191,14 @@ function applyAnswerResult(isCorrect, feedbackWrongText, problem) {
     feedback.textContent = feedbackWrongText;
     feedback.className = "feedback wrong";
     setGuide("wrong");
-    // 間違えた問題は、翌日→3日後→7日後→20日後 に もう一度出す
-    recordWrongAnswer(problem);
+    // 間違えた問題は、翌日→3日後→7日後→20日後 に もう一度出す。
+    // ⚠️ こちらも1回だけ。再開して2回目を答えると、正解なら間違いが帳消しになり、
+    //    もう一度間違えると wrongCount が二重に増えていた。
+    if (problem && !problem.srsApplied) {
+      problem.srsApplied = true;
+      recordWrongAnswer(problem);
+      saveActiveSession();
+    }
 
     if (problem && problem.explain) {
       const explainBox = document.getElementById("explain-box");

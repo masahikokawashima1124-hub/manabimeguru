@@ -22,6 +22,9 @@ const LOCALES = {
     "common.back": "もどる",
     "common.home": "ホームへ",
     "common.sound": "おとの きりかえ",
+    "common.close": "とじる",
+    "quiz.answerLabel": "こたえを いれる",
+    "testimonial.starLabel": "{n}つぼし",
     // 複数の文をJS側で連結するときの区切り（subtractStepsExplain など）。
     // 日本語の句点をそのままハードコードすると他言語でも「。」が混ざってしまうため。
     "common.sentenceSep": "。",
@@ -60,6 +63,7 @@ const LOCALES = {
     "todayQ.lockedPaid": "プレミアムプランにすると、お子さんが今日つまずいた問題が見られます。",
     "todayQ.empty": "まだ出せる問題がありません。お子さんが問題を解くと、つまずいたところがここに出ます。",
     "todayQ.missedToday": "きょう まちがえた問題です",
+    "todayQ.missedYesterday": "きのう まちがえた問題です",
     "todayQ.missedDaysAgo": "{n}日前に まちがえた問題です",
     "todayQ.missedBefore": "まえに まちがえた問題です",
     "todayQ.answerLabel": "こたえ：{answer}",
@@ -82,7 +86,7 @@ const LOCALES = {
     "resume.continue": "つづきから やる",
     "resume.discard": "やめておく",
     "resume.overwriteConfirm": "とちゅうの {subject}（{current}／{total}もんめ）が きえるけど、あたらしく はじめる？",
-    "resume.sameConfirm": "とちゅうの {subject}が あるよ（{current}／{total}もんめ）。あたらしく はじめる？やめると つづきから できるよ",
+    "resume.sameConfirm": "とちゅうの {subject}が あるよ（{current}／{total}もんめ）。あたらしく はじめる？ キャンセルすると つづきから できるよ",
     "review.remove": "この項目を削除",
     "review.removeConfirm": "「{name}」を一覧から削除します。もう一度まちがえたときは、あらためて復習に入ります。よろしいですか？",
 
@@ -552,7 +556,7 @@ const LOCALES = {
     "math.mul3.explain": "{tens}×{b}＝{tensPart}、{ones}×{b}＝{onesPart}。あわせて {tensPart}＋{onesPart}＝{product}",
     "math.div3.hint": "{b}のだんの 九九で こたえが {a} になる数を さがそう",
     "math.div3.explain": "{b} × {q} = {a} だから、{a} ÷ {b} の こたえは {q}",
-    "math.divRemainder3.text": "{a} ÷ {b} = ？（例のように「〇あまり△」の形で書いてね。例: 5あまり3）",
+    "math.divRemainder3.text": "{a} ÷ {b} = ？（「〇あまり△」の形で書いてね。書き方の例: 12あまり3）",
     "math.divRemainder3.answer": "{q}あまり{r}",
     "math.divRemainder3.accept": ["{q}余り{r}"],
     "math.divRemainder3.hint": "{b}のだんの 九九で {a}を こえない、いちばん大きい数を さがそう",
@@ -779,6 +783,9 @@ const LOCALES = {
     "common.back": "Volver",
     "common.home": "Inicio",
     "common.sound": "Sonido",
+    "common.close": "Cerrar",
+    "quiz.answerLabel": "Tu respuesta",
+    "testimonial.starLabel": "{n} de 5 estrellas",
     "common.sentenceSep": ". ",
 
     // --- タブバー ---
@@ -814,6 +821,7 @@ const LOCALES = {
     "todayQ.lockedPaid": "Con el plan premium puedes ver la pregunta que se le ha resistido hoy.",
     "todayQ.empty": "Todavía no hay ninguna pregunta que mostrar. Cuando empiece a jugar, aquí aparecerá lo que se le resista.",
     "todayQ.missedToday": "Falló esta pregunta hoy",
+    "todayQ.missedYesterday": "Falló esta pregunta ayer",
     "todayQ.missedDaysAgo": "Falló esta pregunta hace {n} días",
     "todayQ.missedBefore": "Falló esta pregunta anteriormente",
     "todayQ.answerLabel": "Respuesta: {answer}",
@@ -922,7 +930,7 @@ const LOCALES = {
     "auth.syncFailed": "No se pudo sincronizar (se volverá a intentar)",
 
     // --- メールアドレスの確認 ---
-    "auth.verifyNotice": "📧 Su correo electrónico aún no está verificado. Le hemos enviado un mensaje de confirmación: abra el enlace para completar la verificación. Los avisos previos a la renovación del plan anual también se envían a esta dirección.",
+    "auth.verifyNotice": "📧 Su correo electrónico aún no está verificado. Le hemos enviado un mensaje de confirmación: abra el enlace para completar la verificación.",
     "auth.verifyResend": "Reenviar el correo de verificación",
     "auth.verifyCheck": "Comprobar si ya está verificado",
     "auth.verifySent": "Correo de verificación enviado. Revise su bandeja de entrada (puede llegar a la carpeta de spam)",
@@ -1021,7 +1029,7 @@ const LOCALES = {
     "rank.20": "Cronista legendario",
     "rank.40": "Jefe de investigación",
     "rank.60": "Sabio del álbum",
-    "rank.80": "Investigador de todas las estaciones",
+    "rank.80": "Investigador de las estaciones",
     "rank.100": "Consejero de los espíritus",
     "rank.120": "Tejedor de leyendas",
     "rank.140": "Guía del cielo lejano",
@@ -1310,7 +1318,7 @@ const LOCALES = {
     "math.mul3.explain": "{tens}×{b}={tensPart} y {ones}×{b}={onesPart}. Juntando: {tensPart}+{onesPart}={product}.",
     "math.div3.hint": "Busca en la tabla del {b} el número que da {a}.",
     "math.div3.explain": "{b} × {q} = {a}, así que {a} ÷ {b} = {q}.",
-    "math.divRemainder3.text": "{a} ÷ {b} = ? (escríbelo así: «número resto número». Ejemplo: 5 resto 3)",
+    "math.divRemainder3.text": "{a} ÷ {b} = ? (escríbelo así: «número resto número». Ejemplo: 12 resto 3)",
     "math.divRemainder3.answer": "{q} resto {r}",
     "math.divRemainder3.accept": ["{q}resto{r}", "{q} r {r}"],
     "math.divRemainder3.hint": "Busca en la tabla del {b} el número más grande que no pase de {a}.",
@@ -1390,7 +1398,7 @@ const LOCALES = {
     "math.wordUnit4.text": "Una cinta mide {total} cm. ¿Cuántos m y cuántos cm son? (escribe solo los cm: {m} m y ◯ cm)",
     "math.wordUnit4.hint": "100 cm = 1 m. Piensa en el resto de dividir entre 100.",
     "math.wordUnit4.explain": "{total} cm = {m} m y {cm} cm ({m} veces 100 cm, y sobran {cm} cm).",
-    "math.wordBigNumber4.text": "{what} de {place} es de {base} {unit} {amount}. La de al lado es {times} veces mayor. ¿Cuántos {unit} {amount} tiene? (escribe el número sin «{unit}»)",
+    "math.wordBigNumber4.text": "{what} de {place} es de {base} {unit} {amount}. En el lugar de al lado es {times} veces mayor. ¿Cuántos {unit} {amount} hay allí? (escribe el número sin «{unit}»)",
     "math.wordBigNumber4.hint": "Piensa en cuántos «{unit}» son. Calcula {base} × {times}.",
     "math.wordBigNumber4.explain": "{base} {unit} por {times} es {base}×{times}={total}. Es decir, {total} {unit} {amount}.",
     "math.wordEstimate4.text": "A una tienda fueron {a} personas el lunes y {b} el martes. Redondea cada número a {label} y calcula aproximadamente cuántas personas fueron en los dos días.",
@@ -1414,7 +1422,7 @@ const LOCALES = {
     "math.wordDecimalAmount4.textSub": "Había {a} {unit} de {name} y se usaron {b} {unit}. ¿Cuántos {unit} quedan?",
     "math.wordDecimalAmount4.hintSub": "Alinea las comas decimales y resta.",
     "math.wordDecimalAmount4.explainSub": "{a}−{b}={diff} ({unit})",
-    "math.wordProportion4.text": "{n1} {unit} de {name} tienen {word} de {first} {amount}. ¿Y {n2} {unit} del mismo {name}?",
+    "math.wordProportion4.text": "{n1} {unit} de {name} tienen {word} de {first} {amount}. ¿Cuánto tendrán {n2} {unit}?",
     "math.wordProportion4.hint": "Primero calcula {word} de 1 {unit}.",
     "math.wordProportion4.explain": "1 {unit} es {first}÷{n1}={per} {amount}. Para {n2} {unit}: {per}×{n2}={total} {amount}.",
 
@@ -1527,6 +1535,9 @@ const LOCALES = {
     "common.back": "Zurück",
     "common.home": "Start",
     "common.sound": "Ton ein/aus",
+    "common.close": "Schließen",
+    "quiz.answerLabel": "Deine Antwort",
+    "testimonial.starLabel": "{n} von 5 Sternen",
     // 複数の文をJS側で連結するときの区切り（subtractStepsExplain など）。
     // 日本語の句点をそのままハードコードすると他言語でも「。」が混ざってしまうため。
     "common.sentenceSep": ". ",
@@ -1565,6 +1576,7 @@ const LOCALES = {
     "todayQ.lockedPaid": "Mit dem Premium-Tarif sehen Sie die Frage, an der Ihr Kind heute gescheitert ist.",
     "todayQ.empty": "Es gibt noch keine Frage anzuzeigen. Sobald Ihr Kind Aufgaben löst, erscheinen hier die schwierigen Stellen.",
     "todayQ.missedToday": "Diese Frage wurde heute falsch beantwortet",
+    "todayQ.missedYesterday": "Diese Frage wurde gestern falsch beantwortet",
     "todayQ.missedDaysAgo": "Diese Frage wurde vor {n} Tagen falsch beantwortet",
     "todayQ.missedBefore": "Diese Frage wurde früher falsch beantwortet",
     "todayQ.answerLabel": "Antwort: {answer}",
@@ -1674,7 +1686,7 @@ const LOCALES = {
     "auth.syncFailed": "Synchronisierung fehlgeschlagen (nächster Versuch folgt automatisch)",
 
     // --- メールアドレスの確認 ---
-    "auth.verifyNotice": "📧 Ihre E-Mail-Adresse ist noch nicht bestätigt. Wir haben eine Bestätigungs-E-Mail an Ihre Adresse gesendet – bitte öffnen Sie den Link darin. Auch Hinweise vor der Verlängerung des Jahresabos gehen an diese Adresse.",
+    "auth.verifyNotice": "📧 Ihre E-Mail-Adresse ist noch nicht bestätigt. Wir haben eine Bestätigungs-E-Mail an Ihre Adresse gesendet – bitte öffnen Sie den Link darin.",
     "auth.verifyResend": "Bestätigungs-E-Mail erneut senden",
     "auth.verifyCheck": "Bestätigung prüfen",
     "auth.verifySent": "Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihr Postfach (auch den Spam-Ordner)",
@@ -1763,7 +1775,7 @@ const LOCALES = {
     "rank.20": "Legendärer Chronist",
     "rank.40": "Forschungsleiter",
     "rank.60": "Weiser des Albums",
-    "rank.80": "Forscher aller Jahreszeiten",
+    "rank.80": "Jahreszeiten-Forscher",
     "rank.100": "Berater der Geister",
     "rank.120": "Weber der Legenden",
     "rank.140": "Führer des fernen Himmels",
@@ -2055,7 +2067,7 @@ const LOCALES = {
     "math.mul3.explain": "{tens}×{b}={tensPart}, {ones}×{b}={onesPart}. Zusammen: {tensPart}+{onesPart}={product}.",
     "math.div3.hint": "Such im {b}er-Einmaleins die Zahl, die {a} ergibt.",
     "math.div3.explain": "{b} × {q} = {a}, also ist {a} ÷ {b} = {q}.",
-    "math.divRemainder3.text": "{a} ÷ {b} = ? (Schreib es so: „Zahl Rest Zahl“. Beispiel: 5 Rest 3)",
+    "math.divRemainder3.text": "{a} ÷ {b} = ? (Schreib es so: „Zahl Rest Zahl“. Beispiel: 12 Rest 3)",
     "math.divRemainder3.answer": "{q} Rest {r}",
     "math.divRemainder3.accept": ["{q}Rest{r}", "{q} r {r}"],
     "math.divRemainder3.hint": "Such im {b}er-Einmaleins die größte Zahl, die nicht über {a} hinausgeht.",
