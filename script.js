@@ -369,13 +369,26 @@ const ACTIVE_PROFILE_KEY = "active_profile";
 // 一度でもログイン（または新規登録）まで到達したことがあるか。
 // **最初の画面をログインにするか新規登録にするか**の判断にだけ使う。
 const AUTH_SEEN_KEY = "auth_seen";
+// **いま**ログインしているか（最後に Firebase がユーザーありと答えたか）。ログアウトで消す。
+// 起動時に Firebase の応答を待たずに「だれが あそぶ？」を出してよいかの判断にだけ使う。
+// ⚠️ AUTH_SEEN_KEY（一度でもログインしたか・消さない）とは別物。
+const AUTH_SIGNED_IN_KEY = "auth_signed_in";
 const PROFILE_NAME_MAX = 8;
 const PROFILE_MAX = 6;
+
+// プロフィールIDの形（newProfileId が作るのは「p＋数字（-数字）」だけ）。
+// ⚠️ **形を外れたIDは捨てる。**IDは HTML の属性に埋まる（だれが あそぶ？ の画面）ので、
+//    細工したバックアップに `x"><img src=x onerror=...>` のようなIDを入れて読み込ませると、
+//    **アプリ上で任意のJavaScriptが動いていた**（2026-10-03 セキュリティ監査で発見）。
+const PROFILE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+function isValidProfileId(id) {
+  return typeof id === "string" && PROFILE_ID_RE.test(id);
+}
 
 function getProfiles() {
   try {
     const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || "[]");
-    return Array.isArray(list) ? list.filter((p) => p && p.id) : [];
+    return Array.isArray(list) ? list.filter((p) => p && isValidProfileId(p.id)) : [];
   } catch {
     return [];
   }
@@ -417,12 +430,18 @@ function newProfileId(existing) {
   return id;
 }
 
+// 文字数は「見た目の1文字」で数える。slice() は UTF-16 単位なので、絵文字の途中で切れて
+// 「�」になっていた（バックアップやクラウドから長い名前が入ったとき。2026-10-10 日次QA）
+function clipProfileName(name) {
+  return Array.from(String(name || "")).slice(0, PROFILE_NAME_MAX).join("");
+}
+
 function createProfile(name) {
   const list = getProfiles();
   if (list.length >= profileLimit()) return null;
   const profile = {
     id: newProfileId(list),
-    name: String(name || "").slice(0, PROFILE_NAME_MAX) || t("profile.defaultName"),
+    name: clipProfileName(name) || t("profile.defaultName"),
     createdAt: new Date().toISOString(),
   };
   // 年度の開始月は家庭ごとに同じはずなので、すでにいる子の設定を引き継ぐ。
@@ -452,7 +471,7 @@ function renameProfile(id, name) {
   const list = getProfiles();
   const profile = list.find((p) => p.id === id);
   if (!profile) return null;
-  profile.name = String(name || "").slice(0, PROFILE_NAME_MAX) || t("profile.defaultName");
+  profile.name = clipProfileName(name) || t("profile.defaultName");
   saveProfiles(list);
   return profile;
 }
@@ -662,6 +681,17 @@ const INTEGER_ONLY = /^-?\d+$/;
 function parseFractionInput(str) {
   // 全角スラッシュ・全角数字も受理する（タブレットのかな入力だと全角で入るため）
   str = toHalfWidth(str).trim().replace(/／/g, "/");
+  // 帯分数（「1 4/15」「1と4/15」「1+4/15」）も受理する。4年で習う書き方なので、
+  // 仮分数の答え（19/15）に帯分数で答えた子を不正解にしないため。
+  // 分数部分が真分数のときだけ帯分数とみなす（「1 19/15」のような書き方は受けない）
+  const mixed = str.match(/^(\d+)\s*(?:と|\+|\s)\s*(\d+)\s*\/\s*(\d+)$/);
+  if (mixed) {
+    const w = parseInt(mixed[1], 10);
+    const n = parseInt(mixed[2], 10);
+    const d = parseInt(mixed[3], 10);
+    if (d === 0 || n === 0 || n >= d) return null;
+    return reduceFraction(w * d + n, d);
+  }
   if (str.includes("/")) {
     const parts = str.split("/");
     if (parts.length !== 2) return null;
@@ -1048,13 +1078,19 @@ const GUIDE_MOOD_POSE = {
 };
 
 // 吹き出しの横に立つ全身イラスト。表情は setGuide() が差し替える。
+// alt は表示言語の名前にする（es/de でも「はなびのこびと」と読み上げていた。2026-10-11）
+function guideCharacterName() {
+  const card = CARD_POOL.find((c) => c.id === "n1");
+  return escapeHtmlAttr(card ? cardName(card) : GUIDE_CHARACTER.name);
+}
+
 function renderGuideCharacterHTML() {
-  return `<img id="guide-character-img" class="guide-character-img" src="${GUIDE_CHARACTER.poses.greet}" alt="${GUIDE_CHARACTER.name}">`;
+  return `<img id="guide-character-img" class="guide-character-img" src="${GUIDE_CHARACTER.poses.greet}" alt="${guideCharacterName()}">`;
 }
 
 // ステータスバーの丸枠に入れる顔アップ
 function renderGuideFaceHTML(sizeClass) {
-  return `<div class="creature-slot ${sizeClass}"><img class="mascot-art" src="${GUIDE_CHARACTER.faceImage}" alt="${GUIDE_CHARACTER.name}"></div>`;
+  return `<div class="creature-slot ${sizeClass}"><img class="mascot-art" src="${GUIDE_CHARACTER.faceImage}" alt="${guideCharacterName()}"></div>`;
 }
 
 // ===== 図鑑レベル（集めたカードの種類数で決まる） =====
@@ -1455,9 +1491,27 @@ function drawGachaCard() {
   return { card, isNew, count: owned[card.id], refund, pityHit };
 }
 
+// ⚠️ **カード画像が読み込めなかったら、CSSで描くカードに差し替える。**
+//    画像は初めて使う瞬間に読み込む作りなので、圏外（車でトンネルに入る、など）で
+//    ガチャを引くと、**ポイントは引かれてカードも記録されるのに、演出のカードは
+//    壊れた画像アイコンと名前の文字だけ**になっていた（2026-10-02 日次QAで発見）。
+//    renderCreatureHTML は画像を使わないので、こちらは必ず描ける。
+function cardImageFailed(img, cardId) {
+  if (!img || img.dataset.fallback) return;
+  img.dataset.fallback = "1";
+  const cardDef = CARD_POOL.find((c) => c.id === cardId);
+  if (!cardDef) { img.style.visibility = "hidden"; return; }
+  const cfg = { shape: cardDef.shape, color: cardDef.color, accessory: cardDef.accessory, eye: cardDef.eye, sparkle: !!cardDef.sparkle };
+  const holder = document.createElement("div");
+  holder.innerHTML = renderCreatureHTML(cfg, "creature-slot--card");
+  const art = holder.firstElementChild;
+  if (art) img.replaceWith(art);
+  else img.style.visibility = "hidden";
+}
+
 function cardArtMarkup(cardDef) {
   if (cardDef.image) {
-    return `<img class="card-art" src="${cardImageDir()}/${cardDef.image}" alt="${cardName(cardDef)}" loading="lazy">`;
+    return `<img class="card-art" src="${cardImageDir()}/${cardDef.image}" alt="${cardName(cardDef)}" loading="lazy" onerror="cardImageFailed(this,'${cardDef.id}')">`;
   }
   const cfg = { shape: cardDef.shape, color: cardDef.color, accessory: cardDef.accessory, eye: cardDef.eye, sparkle: !!cardDef.sparkle };
   return renderCreatureHTML(cfg, "creature-slot--card");
@@ -1495,7 +1549,7 @@ function renderCardHTML(cardDef, opts) {
     return `
       <div class="card card--full-art rarity-${cardDef.rarity}">
         ${isNew ? `<div class="card-new-badge">NEW!</div>` : ""}
-        <img class="card-art card-art--full" src="${cardImageDir()}/${cardDef.image}" alt="${cardName(cardDef)}" loading="lazy">
+        <img class="card-art card-art--full" src="${cardImageDir()}/${cardDef.image}" alt="${cardName(cardDef)}" loading="lazy" onerror="cardImageFailed(this,'${cardDef.id}')">
         ${count > 1 ? `<div class="card-count">× ${count}</div>` : ""}
       </div>
     `;
@@ -1818,6 +1872,23 @@ function setGuide(mood, vars, poseAs) {
   if (!img) return;
   const src = GUIDE_CHARACTER.poses[pose];
   if (img.getAttribute("src") === src) return;
+  // ⚠️ 表情の絵は初めて使う瞬間に読み込むので、圏外だと**まちがえた瞬間や
+  //    全問正解の瞬間に壊れた画像アイコン**が出ていた（2026-10-02 日次QAで発見）。
+  //    起動時に必ず読み込んでいる「あいさつ」の絵→顔アップの順に戻し、
+  //    それも駄目なら絵を隠す（壊れたアイコンよりはよい）。
+  img.onerror = () => {
+    const tried = (img.dataset.tried || "").split("|");
+    const next = [GUIDE_CHARACTER.poses.greet, GUIDE_CHARACTER.faceImage]
+      .find((f) => !tried.includes(f) && img.getAttribute("src") !== f);
+    if (next) {
+      img.dataset.tried = [...tried, img.getAttribute("src")].join("|");
+      img.src = next;
+    } else {
+      img.style.visibility = "hidden";
+    }
+  };
+  img.dataset.tried = "";
+  img.style.visibility = "";
   img.src = src;
   // 表情が変わったことが分かるように軽くはずませる
   img.classList.remove("guide-pop");
@@ -2156,7 +2227,7 @@ const MATH_WORDS = {
     perUnitItems: [
       { unit: "m", item: "リボン", per: "g", label: "おもさ" },
       { unit: "こ", item: "あめ", per: "円", label: "ねだん" },
-      { unit: "L", item: "ペンキ", per: "㎡", label: "ぬれる面積" },
+      { unit: "L", item: "ペンキ", per: "m²", label: "ぬれる面積" },
       { unit: "さつ", item: "ノート", per: "円", label: "ねだん" },
       { unit: "本", item: "えんぴつ", per: "円", label: "ねだん" },
     ],
@@ -2494,15 +2565,20 @@ function genWordMulArray2() {
 // ===== 算数（小学4年生・新しく習う内容）=====
 // わり算の商（2桁）を十の位・一の位に分けて、分配法則で説明する。
 // 筆算そのものの再現ではなく簡易版（詳しい方針は hint-explain-audit.md 参照）。
+// ⚠️ 分け方は「わる数×10 の いくつぶん」と「のこり」。位ごと（84 → 80 と 4）に分けると
+//    80÷3 が割り切れず進めなくなるので、ヒントもこの分け方に揃えてある
+//    （2026-10-12 日次QAで発見。以前のヒント「位ごとに 分けて」は小4の約73%で使えなかった）。
 function distributiveDivideExplain(rawDividend, divisor, rawQuotient) {
   const qTens = Math.floor(rawQuotient / 10) * 10;
+  const qT = qTens / 10;
   const qOnes = rawQuotient % 10;
   const tensPart = divisor * qTens;
+  const b10 = divisor * 10;
   if (qOnes === 0) {
-    return t("math.divLong4.explainExact", { a: rawDividend, b: divisor, qTens, tensPart });
+    return t("math.divLong4.explainExact", { a: rawDividend, b: divisor, qTens, qT, b10, tensPart });
   }
   const onesPart = divisor * qOnes;
-  return t("math.divLong4.explainSplit", { a: rawDividend, b: divisor, q: rawQuotient, qTens, qOnes, tensPart, onesPart });
+  return t("math.divLong4.explainSplit", { a: rawDividend, b: divisor, q: rawQuotient, qTens, qT, qOnes, tensPart, onesPart, b10 });
 }
 
 function genDivLong4() {
@@ -2513,7 +2589,7 @@ function genDivLong4() {
     text: `${a} ÷ ${b} = ?`,
     answer: String(q),
     type: "number",
-    hint: t("math.divLong4.hint"),
+    hint: t("math.divLong4.hint", { a, b }),
     explain: distributiveDivideExplain(a, b, q),
   };
 }
@@ -2951,7 +3027,10 @@ function genWordPercent5() {
 function genWordAverage5() {
   const n = randInt(3, 5);
   const avgSoFar = randInt(60, 85);
-  const targetAvg = avgSoFar + randInt(2, 8);
+  // 必要な点数は avgSoFar + (n+1)×上げ幅 になる。100点をこえる（とれない）点数を
+  // 答えにしないよう、上げ幅の上限をしぼる（avgSoFar≦85・n+1≦6 なので最低でも2はとれる）
+  const maxRise = Math.min(8, Math.floor((100 - avgSoFar) / (n + 1)));
+  const targetAvg = avgSoFar + randInt(2, maxRise);
   const need = targetAvg * (n + 1) - avgSoFar * n;
   return {
     text: t("math.wordAverage5.text", { n, n1: n + 1, avgSoFar, targetAvg }),
@@ -3054,7 +3133,9 @@ function genVolume6() {
 function genRatio6() {
   const factor = randInt(2, 12);
   const sx = randInt(1, 12);
-  const sy = randInt(1, 12);
+  let sy = randInt(1, 12);
+  // a と b が同じ数（答えが 1:1）だと「かんたんにする」練習にならないのでさける
+  if (sy === sx) sy = sx === 12 ? 1 : sx + 1;
   const g = gcd(sx, sy);
   const simpleX = sx / g;
   const simpleY = sy / g;
@@ -3438,14 +3519,48 @@ const REVIEW_INTERVALS = [1, 3, 7, 20];
 const REVIEW_MAX_PER_SESSION = 3;
 
 function getReviewQueue() {
+  let queue;
   try {
     const parsed = JSON.parse(localStorage.getItem(pk(REVIEW_KEY)) || "{}");
     // ⚠️ 配列も typeof は "object" なので素通りする。配列に文字列キーを生やしても
     // JSON.stringify が捨てるため、まちがえた記録が黙って消える
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    queue = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
     return {};
   }
+  if (migrateLegacyAntonymReviews(queue)) saveReviewQueue(queue);
+  return queue;
+}
+
+// 反対語の復習の目印は 2026-10-09 に「upTo() の中の順番（antonym:5#a）」から
+// 「ひらがなの組（antonym:ひろい|せまい#a）」に変えた。古い形のままだと、
+//  - 出題はできても、正解・不正解の記録が新しい形のキーに向かい、古い項目が卒業しない
+//  - 古い番号は「そのセッションの学年」のリストの番号だったので、4〜6年で積んだものは別の語に当たる
+// （2026-10-10 日次QAで発見）。番号は当てにせず、保存してある問題文で引き当てて新しいキーに付け替える。
+// 見つからない項目はそのまま残す（保護者が「にがて分野」の×で消せる）。
+function migrateLegacyAntonymReviews(queue) {
+  const legacyKeys = Object.keys(queue).filter((key) => /^japanese\|kotoba\|antonym:\d+#[ab]$/.test(key));
+  if (legacyKeys.length === 0) return false;
+  const pools = new Map();
+  let changed = false;
+  for (const oldKey of legacyKeys) {
+    const item = queue[oldKey];
+    if (!item || typeof item.text !== "string") continue;
+    const grade = Number(item.grade) || 6;
+    if (!pools.has(grade)) pools.set(grade, buildJapanesePool(grade, "kotoba"));
+    const found = pools.get(grade).find((q) => q.text === item.text);
+    if (!found) continue;
+    const reviewId = `${found.pairKey}#${found.dir}`;
+    const newKey = `japanese|kotoba|${reviewId}`;
+    const existing = queue[newKey];
+    delete queue[oldKey];
+    // 新しい形でもう積まれていれば、そちらの予定を残して間違えた回数だけ足す
+    queue[newKey] = existing
+      ? { ...existing, wrongCount: (existing.wrongCount || 0) + (item.wrongCount || 0) }
+      : { ...item, reviewId };
+    changed = true;
+  }
+  return changed;
 }
 
 function saveReviewQueue(queue) {
@@ -3853,7 +3968,9 @@ function readingPositionHint(passage) {
   }
   if (pos === -1) return t("q.choiceHint");
   const ratio = pos / text.length;
-  const zone = ratio < 0.34 ? "前半" : ratio < 0.67 ? "中盤" : "後半";
+  // ⚠️ かなで書く。以前の「中盤」の「盤」は小学校で習わない字で、全学年の読解ヒントに出ていた。
+  //    前・半・後（2年）も1年生には読めない（2026-10-05 日次QAで発見）。
+  const zone = ratio < 0.34 ? "はじめのほう" : ratio < 0.67 ? "まんなかあたり" : "おわりのほう";
   return t("q.readingPositionHint", { zone });
 }
 
@@ -3882,7 +3999,10 @@ function buildJapanesePool(grade, category) {
     bank.forEach((item, idx) => {
       const word = item.a;
       const reading = answerList(item.b)[0];
-      const others = shuffle(bank.filter((_, i) => i !== idx)).slice(0, 3).map((x) => x.a);
+      // 同じ読みを持つ語はダミーにしない。「『かい』と よむ ことばは？」（貝）に 絵・海（かい）が
+      // 混ざると正解が2つになっていた（2026-10-09 日次QAで発見）
+      const others = shuffle(bank.filter((x, i) => i !== idx && !answerList(x.b).includes(reading)))
+        .slice(0, 3).map((x) => x.a);
       if (others.length < 3) return;
       pool.push({
         grade: item.grade,
@@ -3900,9 +4020,16 @@ function buildJapanesePool(grade, category) {
 
   if (category === "kotoba") {
     // 反対語は「AのはんたいはB」と「BのはんたいはA」の両方向を出す
-    upTo(JA_ANTONYM, grade, category).forEach((item, idx) => {
+    // ⚠️ pairKey はひらがなの組で作る。以前は upTo() の中の順番（idx）だったため、
+    //    1年の「ひろい／せまい」と3年の「広い／狭い」が別の問題あつかいになり、
+    //    3年で「『広い』の はんたいは？」と「『せまい』の はんたいは？」が同じ10問に並んで
+    //    片方がもう片方の答えになっていた（2026-10-09 日次QAで発見。小3の約13%のセッション）。
+    //    それより前に積まれた復習は migrateLegacyAntonymReviews() が新しい形に付け替える。
+    const hiraKey = (list) => list.find((w) => /^[ぁ-んー]+$/.test(w)) || list[0];
+    upTo(JA_ANTONYM, grade, category).forEach((item) => {
       const left = answerList(item.a);
       const right = answerList(item.b);
+      const pairKey = `antonym:${hiraKey(left)}|${hiraKey(right)}`;
       [[left, right], [right, left]].forEach(([fromList, toList], dirIdx) => {
         pool.push({
           grade: item.grade,
@@ -3912,7 +4039,7 @@ function buildJapanesePool(grade, category) {
           type: "text",
           hint: toList[0].length >= 3 ? t("q.antonymHint", { first: toList[0][0] }) : t("q.shortAnswerHint"),
           explain: t("q.antonymExplain", { word: fromList[0], opposite: toList[0] }),
-          pairKey: `antonym:${idx}`,
+          pairKey,
           dir: dirIdx === 0 ? "a" : "b",
         });
       });
@@ -4011,9 +4138,17 @@ function collectDueReviewProblems(subject, category, grade, limit) {
   const dead = [];
   // 上限で先に切らず、成功したものだけを数える。
   // そうしないと、組み立てに失敗する項目が1つあるだけで枠が1つ無駄になる。
+  // 表と裏（漢字の読み↔書き、反対語の A→B と B→A）が両方とも期日になっていても、
+  // 同じ回には1つだけ出す。並ぶと片方がもう片方の答えになる（2026-10-10 日次QAで発見）。
+  // 2つめは次の回に回る（キューからは消さない）。
+  const usedPairKeys = new Set();
   for (const item of getDueReviewItems(subject, category, grade)) {
     if (problems.length >= limit) break;
     const problem = materializeReviewProblem(item, poolFor);
+    if (problem && problem.pairKey) {
+      if (usedPairKeys.has(problem.pairKey)) continue;
+      usedPairKeys.add(problem.pairKey);
+    }
     if (problem) {
       problem.isReview = true;
       problems.push(problem);
@@ -4139,6 +4274,9 @@ function parseLocaleNumber(str) {
   if (/\d/.test(src.slice(matched[0].length))) return NaN;
 
   let numStr = matched[0];
+  // 日本語版では「1,200」は3けたくぎり（1200）。小数のコンマは使わないので、
+  // 3けたごとのくぎりの形にぴったり合うときだけコンマを外す（es/de は小数のコンマなのでそのまま）
+  if (getLocale() === "ja" && /^-?\d{1,3}(?:,\d{3})+$/.test(numStr)) return parseFloat(numStr.replace(/,/g, ""));
   numStr = numStr.includes(".") ? numStr.replace(/,/g, "") : numStr.replace(",", ".");
   return parseFloat(numStr);
 }
@@ -4186,6 +4324,8 @@ function checkAnswer(userInput, problem) {
     str
       .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
       .replace(/[\s　]/g, "")
+      // 文の終わりにつけた「。」「．」「、」は無視する（「はな。」が×になっていた。2026-10-09）
+      .replace(/[。．、]+$/, "")
       .toLowerCase();
   const accepted = problem.accept || [problem.answer];
   return accepted.some((a) => normalize(trimmed) === normalize(a));
@@ -4459,7 +4599,12 @@ function refreshGachaPointsDisplay() {
   updateStatusBar();
 }
 
-document.getElementById("btn-pull-gacha").addEventListener("click", () => {
+document.getElementById("btn-pull-gacha").addEventListener("click", (e) => {
+  // 演出中は引かない。押したあともフォーカスがこのボタンに残るため、Enter／Space を押し続けると
+  // オーバーレイの裏で連続して引き、ポイントがなくなるまで最後の1枚しか見えなかった
+  // （2026-10-08 日次QAで発見。btn-next の連打対策と同じ考え方）
+  if (document.body.classList.contains("gacha-open")) return;
+  e.currentTarget.blur();
   const points = getTotalStamps();
   if (points < GACHA_PULL_COST) {
     playWrongSound();
@@ -4531,7 +4676,15 @@ document.getElementById("btn-sound-toggle").addEventListener("click", () => {
   updateSpeakButton();
   if (enabled) {
     playClickSound();
-    playBgm(currentBgmKey || "home", { restart: true });
+    // ガチャ演出の効果音（5秒の一発音）が最後に鳴った曲のままだと、演出が終わったあとに
+    // 音をONにした瞬間その効果音が鳴っていた（2026-10-12 日次QA）。演出中でなければ画面の曲に戻す
+    let key = currentBgmKey || "home";
+    if (/^gachaReveal/.test(key) && !document.body.classList.contains("gacha-open")) {
+      // ガチャ画面に残っているなら、演出のあとに流れる曲（gachaView）にする
+      const active = document.querySelector(".screen.active");
+      key = active && active.id === "screen-gacha" ? "gachaView" : (active && SCREEN_TO_BGM[active.id]) || "home";
+    }
+    playBgm(key, { restart: true });
   } else {
     stopAllBgm();
   }
@@ -4749,7 +4902,9 @@ function renderTodayQuestionSetting() {
   if (item.answer) {
     const answer = document.createElement("p");
     answer.className = "today-q-answer hidden";
-    answer.textContent = t("todayQ.answerLabel", { answer: item.answer });
+    // 小数の答えは、es/de では問題文・解説と同じ「,」で見せる（「59,4 ÷ 9」の答えが「6.6」になっていた）
+    const shownAnswer = /^-?\d+\.\d+$/.test(String(item.answer)) ? fmtDecimal(item.answer) : item.answer;
+    answer.textContent = t("todayQ.answerLabel", { answer: shownAnswer });
 
     const toggle = document.createElement("button");
     toggle.type = "button";
@@ -4882,6 +5037,8 @@ function renderReviewSetting() {
         delete latest[item.key];
         saveReviewQueue(latest);
         renderReviewSetting();
+        // 「きょうの1問」が消した問題のまま残っていた（2026-10-10 日次QA）
+        renderTodayQuestionSetting();
       });
       row.appendChild(removeBtn);
 
@@ -4957,14 +5114,16 @@ function renderFeedbackSetting() {
   if (!box) return;
 
   box.innerHTML = `
-    <textarea class="feedback-textarea" id="feedback-text" placeholder="${t("feedback.placeholder")}"></textarea>
+    <textarea class="feedback-textarea" id="feedback-text" maxlength="5000" placeholder="${t("feedback.placeholder")}"></textarea>
     <div class="backup-actions">
       <button type="button" class="btn-secondary" id="btn-feedback-submit">${t("feedback.submit")}</button>
     </div>
     <p class="backup-feedback" id="feedback-status"></p>
   `;
 
-  document.getElementById("btn-feedback-submit").addEventListener("click", async () => {
+  document.getElementById("btn-feedback-submit").addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    if (btn.disabled) return;
     const textEl = document.getElementById("feedback-text");
     const statusEl = document.getElementById("feedback-status");
     const text = textEl.value.trim();
@@ -4976,6 +5135,8 @@ function renderFeedbackSetting() {
     playClickSound();
     statusEl.textContent = t("feedback.sending");
     statusEl.className = "backup-feedback";
+    btn.disabled = true;
+    const waiting = showSendWaitingAfterDelay(statusEl);
     try {
       await fbDb.collection("feedback").add({
         uid: fbCurrentUser.uid,
@@ -4990,6 +5151,9 @@ function renderFeedbackSetting() {
       console.warn("[feedback] failed:", e.message);
       statusEl.textContent = t("feedback.failed");
       statusEl.className = "backup-feedback error";
+    } finally {
+      clearTimeout(waiting);
+      btn.disabled = false;
     }
   });
 }
@@ -5007,7 +5171,7 @@ function renderTestimonialSetting() {
     <div class="feedback-rating" id="testimonial-stars">
       ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="feedback-star" data-star="${n}" aria-label="${t("testimonial.starLabel", { n })}" aria-pressed="false">★</button>`).join("")}
     </div>
-    <textarea class="feedback-textarea" id="testimonial-text" placeholder="${t("testimonial.placeholder")}"></textarea>
+    <textarea class="feedback-textarea" id="testimonial-text" maxlength="5000" placeholder="${t("testimonial.placeholder")}"></textarea>
     <label class="feedback-consent">
       <input type="checkbox" id="testimonial-consent">
       <span>${t("testimonial.consentLabel")}</span>
@@ -5030,7 +5194,9 @@ function renderTestimonialSetting() {
     });
   });
 
-  document.getElementById("btn-testimonial-submit").addEventListener("click", async () => {
+  document.getElementById("btn-testimonial-submit").addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    if (btn.disabled) return;
     const textEl = document.getElementById("testimonial-text");
     const consentEl = document.getElementById("testimonial-consent");
     const statusEl = document.getElementById("testimonial-status");
@@ -5042,6 +5208,8 @@ function renderTestimonialSetting() {
     playClickSound();
     statusEl.textContent = t("testimonial.sending");
     statusEl.className = "backup-feedback";
+    btn.disabled = true;
+    const waiting = showSendWaitingAfterDelay(statusEl);
     try {
       await fbDb.collection("reviews").add({
         uid: fbCurrentUser.uid,
@@ -5061,8 +5229,23 @@ function renderTestimonialSetting() {
       console.warn("[testimonial] failed:", e.message);
       statusEl.textContent = t("testimonial.failed");
       statusEl.className = "backup-feedback error";
+    } finally {
+      clearTimeout(waiting);
+      btn.disabled = false;
     }
   });
+}
+
+// ご意見・感想の送信が、圏外だと「送信中…」のまま止まっていた（2026-10-02 日次QAで発見）。
+// ⚠️ **圏外の Firestore の書き込みは「失敗」にならず、保留されて、つながりしだい送られる**
+//    （アプリを開いているあいだは）。なので「失敗しました・もう一度」と出すと、
+//    押し直したぶんが**つながった瞬間に重複して届く。**
+//    → しばらく応答が無ければ「つながりしだい送られる」と正直に伝え、ボタンは押せないままにする。
+function showSendWaitingAfterDelay(statusEl) {
+  return setTimeout(() => {
+    statusEl.textContent = t("common.sendWaiting");
+    statusEl.className = "backup-feedback";
+  }, 8000);
 }
 
 // プラン（無料→ファミリーの切り替え）。account-design.md §10-9。
@@ -5162,6 +5345,12 @@ function lockedAddLabel() {
   return isPaidPlan() ? t("profile.addFull", { n: PROFILE_MAX }) : t("profile.addLocked");
 }
 
+function escapeHtmlAttr(str) {
+  return String(str)
+    .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function openProfileSelectScreen(mode, fromSettings) {
   state.profileMode = ["manage", "rename"].includes(mode) ? mode : "select";
   if (fromSettings !== undefined) state.profileSelectFromSettings = !!fromSettings;
@@ -5170,7 +5359,7 @@ function openProfileSelectScreen(mode, fromSettings) {
   const canAddProfile = profiles.length < profileLimit();
 
   list.innerHTML = profiles.map((p) => `
-    <button type="button" class="profile-card" data-profile-id="${p.id}">
+    <button type="button" class="profile-card" data-profile-id="${escapeHtmlAttr(p.id)}">
       <span class="profile-card-name"></span>
       ${state.profileMode === "manage" ? `<span class="profile-card-delete">${t("profile.deleteBtn")}</span>` : ""}
       ${state.profileMode === "rename" ? `<span class="profile-card-rename">${t("profile.renameBtn")}</span>` : ""}
@@ -5383,7 +5572,12 @@ document.getElementById("btn-profile-create-ok").addEventListener("click", () =>
 
 document.getElementById("btn-profile-create-cancel").addEventListener("click", () => {
   playClickSound();
-  openProfileSelectScreen("select");
+  // なまえの変更から「もどる」ときは、なまえを変える子を選ぶ一覧に戻す。
+  // 以前は「だれが あそぶ？」に飛び、そこで子を押すとアプリに入ってしまった（2026-10-10 日次QA）
+  const wasRenaming = !!state.profileRenameId;
+  state.profileRenameId = null;
+  applyProfileFormLabels();
+  openProfileSelectScreen(wasRenaming ? "rename" : "select");
 });
 
 // ログイン・新規登録・プロフィール作成は<form>を使っていないため、Enterキーでは
@@ -5459,10 +5653,31 @@ function enterAppWithActiveProfile() {
 const BACKUP_APP_ID = "manabimeguru";
 const BACKUP_FORMAT_VERSION = 1;
 
+// ⚠️ **Firebase のログイン情報（`firebase:` で始まるキー）はバックアップに入れない／読み込まない。**
+//    ふつうのブラウザでは IndexedDB に入るが、IndexedDB が使えない環境（一部のプライベート
+//    モードや WebView）では localStorage に入り、**書き出したファイルに保護者のログイン用の
+//    トークンが含まれていた**（2026-10-03 セキュリティ監査で発見）。
+//    読み込み側でも捨てる。細工したファイルにログイン情報を仕込まれると、
+//    **読み込んだ人が知らないうちに他人のアカウントへログインした状態**になり、
+//    子どもの記録がそちらへ同期されてしまう。
+function isSecretStorageKey(key) {
+  return typeof key === "string" && key.startsWith("firebase:");
+}
+
+// **この端末の**ログイン状態を表すキー。子どもの記録ではないので、バックアップでは運ばない。
+// ⚠️ 読み込みは localStorage.clear() してから書くので、何もしないと**読み込んだ瞬間に
+//    この端末のログイン状態まで消える**（IndexedDB が使えない環境ではログアウトになり、
+//    auth_signed_in が消えると、次に電波が弱いときローカルファーストの起動が効かない）。
+//    2026-10-04 日次QAで発見。読み込みの前後でそのまま引き継ぐ。
+function isDeviceSessionKey(key) {
+  return isSecretStorageKey(key) || key === AUTH_SEEN_KEY || key === AUTH_SIGNED_IN_KEY;
+}
+
 function collectBackupData() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
+    if (isDeviceSessionKey(key)) continue;
     data[key] = localStorage.getItem(key);
   }
   return data;
@@ -5493,7 +5708,31 @@ function backupSummaryFromData(data) {
     points += parseInt(data[`${prefix}${STORAGE_KEY}`] || "0", 10) || 0;
   });
 
-  return { profiles: Math.max(1, profiles.length), cards: cardIds.size, points };
+  // ⚠️ 以前は Math.max(1, …) で、**0人のファイルでも「1人ぶん」と表示していた。**
+  //    旧形式（プロフィール制より前・接頭辞なし）だけを「1人」と数える。
+  const legacy = profiles.length === 0 && LEGACY_KEYS.some((k) => data[k] !== undefined);
+  return { profiles: profiles.length || (legacy ? 1 : 0), cards: cardIds.size, points };
+}
+
+// 読み込んでよいファイルか。
+// ⚠️ **中身の無いファイルを通さない。**以前は `app` と `data` がオブジェクトかしか見ておらず、
+//    `{"app":"manabimeguru","data":{}}` が通って、押すと**全データが消えて0人**になっていた
+//    （2026-10-01 日次QAで発見。作った直後のプロフィールを書き出したファイルを取り違えると起きる）。
+//    - 値はすべて文字列（localStorage は文字列しか持てない。オブジェクトは "[object Object]" に化ける）
+//    - プロフィールが1人以上いる、または旧形式のキーがある（旧形式も正しく復元できるので弾かない）
+function isRestorableBackup(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+  if (!Object.values(data).every((v) => typeof v === "string")) return false;
+  // 形の崩れたプロフィールIDが1つでもあれば、ファイルごと受け付けない
+  // （黙って一部だけ取り込むと、細工に気づけない）
+  try {
+    const raw = JSON.parse(data[PROFILES_KEY] || "[]");
+    if (!Array.isArray(raw)) return false;
+    if (raw.some((p) => !p || !isValidProfileId(p.id))) return false;
+  } catch {
+    return false;
+  }
+  return backupSummaryFromData(data).profiles > 0;
 }
 
 function setBackupFeedback(text, cls) {
@@ -5564,12 +5803,17 @@ document.getElementById("backup-file-input").addEventListener("change", async (e
 
   try {
     const parsed = JSON.parse(await file.text());
-    if (parsed.app !== BACKUP_APP_ID || typeof parsed.data !== "object" || !parsed.data) {
+    if (parsed.app !== BACKUP_APP_ID || !isRestorableBackup(parsed.data)) {
       throw new Error("invalid backup file");
     }
     pendingBackupData = parsed.data;
+    // 読み込むものだけでなく、**いま消えるもの**も並べる。
+    // 確認画面で「何を失うか」が見えないと、取り違えに気づけない。
+    const incoming = backupSummaryFromData(parsed.data);
+    const current = backupSummaryFromData(collectBackupData());
     document.getElementById("backup-confirm-text").textContent =
-      t("settings.backupImportConfirm", backupSummaryFromData(parsed.data));
+      t("settings.backupImportConfirm", incoming) +
+      (current.profiles > 0 ? "\n" + t("settings.backupCurrent", current) : "");
     document.getElementById("backup-confirm-box").classList.remove("hidden");
     setBackupFeedback("", "");
   } catch (err) {
@@ -5587,13 +5831,35 @@ document.getElementById("btn-backup-confirm-no").addEventListener("click", () =>
 document.getElementById("btn-backup-confirm-yes").addEventListener("click", () => {
   playClickSound();
   if (!pendingBackupData) return;
+  // ⚠️ **消す前に、いまの中身を控えておく。**以前は clear() のあと1件ずつ書き込み、
+  //    途中で失敗（容量オーバーなど）しても戻さなかったので、「しっぱいしました」と
+  //    出たときには**いまのデータがもう消えていた**（2026-10-01 日次QAで発見）。
+  const snapshot = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    snapshot.push([key, localStorage.getItem(key)]);
+  }
   try {
     localStorage.clear();
-    Object.entries(pendingBackupData).forEach(([key, value]) => localStorage.setItem(key, value));
+    Object.entries(pendingBackupData).forEach(([key, value]) => {
+      if (isDeviceSessionKey(key)) return;
+      localStorage.setItem(key, value);
+    });
+    // この端末のログイン状態は、読み込む前のものをそのまま戻す
+    snapshot.forEach(([key, value]) => {
+      if (isDeviceSessionKey(key)) localStorage.setItem(key, value);
+    });
     document.getElementById("backup-confirm-box").classList.add("hidden");
     setBackupFeedback(t("settings.backupImportOk"), "ok");
     setTimeout(() => location.reload(), 600);
   } catch (err) {
+    try {
+      localStorage.clear();
+      snapshot.forEach(([key, value]) => localStorage.setItem(key, value));
+    } catch {
+      // 元の中身は直前まで入っていたものなので、戻せないことは考えにくい
+    }
+    document.getElementById("backup-confirm-box").classList.add("hidden");
     setBackupFeedback(t("settings.backupImportFailed"), "error");
   }
   pendingBackupData = null;
@@ -5744,7 +6010,7 @@ function openFlashScreen() {
 
 function renderFlashSetup() {
   const level = flashLevelFor(getGrade());
-  document.getElementById("flash-rule").textContent = t("flash.rule", {
+  document.getElementById("flash-rule").textContent = t(level.digits === 1 ? "flash.ruleOneDigit" : "flash.rule", {
     count: level.count,
     digits: level.digits,
     rounds: FLASH_ROUNDS,
@@ -5836,7 +6102,10 @@ function submitFlashAnswer() {
   const raw = input.value.trim();
   if (raw === "") return;
 
-  const correct = Number(raw) === flashState.sum;
+  // 全角の数字（日本語入力のまま打った「２１」）も受ける。Number() だと「0x15」「1e1」まで○になるので、
+  // 数字だけの形に限る（2026-10-11 日次QAで発見。通常のクイズは 9/29 に対応ずみ）
+  const digits = toHalfWidth(raw).replace(/\s/g, "");
+  const correct = /^\d+$/.test(digits) && parseInt(digits, 10) === flashState.sum;
   const feedback = document.getElementById("flash-feedback");
   if (correct) {
     flashState.correct += 1;
@@ -5853,18 +6122,31 @@ function submitFlashAnswer() {
   flashState.round += 1;
   flashState.sum = undefined;
 
+  // ⚠️ 最後の1問なら、ポイントと自己ベストは**この場で**記録する。結果画面を出すまでの
+  //    待ち（0.9〜1.8秒）のあいだに「やめる」「もどる」を押すとタイマーが消され、
+  //    5問遊び切ったのにポイントもベストも付かなかった（2026-10-11 日次QAで発見）。
+  if (flashState.round >= FLASH_ROUNDS) commitFlashSet();
   flashTimers.push(setTimeout(() => {
     if (flashState.round >= FLASH_ROUNDS) finishFlashSet();
     else runFlashRound();
   }, correct ? 900 : 1800));
 }
 
-function finishFlashSet() {
-  clearFlashTimers();
+// 1セットぶんのポイントと自己ベストを1回だけ記録する
+function commitFlashSet() {
+  if (flashState.committed) return flashState.committed;
   const { correct, speedKey } = flashState;
   const isBest = saveFlashBest(speedKey, correct);
   const { granted, capped } = addFlashPoints(correct);
   updateStatusBar();
+  flashState.committed = { isBest, granted, capped };
+  return flashState.committed;
+}
+
+function finishFlashSet() {
+  clearFlashTimers();
+  const { correct } = flashState;
+  const { isBest, granted, capped } = commitFlashSet();
 
   document.getElementById("flash-play").classList.add("hidden");
   document.getElementById("flash-result").classList.remove("hidden");
@@ -5874,7 +6156,7 @@ function finishFlashSet() {
   });
 
   const notes = [];
-  if (granted > 0) notes.push(t("flash.gotPoints", { n: granted }));
+  if (granted > 0) notes.push(t(granted === 1 ? "flash.gotPointsOne" : "flash.gotPoints", { n: granted }));
   if (capped) notes.push(t("flash.capped", { n: FLASH_DAILY_POINT_CAP }));
   if (isBest) notes.push(t("flash.newBest"));
   document.getElementById("flash-result-note").textContent = notes.join(" ");
@@ -6081,6 +6363,9 @@ function startSession() {
   state.stampsBeforeSession = getTotalStamps();
   renderProblem();
   showScreen("screen-quiz");
+  // renderProblem() の focus() は画面が出る前なので効かない。1問目だけこたえ欄に入らなかった（2026-10-11）
+  const firstInput = document.getElementById("answer-input");
+  if (firstInput && !firstInput.disabled && firstInput.offsetParent) firstInput.focus();
 }
 
 function renderProblem() {
@@ -6461,6 +6746,7 @@ function dismissSplash() {
   const splash = document.getElementById("splash");
   if (!splash || splash.classList.contains("is-leaving")) return;
   splash.classList.add("is-leaving");
+  document.getElementById("app").inert = false;
   setTimeout(() => {
     splash.classList.add("is-gone");
     // すでにメイン画面へ入っていた（＝おしらせポップアップが保留になっていた）なら、
@@ -6469,8 +6755,82 @@ function dismissSplash() {
   }, 600);
 }
 
+// ⚠️ **起動の準備ができるまで、スプラッシュを閉じない。**
+//    index.html では `screen-home` が最初から active なので、準備前にスプラッシュを閉じると
+//    **中身の空っぽなホーム（0pt・グラフ空）**に入れてしまい、そこからクイズも始められた。
+//    通信が「切れる」のでなく「応答しない」と準備に約40秒かかり、そのあいだ遊んでいた子が
+//    **準備ができた瞬間に「だれが あそぶ？」へ引きはがされていた**（2026-10-02 日次QAで発見）。
+//    準備前にタップされたら「じゅんびちゅう…」を出して待ち、準備ができたら閉じる。
+let initialScreenReady = false;
+let splashDismissRequested = false;
+
+function markInitialScreenReady() {
+  if (initialScreenReady) return;
+  initialScreenReady = true;
+  if (splashDismissRequested) dismissSplash();
+  preloadGuidePoses();
+}
+
+// 表情の絵を、使う前に読んでおく。読み込みが落ち着いてから（アイドル時）に始めるので、
+// 起動を遅くしない。どのみち最初の数問でほぼ全部使う絵なので、通信量はほとんど増えない。
+let guidePosesPreloaded = false;
+function preloadGuidePoses() {
+  if (guidePosesPreloaded) return;
+  guidePosesPreloaded = true;
+  const run = () => Object.values(GUIDE_CHARACTER.poses).forEach((src) => { new Image().src = src; });
+  if ("requestIdleCallback" in window) requestIdleCallback(run, { timeout: 4000 });
+  else setTimeout(run, 1500);
+}
+
+// ⚠️ **Firebase の応答を待たずに、端末にあるデータで最初の画面を出す（ローカルファースト）。**
+//    電波が弱いと、Firebase Auth が起動時に行うアカウントの確認（accounts:lookup）が
+//    **約30秒**かかり、そのあいだ最初の画面が出なかった。さらに、その間に遊んでいた子が、
+//    確認が終わった瞬間に「だれが あそぶ？」へ引きはがされていた（2026-10-02 日次QAで実測）。
+//    記録はもともと端末にあるので、前回ログインしたままの端末なら、確認を待たずに出してよい。
+//    確認が遅れて届いたときは、最初の画面を出し直さない（onAuthStateChanged 側で見る）。
+let initialScreenShownLocally = false;
+
+function isSignedInLocally() {
+  try { return localStorage.getItem(AUTH_SIGNED_IN_KEY) === "1"; } catch { return false; }
+}
+
+setTimeout(() => {
+  if (initialScreenReady) return;
+  if (isSignedInLocally() && getProfiles().length > 0) {
+    initialScreenShownLocally = true;
+    startInitialScreen();
+    markInitialScreenReady();
+  }
+}, 4000);
+
+// 最後の安全弁：前回ログインしていない端末で Firebase がまったく応答しないときも、
+// スプラッシュに閉じこめない。この場合はログイン・新規登録の画面を出す。
+setTimeout(() => {
+  if (initialScreenReady) return;
+  if (hasUsedAppBefore()) openLoginScreen();
+  else openSignupScreen();
+  markInitialScreenReady();
+}, 20000);
+
+// ⚠️ スプラッシュはキーボードでも閉じられるようにし、出ているあいだは裏の画面（#app）を
+//    inert にしてフォーカスが入らないようにする。以前は Tab で裏の見えない入力欄に入り、
+//    Enter/Space では閉じられなかった（2026-10-11 日次QAで発見）。
+if (!document.getElementById("splash").classList.contains("is-gone")) {
+  document.getElementById("app").inert = true;
+}
+document.getElementById("splash").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  e.preventDefault();
+  document.getElementById("splash").click();
+});
 document.getElementById("splash").addEventListener("click", () => {
   unlockAudioOnFirstGesture();
+  if (!initialScreenReady) {
+    splashDismissRequested = true;
+    const tap = document.querySelector("#splash .splash-tap");
+    if (tap) tap.textContent = t("splash.preparing");
+    return;
+  }
   dismissSplash();
 });
 
@@ -6794,6 +7154,8 @@ function authErrorMessage(code) {
     "auth/wrong-password": t("auth.errorWrongPassword"),
     "auth/invalid-credential": t("auth.errorWrongPassword"),
     "auth/user-not-found": t("auth.errorUserNotFound"),
+    // 圏外で押すと、以前は「エラーが発生しました」だけで、保護者がパスワードを疑っていた
+    "auth/network-request-failed": t("auth.errorNetwork"),
   };
   return map[code] || t("auth.errorGeneric");
 }
@@ -6872,7 +7234,14 @@ document.getElementById("btn-signup-to-login").addEventListener("click", () => {
 async function signOutFromApp() {
   clearTimeout(_syncDirtyTimer);
   if (fbCurrentUser && getActiveProfileId()) {
-    await pushCurrentProfileToFirestore().catch(() => {});
+    // ⚠️ **送信の完了を無期限に待たない。**圏外の Firestore の書き込みは失敗せずに
+    //    保留になり続けるので、ここで待つと**ログアウトボタンが何も起きなくなっていた**
+    //    （2026-10-02 日次QAで発見。25秒待っても変化なし・エラーも出ない）。
+    //    最大3秒だけ送信を待って、ログアウトへ進む。
+    await Promise.race([
+      pushCurrentProfileToFirestore().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
   }
   await fbAuth.signOut();
   // onAuthStateChanged がログイン画面に遷移させる
@@ -6960,6 +7329,8 @@ fbAuth.onAuthStateChanged(async (user) => {
   document.getElementById("btn-signup-submit").disabled = false;
 
   if (!user) {
+    try { localStorage.removeItem(AUTH_SIGNED_IN_KEY); } catch {}
+    initialScreenShownLocally = false;
     stopWatchingHouseholdPlan();
     fbPlan = "free";
     fbNotifyReview = false;
@@ -6969,23 +7340,39 @@ fbAuth.onAuthStateChanged(async (user) => {
     //    「アカウントをお持ちの前提」の画面に着き、小さなリンクを探して移ることになる。
     //    一度でも使った端末（プロフィールがある／ログインまで行った記録がある）は、
     //    ログアウト後などにまた入るところなので、いままでどおりログイン画面。
-    if (hasUsedAppBefore()) openLoginScreen();
-    else openSignupScreen();
+    // ⚠️ **すでにログイン・新規登録の画面にいるなら、開き直さない。**開き直すと入力欄が空になる。
+    //    電波が弱いと、20秒の安全弁でログイン画面を出したあとに Firebase の「未ログイン」が
+    //    遅れて届き、**保護者が打ちかけたメールとパスワードが消えていた**（2026-10-04 日次QAで発見）。
+    //    保護者がログインから新規登録へ移っていた場合も、そのままにする。
+    const current = (document.querySelector(".screen.active") || {}).id;
+    if (current !== "screen-login" && current !== "screen-signup") {
+      if (hasUsedAppBefore()) openLoginScreen();
+      else openSignupScreen();
+    }
+    markInitialScreenReady();
     return;
   }
 
   // この端末は一度ログインまで来た。次に未ログインで開いたときはログイン画面を出す
   tryLocalSet(AUTH_SEEN_KEY, "1");
+  tryLocalSet(AUTH_SIGNED_IN_KEY, "1");
 
-  try {
-    await migrateLocalProfilesToFirestore();
-  } catch (e) {
+  // ⚠️ **Firestore の応答を無期限に待たない。**同期はローカルファーストなので、
+  //    画面を出すのに通信は要らない。電波が弱い（つながるが進まない）場所では
+  //    ここが約40秒止まり、そのあいだ子どもは空のホームを見ていた（2026-10-02 日次QAで発見）。
+  //    5秒で見切って画面を出す。移行の処理自体は止めずに裏で最後まで走らせ、
+  //    プランは下の watchHouseholdPlan() の購読が、つながりしだい反映する。
+  const migration = migrateLocalProfilesToFirestore().catch((e) => {
     console.warn("[sync] migration failed:", e.message);
-  }
+  });
+  await Promise.race([migration, new Promise((resolve) => setTimeout(resolve, 5000))]);
 
   // 以降のプラン変更（支払い・解約）はこの購読が拾う
   watchHouseholdPlan();
 
   refreshAuthAccountLine();
-  startInitialScreen();
+  // ⚠️ **すでに端末のデータで最初の画面を出していたら、出し直さない。**
+  //    出し直すと、そのあいだに遊び始めた子を「だれが あそぶ？」へ引きはがすことになる。
+  if (!initialScreenShownLocally) startInitialScreen();
+  markInitialScreenReady();
 });

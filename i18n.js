@@ -39,6 +39,9 @@ const LOCALES = {
 
     // --- オープニング ---
     "splash.tap": "タップして はじめる",
+    "splash.preparing": "じゅんびちゅう…",
+    "common.sendWaiting": "電波が よわいようです。つながりしだい 送られます（アプリは とじないでください）。",
+    "auth.errorNetwork": "インターネットに つながっていないようです。電波のよいところで もう一度お試しください。",
 
     // --- せってい ---
     "settings.title": "⚙️ せってい",
@@ -105,6 +108,7 @@ const LOCALES = {
     "settings.backupExportOk": "書き出しました！ファイルを だいじに ほかんしてね",
     "settings.backupExportFailed": "書き出しに しっぱいしました。もういちど ためしてね",
     "settings.backupImportInvalid": "このファイルは 読み込めませんでした",
+    "settings.backupCurrent": "（いまの きろく：{profiles}人ぶん・カード{cards}しゅるい・ポイント{points}点 は 消えます）",
     "settings.backupImportConfirm": "{profiles}人ぶん・カード{cards}しゅるい・ポイント{points}点 を読み込みます。今の きろくは うわがきされます。よろしいですか？",
     "settings.backupImportOk": "読み込みました！",
     "settings.backupImportFailed": "読み込みに しっぱいしました。もういちど ためしてね",
@@ -364,6 +368,7 @@ const LOCALES = {
     "flash.title": "⚡ たしざんダッシュ",
     "flash.desc": "すうじが 1つずつ 出てきます。ぜんぶ たした こたえを 入力してね。",
     "flash.rule": "{digits}けたの すうじが {count}こ ながれます。ぜんぶで {rounds}かい。",
+    "flash.ruleOneDigit": "{digits}けたの すうじが {count}こ ながれます。ぜんぶで {rounds}かい。",
     "flash.best": "じこベスト：{total}かい中 {n}かい せいかい",
     "flash.noBest": "まだ きろくが ありません。さいしょの きろくを つくろう！",
     "flash.speed.slow": "🐢 ゆっくり",
@@ -377,6 +382,7 @@ const LOCALES = {
     "flash.wrong": "おしい！こたえは {answer}",
     "flash.score": "{total}かい中 {n}かい せいかい！",
     "flash.gotPoints": "🎰 {n}ポイント ゲット！",
+    "flash.gotPointsOne": "🎰 {n}ポイント ゲット！",
     "flash.capped": "きょうの たしざんダッシュの ポイントは {n}ポイントまでです。",
     "flash.newBest": "🎉 じこベスト こうしん！",
     "flash.again": "もう いっかい",
@@ -400,16 +406,17 @@ const LOCALES = {
     "settings.gradeRange1": "1年の もんだい",
 
     // --- 問題文・解説のひな形 ---
-    "q.kanjiRead": "「{kanji}」の 読み方を ひらがなで 書いてね",
+    // ⚠️ 1年生も読む問題文。読・方・書・声は2年の配当なので、かなで書く（2026-10-05 日次QAで発見）
+    "q.kanjiRead": "「{kanji}」の よみかたを ひらがなで かいてね",
     "q.kanjiReadHint": "さいしょの文字は「{first}」だよ",
-    "q.shortAnswerHint": "みじかい ことばだよ。声に 出して 読んでみよう",
-    "q.kanjiReadExplain": "「{kanji}」は「{reading}」と読みます",
+    "q.shortAnswerHint": "みじかい ことばだよ。こえに 出して よんでみよう",
+    "q.kanjiReadExplain": "「{kanji}」は「{reading}」と よみます",
     "q.antonym": "「{word}」の はんたいの ことばは？",
     "q.antonymHint": "さいしょの文字は「{first}」だよ",
     "q.antonymExplain": "「{word}」の はんたいは「{opposite}」だよ",
     "q.meaning": "「{word}」の いみは どれ？",
     "q.meaningReverse": "「{meaning}」という いみの ことばは どれ？",
-    "q.kanjiWrite": "「{reading}」と 読む ことばは どれ？",
+    "q.kanjiWrite": "「{reading}」と よむ ことばは どれ？",
     "q.meaningExplain": "「{word}」は「{meaning}」という いみです",
     "q.enToJa": "「{word}」の いみは どれ？",
     "q.jaToEn": "「{ja}」を あらわす 英語は どれ？",
@@ -417,7 +424,8 @@ const LOCALES = {
     "q.enPhrase": "{sentence}\n\n___ に 入る ことばは どれ？",
     "q.enPhraseExplain": "{sentence}（{ja}）",
     "q.choiceHint": "せんたくしを 1つ へらすよ",
-    "q.readingPositionHint": "本文の{zone}あたりに 注目してみよう",
+    // ⚠️ 1年生も読む。{zone} は script.js の readingPositionHint が かなで渡す
+    "q.readingPositionHint": "本文の {zone}を よく よんでみよう",
     "q.reading": "{passage}\n\nしつもん：{question}",
     "q.readingExplain": "本文の {why}",
 
@@ -471,9 +479,11 @@ const LOCALES = {
       "かんぺき！りかいも できてるよ！",
       "すばらしい！",
     ],
+    // まちがえると答えが出て次へ進む（やり直しはできない）ので「もう一回かんがえて」とは言わない
+    //（2026-10-09 日次QAで発見。答えを見たあとに「もう一回かんがえてみよう！」が出ていた）
     "guide.wrong": [
       "おしい！つぎは できるよ！",
-      "だいじょうぶ、もう一回かんがえてみよう！",
+      "だいじょうぶ！ つぎの もんだいで とりかえそう！",
       "ちょっとむずかしかったね。こたえを おぼえておこう！",
     ],
     "guide.resultPerfect": [
@@ -532,11 +542,11 @@ const LOCALES = {
     "math.sub1.explainFromTen": "10は ちょうど10。10から {b}を ひくと {diff}",
     "math.sub1.explainSplit": "{a}は 10と{aOnes}。{aOnes}－{b}＝{part}。10と{part}で {diff}",
     "math.sub1.explainBorrow": "{a}は 10と{aOnes}。10－{b}＝{borrow}。{borrow}に {aOnes}を たして {diff}",
-    "math.sub1.explainTeens": "{a}は 10と{aOnes}、{b}は 10と{bOnes}。10どうしは 同じなので消えて、{aOnes}－{bOnes}＝{diff}",
+    "math.sub1.explainTeens": "{a}は 10と{aOnes}、{b}は 10と{bOnes}。10どうしは おなじなので きえて、{aOnes}－{bOnes}＝{diff}",
     // 2桁〜4桁の加減算で共通（script.js の stepwiseAddSubExplain）。
     // 桁ごとに文言を分けない。分けると考え方がずれる（hint-explain-audit.md の P8）。
-    "math.stepwise.hintAdd": "たす数を 位ごとに 分けて、大きいほうから たしてみよう",
-    "math.stepwise.hintSub": "ひく数を 位ごとに 分けて、大きいほうから ひいてみよう",
+    "math.stepwise.hintAdd": "たす数を くらいごとに 分けて、大きいほうから たしてみよう",
+    "math.stepwise.hintSub": "ひく数を くらいごとに 分けて、大きいほうから ひいてみよう",
     "math.stepwise.and": "と",
     "math.stepwise.listSep": "と",
     "math.stepwise.introAdd": "{b}は {parts}",
@@ -556,12 +566,12 @@ const LOCALES = {
     "math.mul3.explain": "{tens}×{b}＝{tensPart}、{ones}×{b}＝{onesPart}。あわせて {tensPart}＋{onesPart}＝{product}",
     "math.div3.hint": "{b}のだんの 九九で こたえが {a} になる数を さがそう",
     "math.div3.explain": "{b} × {q} = {a} だから、{a} ÷ {b} の こたえは {q}",
-    "math.divRemainder3.text": "{a} ÷ {b} = ？（「〇あまり△」の形で書いてね。書き方の例: 12あまり3）",
+    "math.divRemainder3.text": "{a} ÷ {b} = ？（「〇あまり△」の形で書いてね。たとえば 12あまり3）",
     "math.divRemainder3.answer": "{q}あまり{r}",
     "math.divRemainder3.accept": ["{q}余り{r}"],
     "math.divRemainder3.hint": "{b}のだんの 九九で {a}を こえない、いちばん大きい数を さがそう",
     "math.divRemainder3.explain": "{b} × {q} ＝ {product}。{a} － {product} ＝ {r} あまる。だから {q}あまり{r}",
-    "math.decimal3.hint": "小数点の位置を そろえて 計算しよう",
+    "math.decimal3.hint": "小数点の いちを そろえて 計算しよう",
     "math.decimal3.explainAdd": "{a}を 10ばいすると {na}、{b}を 10ばいすると {nb}。{na}＋{nb}＝{raw}。10で わって もとに もどすと {answer}",
     "math.decimal3.explainSub": "{hi}を 10ばいすると {hiRaw}、{lo}を 10ばいすると {loRaw}。{hiRaw}－{loRaw}＝{raw}。10で わって もとに もどすと {answer}",
     "math.fraction.reduceSuffix": "。{rawNum}と{d}を{g}でわって やくぶんすると {reduced}",
@@ -570,10 +580,10 @@ const LOCALES = {
     "math.fractionSame3.hintSub": "分母はそのまま、分子どうしを ひきざんしよう",
     "math.fractionSame3.explainSub": "分母はそのままで、分子は {n1}－{n2}＝{diff}。だから {diff}/{d}",
     "math.wordAdd.text": "{item}が {a}{c} ありました。{b}{c} もらいました。ぜんぶで {howMany}？",
-    "math.wordAdd.hint": "「もらった」ということは、数が ふえるね。たしざんを つかおう",
+    "math.wordAdd.hint": "「もらった」ということは、かずが ふえるね。たしざんを つかおう",
     "math.wordAdd.explain": "はじめに {a}{c}、もらった {b}{c}を たすと {a}＋{b}＝{sum}{c} になるよ",
     "math.wordSub.text": "{item}が {bigger}{c} ありました。{b}{c} {past}。のこりは {howMany}？",
-    "math.wordSub.hint": "「{plain}」ということは、数が へるね。ひきざんを つかおう",
+    "math.wordSub.hint": "「{plain}」ということは、かずが へるね。ひきざんを つかおう",
     "math.wordSub.explain": "はじめに {bigger}{c} あって、{b}{c} {plain}から {bigger}－{b}＝{rest}{c} のこるよ",
     "math.wordMul.text": "1ふくろに {item}が {perBag}{c}ずつ 入っています。{bags}ふくろでは ぜんぶで {howMany}？",
     "math.wordMul.hint": "「1ふくろに◯こ」が「△ふくろぶん」あるときは、かけ算を つかおう",
@@ -610,9 +620,9 @@ const LOCALES = {
     "math.wordMulArray2.explain": "たて {rows}れつ、よこ {cols}れつ ならんでいるから {rows}×{cols}＝{total}まい だよ",
 
     // --- 算数の生成器（4年） ---
-    "math.divLong4.hint": "わられる数を 位ごとに 分けて、それぞれ わってみよう",
-    "math.divLong4.explainExact": "{a}を {b}で わると、ちょうど {qTens}になる（{tensPart}÷{b}＝{qTens}）",
-    "math.divLong4.explainSplit": "{a}を {tensPart}と{onesPart}に分けると、{tensPart}÷{b}＝{qTens}、{onesPart}÷{b}＝{qOnes}。あわせて {q}",
+    "math.divLong4.hint": "{a}を「{b}×10の いくつぶん」と「のこり」に 分けて、それぞれ {b}で わってみよう",
+    "math.divLong4.explainExact": "{b}×10＝{b10}。{a}は {b10}の {qT}つぶんなので、{a}÷{b}＝{qTens}",
+    "math.divLong4.explainSplit": "{a}を、{b}×10の {qT}つぶんの {tensPart}と、のこりの {onesPart}に分けると、{tensPart}÷{b}＝{qTens}、{onesPart}÷{b}＝{qOnes}。あわせて {q}",
     "math.decimalAddSub4.hint": "100ばいして 整数に してから 計算しよう。さいごに 小数点を もどすよ",
     "math.decimalAddSub4.explainAdd": "{a}を 100ばいすると {aRaw}、{b}を 100ばいすると {bRaw}。{aRaw}＋{bRaw}＝{raw}。100で わって もとに もどすと {answer}",
     "math.decimalAddSub4.explainSub": "{big}を 100ばいすると {bigRaw}、{small}を 100ばいすると {smallRaw}。{bigRaw}－{smallRaw}＝{raw}。100で わって もとに もどすと {answer}",
@@ -627,7 +637,7 @@ const LOCALES = {
     "math.rounding4.explain": "{place}の位の 1つ下、{lower}の位の 数字は {lowerDigit}。{decision} {place}の位までの がい数に すると {answer}",
     "math.rounding4.up": "5以上なので きりあげて",
     "math.rounding4.down": "4以下なので きりさげて",
-    "math.angle4.text": "1つの 直線の 上に 2つの 角が ならんでいます。1つが {a}度、もう1つが {b}度の とき、のこりの 角は なん度？",
+    "math.angle4.text": "1つの 直線の 上に 3つの 角が ならんでいます。そのうち 2つが {a}度と {b}度の とき、のこりの 1つの 角は なん度？",
     "math.angle4.hint": "1つの 直線が つくる 角は ぜんぶで 180度",
     "math.angle4.explain": "180 － {a} － {b} ＝ {rest}（度）",
     "math.wordUnit4.text": "テープが {total}cm あります。これは なんm なんcm？（cm の 数を 答えてね。{m}m ◯cm）",
@@ -798,6 +808,9 @@ const LOCALES = {
 
     // --- オープニング ---
     "splash.tap": "Toca para empezar",
+    "splash.preparing": "Preparando…",
+    "common.sendWaiting": "La conexión es débil. Se enviará en cuanto haya conexión (no cierre la app).",
+    "auth.errorNetwork": "Parece que no hay conexión a internet. Inténtelo de nuevo con mejor cobertura.",
 
     // --- せってい ---
     "settings.title": "⚙️ Ajustes",
@@ -862,6 +875,7 @@ const LOCALES = {
     "settings.backupExportOk": "¡Guardado! Conserva bien el archivo",
     "settings.backupExportFailed": "No se pudo exportar. Inténtalo otra vez",
     "settings.backupImportInvalid": "No se ha podido leer este archivo",
+    "settings.backupCurrent": "(Se borrará lo actual: {profiles} perfil(es), {cards} cartas distintas y {points} puntos)",
     "settings.backupImportConfirm": "Se importarán {profiles} perfil(es), {cards} cartas distintas y {points} puntos. Tu progreso actual se sustituirá. ¿Quieres continuar?",
     "settings.backupImportOk": "¡Importado!",
     "settings.backupImportFailed": "No se pudo importar. Inténtalo otra vez",
@@ -1131,7 +1145,8 @@ const LOCALES = {
     "cat.flashDesc": "Van saliendo números. ¡Súmalos todos!",
     "flash.title": "⚡ Carrera de sumas",
     "flash.desc": "Los números van saliendo de uno en uno. Escribe la suma de todos ellos.",
-    "flash.rule": "Salen {count} números de {digits} cifra(s). Son {rounds} rondas en total.",
+    "flash.rule": "Salen {count} números de {digits} cifras. Son {rounds} rondas en total.",
+    "flash.ruleOneDigit": "Salen {count} números de {digits} cifra. Son {rounds} rondas en total.",
     "flash.best": "Tu récord: {n} de {total} aciertos",
     "flash.noBest": "Aún no hay récord. ¡Marca el primero!",
     "flash.speed.slow": "🐢 Lento",
@@ -1145,6 +1160,7 @@ const LOCALES = {
     "flash.wrong": "¡Casi! La respuesta era {answer}",
     "flash.score": "¡{n} de {total} aciertos!",
     "flash.gotPoints": "🎰 ¡Has ganado {n} puntos!",
+    "flash.gotPointsOne": "🎰 ¡Has ganado {n} punto!",
     "flash.capped": "Hoy ya has llegado al máximo de {n} puntos con la carrera de sumas.",
     "flash.newBest": "🎉 ¡Nuevo récord!",
     "flash.again": "Otra vez",
@@ -1226,7 +1242,7 @@ const LOCALES = {
       "Si tienes dudas, echa un vistazo aquí",
     ],
     "guide.start": [
-      "¿Preparado? ¡Vamos con 10 preguntas!",
+      "¿Todo listo? ¡Vamos con 10 preguntas!",
       "Si te esfuerzas conseguirás sobres. ¡A llenar el álbum!",
     ],
     "guide.flash": [
@@ -1241,7 +1257,7 @@ const LOCALES = {
     ],
     "guide.wrong": [
       "¡Casi! ¡La próxima seguro!",
-      "Tranquilo, piénsalo otra vez.",
+      "¡No pasa nada, en la próxima lo recuperas!",
       "Esta era un poco difícil. ¡Quédate con la respuesta!",
     ],
     "guide.resultPerfect": [
@@ -1352,7 +1368,7 @@ const LOCALES = {
     "math.wordAddCombine.text": "Hay {a} {item} {place1} y {b} {place2}. ¿{howMany} hay en total?",
     "math.wordAddCombine.hint": "Cuando preguntan «en total», usa la suma.",
     "math.wordAddCombine.explain": "{a} {place1} y {b} {place2}. Juntando: {a}+{b}={sum}.",
-    "math.wordSubDiff1.text": "{nameA} tiene {a} {item} y {nameB} tiene {b}. ¿{howMany} tiene {nameA} de diferencia?",
+    "math.wordSubDiff1.text": "{nameA} tiene {a} {item} y {nameB} tiene {b}. ¿{howMany} más tiene {nameA} que {nameB}?",
     "math.wordSubDiff1.hint": "Cuando preguntan «la diferencia», resta el pequeño del grande.",
     "math.wordSubDiff1.explain": "{a}−{b}={diff}. {nameA} tiene {diff} más.",
     "math.wordAddSub1.text": "Había {a} {item}. Le dieron {b} más y después alguien {agent} {c2}. ¿{howMany} quedan?",
@@ -1372,12 +1388,12 @@ const LOCALES = {
     "math.wordMulArray2.explain": "{rows} filas por {cols} columnas: {rows}×{cols}={total} pegatinas.",
 
     // --- 算数の生成器（4年） ---
-    "math.divLong4.hint": "Separa el número que divides por su valor posicional y divide cada parte.",
+    "math.divLong4.hint": "Separa {a} en un múltiplo de {b}×10 y lo que sobra, y divide cada parte entre {b}.",
     // ⚠️ 末尾にピリオドを付けないこと。この2つは decimalDiv5.explain の {inner} として
     //    差し込まれ、呼び出し側が「. Dividiendo...」と続けるため、二重ピリオドになる。
     //    日本語版も同じ理由で句点を付けていない。
-    "math.divLong4.explainExact": "{a} entre {b} da justo {qTens} ({tensPart}÷{b}={qTens})",
-    "math.divLong4.explainSplit": "Separa {a} en {tensPart} y {onesPart}: {tensPart}÷{b}={qTens} y {onesPart}÷{b}={qOnes}. En total, {q}",
+    "math.divLong4.explainExact": "{b}×10={b10}. {a} es {qT} veces {b10}, así que {a}÷{b}={qTens}",
+    "math.divLong4.explainSplit": "Separa {a} en {tensPart} ({qT} veces {b}×10) y lo que sobra, {onesPart}: {tensPart}÷{b}={qTens} y {onesPart}÷{b}={qOnes}. En total, {q}",
     "math.decimalAddSub4.hint": "Multiplica por 100 para trabajar con números enteros y, al final, vuelve a poner la coma.",
     "math.decimalAddSub4.explainAdd": "{a} por 100 es {aRaw}, y {b} por 100 es {bRaw}. {aRaw}+{bRaw}={raw}. Dividiendo entre 100 vuelves a {answer}.",
     "math.decimalAddSub4.explainSub": "{big} por 100 es {bigRaw}, y {small} por 100 es {smallRaw}. {bigRaw}−{smallRaw}={raw}. Dividiendo entre 100 vuelves a {answer}.",
@@ -1392,7 +1408,7 @@ const LOCALES = {
     "math.rounding4.explain": "La cifra de {lower}, justo debajo de {place}, es {lowerDigit}. {decision} redondeando a {place} sale {answer}.",
     "math.rounding4.up": "Como es 5 o más se redondea hacia arriba, así que",
     "math.rounding4.down": "Como es 4 o menos se redondea hacia abajo, así que",
-    "math.angle4.text": "Sobre una recta hay dos ángulos seguidos. Si uno mide {a}° y el otro {b}°, ¿cuánto mide el ángulo que queda?",
+    "math.angle4.text": "Sobre una recta hay tres ángulos seguidos. Si dos de ellos miden {a}° y {b}°, ¿cuánto mide el tercero?",
     "math.angle4.hint": "Los ángulos sobre una recta suman 180°.",
     "math.angle4.explain": "180 − {a} − {b} = {rest} (grados)",
     "math.wordUnit4.text": "Una cinta mide {total} cm. ¿Cuántos m y cuántos cm son? (escribe solo los cm: {m} m y ◯ cm)",
@@ -1552,6 +1568,9 @@ const LOCALES = {
 
     // --- オープニング ---
     "splash.tap": "Tippen zum Start",
+    "splash.preparing": "Einen Moment…",
+    "common.sendWaiting": "Die Verbindung ist schwach. Es wird gesendet, sobald eine Verbindung besteht (App bitte nicht schließen).",
+    "auth.errorNetwork": "Es scheint keine Internetverbindung zu bestehen. Bitte versuchen Sie es mit besserem Empfang erneut.",
 
     // --- せってい ---
     "settings.title": "⚙️ Einstellungen",
@@ -1592,7 +1611,7 @@ const LOCALES = {
     "review.dueLaterOne": "Morgen",
     "review.wrongCount": "{n}-mal falsch beantwortet",
     "review.wrongCountOne": "1-mal falsch beantwortet",
-    "review.stage": "{current}/{total}. Wiederholung",
+    "review.stage": "Wiederholung {current} von {total}",
     "review.summary": "{n} in Wiederholung (davon {due} heute fällig)",
     "review.group": "{subject}: {n} (davon {due} heute fällig)",
     "resume.text": "Du hast {subject} noch nicht fertig (Frage {current} von {total})",
@@ -1618,6 +1637,7 @@ const LOCALES = {
     "settings.backupExportOk": "Gespeichert! Bewahren Sie die Datei gut auf",
     "settings.backupExportFailed": "Export fehlgeschlagen. Bitte noch einmal versuchen",
     "settings.backupImportInvalid": "Diese Datei konnte nicht gelesen werden",
+    "settings.backupCurrent": "(Der aktuelle Stand wird gelöscht: {profiles} Profil(e), {cards} Kartenarten und {points} Punkte)",
     "settings.backupImportConfirm": "Es werden {profiles} Profil(e), {cards} Kartenarten und {points} Punkte importiert. Der aktuelle Stand wird dabei überschrieben. Fortfahren?",
     "settings.backupImportOk": "Importiert!",
     "settings.backupImportFailed": "Import fehlgeschlagen. Bitte noch einmal versuchen",
@@ -1876,7 +1896,8 @@ const LOCALES = {
     "cat.flashDesc": "Zahlen erscheinen nacheinander. Addiere sie alle!",
     "flash.title": "⚡ Additions-Sprint",
     "flash.desc": "Die Zahlen erscheinen nacheinander. Gib die Summe aller Zahlen ein.",
-    "flash.rule": "Es erscheinen {count} Zahlen mit {digits} Stelle(n). Insgesamt {rounds} Runden.",
+    "flash.rule": "Es erscheinen {count} Zahlen mit {digits} Stellen. Insgesamt {rounds} Runden.",
+    "flash.ruleOneDigit": "Es erscheinen {count} Zahlen mit {digits} Stelle. Insgesamt {rounds} Runden.",
     "flash.best": "Dein Rekord: {n} von {total} richtig",
     "flash.noBest": "Noch kein Rekord. Stell den ersten auf!",
     "flash.speed.slow": "🐢 Langsam",
@@ -1890,6 +1911,7 @@ const LOCALES = {
     "flash.wrong": "So knapp! Die Antwort war {answer}",
     "flash.score": "{n} von {total} richtig!",
     "flash.gotPoints": "🎰 {n} Punkte bekommen!",
+    "flash.gotPointsOne": "🎰 {n} Punkt bekommen!",
     "flash.capped": "Beim Additions-Sprint sind heute schon {n} Punkte erreicht. Mehr gibt es heute nicht.",
     "flash.newBest": "🎉 Neuer Rekord!",
     "flash.again": "Noch einmal",
@@ -1937,7 +1959,7 @@ const LOCALES = {
     // --- ガイドのセリフ ---
     "guide.home": [
       "Hallo! Lernen wir heute wieder zusammen?",
-      "Welche Stufe probierst du heute aus?",
+      "Was möchtest du heute üben?",
       "Jeden Tag ein bisschen – dann klappt's bestimmt!",
     ],
     "guide.subject": [
@@ -1984,7 +2006,7 @@ const LOCALES = {
     ],
     "guide.wrong": [
       "So knapp! Beim nächsten Mal klappt's!",
-      "Kein Problem, denk noch einmal nach!",
+      "Kein Problem, bei der nächsten Aufgabe holst du es wieder auf!",
       "Das war etwas schwierig. Merk dir die Antwort gut!",
     ],
     "guide.resultPerfect": [
@@ -2121,9 +2143,9 @@ const LOCALES = {
     "math.wordMulArray2.explain": "{rows} Reihen mal {cols} Spalten: {rows}×{cols}={total} Aufkleber.",
 
     // --- 算数の生成器（4年） ---
-    "math.divLong4.hint": "Teile die Zahl, die du dividierst, nach Stellenwert auf und dividiere jeden Teil.",
-    "math.divLong4.explainExact": "{a} geteilt durch {b} ergibt genau {qTens} ({tensPart}÷{b}={qTens})",
-    "math.divLong4.explainSplit": "Teile {a} in {tensPart} und {onesPart}: {tensPart}÷{b}={qTens}, {onesPart}÷{b}={qOnes}. Zusammen {q}",
+    "math.divLong4.hint": "Zerlege {a} in ein Vielfaches von {b}·10 und den Rest und teile beide Teile durch {b}.",
+    "math.divLong4.explainExact": "{b}·10={b10}. {a} ist {qT}-mal {b10}, also {a}÷{b}={qTens}",
+    "math.divLong4.explainSplit": "Teile {a} in {tensPart} ({qT}-mal {b}·10) und den Rest {onesPart}: {tensPart}÷{b}={qTens}, {onesPart}÷{b}={qOnes}. Zusammen {q}",
     "math.decimalAddSub4.hint": "Multipliziere mit 100, damit du mit ganzen Zahlen rechnest. Setz das Komma am Ende wieder zurück.",
     "math.decimalAddSub4.explainAdd": "{a} mal 100 ist {aRaw}, {b} mal 100 ist {bRaw}. {aRaw}+{bRaw}={raw}. Geteilt durch 100 ergibt wieder {answer}.",
     "math.decimalAddSub4.explainSub": "{big} mal 100 ist {bigRaw}, {small} mal 100 ist {smallRaw}. {bigRaw}−{smallRaw}={raw}. Geteilt durch 100 ergibt wieder {answer}.",
@@ -2138,7 +2160,7 @@ const LOCALES = {
     "math.rounding4.explain": "Die Ziffer der {lower}, direkt unter {place}, ist {lowerDigit}. {decision} auf {place} gerundet ergibt {answer}.",
     "math.rounding4.up": "Da es 5 oder mehr ist, wird aufgerundet, also",
     "math.rounding4.down": "Da es 4 oder weniger ist, wird abgerundet, also",
-    "math.angle4.text": "Auf einer Geraden liegen zwei Winkel nebeneinander. Einer ist {a} Grad, der andere {b} Grad. Wie groß ist der verbleibende Winkel?",
+    "math.angle4.text": "Auf einer Geraden liegen drei Winkel nebeneinander. Zwei davon sind {a} Grad und {b} Grad groß. Wie groß ist der dritte Winkel?",
     "math.angle4.hint": "Die Winkel auf einer Geraden ergeben zusammen immer 180 Grad",
     "math.angle4.explain": "180 − {a} − {b} = {rest} (Grad)",
     "math.wordUnit4.text": "Ein Band ist {total} cm lang. Wie viel m und cm sind das? (Schreib nur die cm auf: {m} m ◯ cm)",

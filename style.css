@@ -36,6 +36,10 @@
 * { box-sizing: border-box; }
 
 /* ===== 起動時のオープニング ===== */
+/* キーボードで閉じられるようにフォーカスを受けるので、フォーカスの輪を内側に見せる（2026-10-11） */
+.splash:focus { outline: none; }
+.splash:focus-visible { outline: 4px solid #ffd54f; outline-offset: -8px; }
+
 .splash {
   position: fixed;
   top: 0;
@@ -1430,6 +1434,10 @@ h2 {
   font-weight: 800;
   color: var(--text);
   line-height: 1.5;
+  /* わかち書きの空白でだけ折り返し、2行になるときは行の長さをそろえる。
+     390px幅で「み／る」と1文字だけ次の行に落ちていた（2026-10-08 日次QA） */
+  word-break: keep-all;
+  text-wrap: balance;
 }
 .youtube-link-note {
   flex: none;
@@ -2725,6 +2733,9 @@ h2 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* 横向きスマホなどで中身が画面より高いときも、上が切れず「とじる」までスクロールで届くように */
+  justify-content: safe center;
+  overflow-y: auto;
   gap: 18px;
   padding: 20px;
   background: radial-gradient(circle at 50% 42%, #43307d 0%, #241a48 52%, #100a24 100%);
@@ -2791,8 +2802,12 @@ body.gacha-open .tab-bar { display: none; }
 .gacha-rays, .gacha-converge, .gacha-aura { z-index: 1; }
 .gacha-flip-card { z-index: 2; }
 
+/* 幅だけで決めると高さが 300×4/3=400px になり、横向きスマホ（高さ360〜390px）で
+   カードの上が切れて「とじる」が画面の外に出ていた（2026-10-08 日次QAで発見）。
+   ボタンと余白のぶん（約150px）を引いた高さにも収まる幅にする */
 .gacha-flip-card {
-  width: min(74vw, 300px);
+  width: min(74vw, 300px, calc((100vh - 150px) * 0.75));
+  width: min(74vw, 300px, calc((100dvh - 150px) * 0.75));
   max-width: 90%;
   aspect-ratio: 3 / 4;
   position: relative;
@@ -3379,3 +3394,6 @@ body.gacha-open .tab-bar { display: none; }
   cursor: not-allowed;
   filter: grayscale(0.5);
 }
+
+/* バックアップ読み込みの確認文。「読み込むもの」と「いま消えるもの」を2行に分けて見せる */
+#backup-confirm-text { white-space: pre-line; }
